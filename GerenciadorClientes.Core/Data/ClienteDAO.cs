@@ -29,7 +29,7 @@ namespace GerenciadorClientes.Core.Data
                 {
                     cmd.Parameters.Add(new OracleParameter("nome", cliente.Nome));
                     cmd.Parameters.Add(new OracleParameter("cpf", cliente.Cpf));
-                    cmd.Parameters.Add(new OracleParameter("email", cliente.Email));
+                    cmd.Parameters.Add(new OracleParameter("email", TextoOuNulo(cliente.Email)));
                     cmd.Parameters.Add(new OracleParameter("telefone", cliente.Telefone));
 
                     // Executa a inserção e retorna true se pelo menos uma linha foi afetada
@@ -64,7 +64,8 @@ namespace GerenciadorClientes.Core.Data
                                 Id = reader.GetInt32(0),
                                 Nome = reader.GetString(1),
                                 Cpf = reader.GetString(2),
-                                Email = reader.GetString(3),
+                                // E-mail e opcional: nulo no banco vira texto vazio
+                                Email = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                                 // Trata valores nulos na coluna TELEFONE
                                 Telefone = reader.IsDBNull(4) ? "Não informado" : reader.GetString(4),
                                 DataCadastro = reader.GetDateTime(5)
@@ -103,7 +104,7 @@ namespace GerenciadorClientes.Core.Data
                             cmdCliente.Transaction = transacao;
                             cmdCliente.Parameters.Add(new OracleParameter("nome", cliente.Nome));
                             cmdCliente.Parameters.Add(new OracleParameter("cpf", cliente.Cpf));
-                            cmdCliente.Parameters.Add(new OracleParameter("email", cliente.Email));
+                            cmdCliente.Parameters.Add(new OracleParameter("email", TextoOuNulo(cliente.Email)));
                             cmdCliente.Parameters.Add(new OracleParameter("telefone", cliente.Telefone));
 
                             // Configura parâmetro de SAÍDA (OUT) para capturar o ID
@@ -163,7 +164,7 @@ namespace GerenciadorClientes.Core.Data
                 {
                     cmd.Parameters.Add(new OracleParameter("nome", cliente.Nome));
                     cmd.Parameters.Add(new OracleParameter("cpf", cliente.Cpf));
-                    cmd.Parameters.Add(new OracleParameter("email", cliente.Email));
+                    cmd.Parameters.Add(new OracleParameter("email", TextoOuNulo(cliente.Email)));
                     cmd.Parameters.Add(new OracleParameter("telefone", cliente.Telefone));
                     cmd.Parameters.Add(new OracleParameter("id", cliente.Id));
 
@@ -194,7 +195,8 @@ namespace GerenciadorClientes.Core.Data
                                 Id = reader.GetInt32(0),
                                 Nome = reader.GetString(1),
                                 Cpf = reader.GetString(2),
-                                Email = reader.GetString(3),
+                                // E-mail e opcional: nulo no banco vira texto vazio
+                                Email = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                                 Telefone = reader.IsDBNull(4) ? "Não informado" : reader.GetString(4),
                                 DataCadastro = reader.GetDateTime(5)
                             };
@@ -204,6 +206,28 @@ namespace GerenciadorClientes.Core.Data
             }
 
             return null; // Retorna null se o ID não existir no banco
+        }
+
+        // Converte texto vazio em NULL para o banco (o e-mail e opcional).
+        private static object TextoOuNulo(string? valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? DBNull.Value : valor.Trim();
+        }
+
+        // Confere se o CPF ja existe antes de gravar (a coluna CPF e UNIQUE).
+        public bool CpfJaCadastrado(string cpf)
+        {
+            string query = "SELECT COUNT(*) FROM CLIENTES WHERE CPF = :cpf";
+
+            using (OracleConnection conexao = Database.GetConnection())
+            {
+                conexao.Open();
+                using (OracleCommand cmd = new OracleCommand(query, conexao))
+                {
+                    cmd.Parameters.Add(new OracleParameter("cpf", cpf));
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
         }
 
         // Exclui um cliente e o endereço vinculado a ele de forma atômica.

@@ -20,5 +20,7 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- Estilos compartilhados entre as telas (dicas, caixas de texto). -->
+        <StyleInclude Source="/Styles/Geral.axaml" />
     </Application.Styles>
 </Application>

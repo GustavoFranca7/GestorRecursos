@@ -3,8 +3,8 @@ CREATE TABLE CLIENTES (
     ID            NUMBER(10)          PRIMARY KEY,
     NOME          VARCHAR2(100)       NOT NULL,
     CPF           VARCHAR2(11)        NOT NULL UNIQUE,
-    EMAIL         VARCHAR2(100)       NOT NULL,
-    TELEFONE      VARCHAR2(15),
+    EMAIL         VARCHAR2(100),
+    TELEFONE      VARCHAR2(15)        NOT NULL,
     DATA_CADASTRO DATE              DEFAULT SYSDATE NOT NULL
 );
 

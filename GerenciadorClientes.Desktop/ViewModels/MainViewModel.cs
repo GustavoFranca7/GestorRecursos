@@ -57,6 +57,29 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    // Formulario de novo cliente aberto por cima da lista. Nulo = fechado.
+    [ObservableProperty]
+    public partial NovoClienteViewModel? NovoCliente { get; set; }
+
+    // Botao "+": abre o formulario.
+    [RelayCommand]
+    private void AbrirNovoCliente()
+    {
+        NovoCliente = new NovoClienteViewModel(_clienteDao, AoSalvarNovoCliente, () => NovoCliente = null);
+    }
+
+    // Aviso rapido do canto inferior esquerdo. Nulo = nenhum aviso na tela.
+    [ObservableProperty]
+    public partial string? Notificacao { get; set; }
+
+    // Chamado pelo formulario depois de gravar: fecha, recarrega e mostra o aviso.
+    private void AoSalvarNovoCliente(Cliente cliente)
+    {
+        NovoCliente = null;
+        CarregarClientes();
+        Notificacao = $"Cliente {cliente.Nome} cadastrado com sucesso.";
+    }
+
     // Dados ficticios para a tela nao aparecer vazia no preview da IDE.
     private void CarregarExemploParaPreview()
     {

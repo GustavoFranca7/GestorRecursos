@@ -1,0 +1,37 @@
+<!-- Estilos usados em mais de uma tela. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Balao de dica (ToolTip) no visual pixel art -->
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource AzulPetroleo}" />
+        <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        <Setter Property="BorderBrush" Value="{StaticResource PretoAzulado}" />
+        <Setter Property="BorderThickness" Value="3" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontFamily" Value="{StaticResource FontePixel}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="MaxWidth" Value="340" />
+    </Style>
+
+    <!-- Caixa de texto sem fundo nem borda: a moldura da arte fica atras dela. -->
+    <Style Selector="TextBox.pixel">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        <Setter Property="CaretBrush" Value="{StaticResource QuaseBranco}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource Mostarda}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontePixel}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Margin" Value="12,0" />
+    </Style>
+
+    <!-- O tema padrao pinta um fundo na caixa ao passar o mouse e ao focar; isto tira. -->
+    <Style Selector="TextBox.pixel /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+</Styles>

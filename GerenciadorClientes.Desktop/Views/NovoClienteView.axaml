@@ -1,0 +1,267 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GerenciadorClientes.Desktop.ViewModels"
+             xmlns:ctl="using:GerenciadorClientes.Desktop.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
+             x:Class="GerenciadorClientes.Desktop.Views.NovoClienteView"
+             x:DataType="vm:NovoClienteViewModel"
+             FontFamily="{StaticResource FontePixel}"
+             FontSize="16">
+
+    <Design.DataContext>
+        <vm:NovoClienteViewModel />
+    </Design.DataContext>
+
+    <!-- Esc fecha o formulario sem salvar -->
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelarCommand}" />
+    </UserControl.KeyBindings>
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="Foreground" Value="{StaticResource Sage}" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+        <Style Selector="TextBlock.secao">
+            <Setter Property="Foreground" Value="{StaticResource Mostarda}" />
+        </Style>
+
+        <!-- Borda transparente em volta do campo; vira vinho quando ha erro -->
+        <Style Selector="Border.campo">
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="Height" Value="46" />
+        </Style>
+        <Style Selector="Border.campo.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Vinho}" />
+        </Style>
+
+        <!-- Etiqueta de erro embaixo do campo -->
+        <Style Selector="TextBlock.msgErro">
+            <Setter Property="Background" Value="{StaticResource Vinho}" />
+            <Setter Property="Foreground" Value="{StaticResource QuaseBranco}" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+
+        <Style Selector="ctl|NineSlice.moldura">
+            <Setter Property="Slice" Value="8" />
+            <Setter Property="Escala" Value="2" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- Fundo escurecido: cobre a tela inteira e bloqueia cliques na lista -->
+        <Border Background="{StaticResource PretoAzulado}" Opacity="0.75" />
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Panel Width="580" Margin="0,20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+
+                <StackPanel Margin="26,20">
+
+                    <!-- Titulo -->
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="NOVO CLIENTE" FontSize="32" VerticalAlignment="Center"
+                                   Foreground="{StaticResource QuaseBranco}" />
+                        <Button Grid.Column="1" Content="X" ToolTip.Tip="Fechar (Esc)"
+                                Theme="{StaticResource BotaoLinhaVinho}"
+                                Command="{Binding CancelarCommand}" />
+                    </Grid>
+
+                    <!-- Faixa de aviso: so aparece quando a gravacao foi recusada -->
+                    <Border Background="{StaticResource Vinho}" BorderBrush="{StaticResource PretoAzulado}"
+                            BorderThickness="3" Padding="10,6" Margin="0,0,0,10"
+                            IsVisible="{Binding Aviso, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding Aviso}" TextWrapping="Wrap"
+                                   Foreground="{StaticResource QuaseBranco}" />
+                    </Border>
+
+                    <!-- ===================== DADOS DO CLIENTE ===================== -->
+                    <Border BorderBrush="{StaticResource VerdeProfundo}" BorderThickness="0,0,0,2" Margin="0,0,0,8">
+                        <TextBlock Classes="secao" Text="DADOS DO CLIENTE" />
+                    </Border>
+
+                    <!-- Nome -->
+                    <StackPanel Margin="0,0,0,8">
+                        <TextBlock Classes="rotulo">
+                            <Run Text="NOME " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                        </TextBlock>
+                        <Border Classes="campo"
+                                Classes.erro="{Binding ErroNome, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <Panel>
+                                <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                <TextBox Name="CampoNome" Classes="pixel" MaxLength="100" Text="{Binding Nome}" />
+                            </Panel>
+                        </Border>
+                        <TextBlock Classes="msgErro" Text="{Binding ErroNome}"
+                                   IsVisible="{Binding ErroNome, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+
+                    <!-- CPF e Telefone -->
+                    <Grid ColumnDefinitions="*,12,*" Margin="0,0,0,8">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="CPF " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroCpf, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    ToolTip.Tip="Somente os 11 numeros, sem pontos e traco. Ex: 12345678901">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="14"
+                                             Text="{Binding Cpf, UpdateSourceTrigger=LostFocus}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroCpf}"
+                                       IsVisible="{Binding ErroCpf, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="TELEFONE " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroTelefone, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    ToolTip.Tip="DDD + 9 + numero, sem o 55 e sem traco. Ex: 47999990000">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="20"
+                                             Text="{Binding Telefone, UpdateSourceTrigger=LostFocus}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroTelefone}"
+                                       IsVisible="{Binding ErroTelefone, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- E-mail (opcional) -->
+                    <StackPanel Margin="0,0,0,8">
+                        <TextBlock Classes="rotulo">
+                            <Run Text="E-MAIL " /><Run Text="(opcional)" Foreground="{StaticResource OlivaEscuro}" />
+                        </TextBlock>
+                        <Border Classes="campo"
+                                Classes.erro="{Binding ErroEmail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <Panel>
+                                <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                <TextBox Classes="pixel" MaxLength="100" Text="{Binding Email}" />
+                            </Panel>
+                        </Border>
+                        <TextBlock Classes="msgErro" Text="{Binding ErroEmail}"
+                                   IsVisible="{Binding ErroEmail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+
+                    <!-- ===================== ENDERECO ===================== -->
+                    <Border BorderBrush="{StaticResource VerdeProfundo}" BorderThickness="0,0,0,2" Margin="0,4,0,8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="secao" Text="ENDERECO" />
+                            <TextBlock Grid.Column="1" Text="{Binding AvisoEndereco}"
+                                       Foreground="{StaticResource OlivaEscuro}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Logradouro e Numero -->
+                    <Grid ColumnDefinitions="3*,12,*" Margin="0,0,0,8">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="LOGRADOURO " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroLogradouro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="150" Text="{Binding Logradouro}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroLogradouro}"
+                                       IsVisible="{Binding ErroLogradouro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="NUMERO " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroNumero, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="20" Text="{Binding Numero}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroNumero}"
+                                       IsVisible="{Binding ErroNumero, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Cidade, UF e CEP -->
+                    <Grid ColumnDefinitions="3*,12,*,12,2*" Margin="0,0,0,8">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="CIDADE " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroCidade, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="50" Text="{Binding Cidade}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroCidade}"
+                                       IsVisible="{Binding ErroCidade, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="UF " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroUf, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    ToolTip.Tip="Sigla do estado com 2 letras. Ex: SC">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="2"
+                                             Text="{Binding Uf, UpdateSourceTrigger=LostFocus}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroUf}"
+                                       IsVisible="{Binding ErroUf, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Classes="rotulo">
+                                <Run Text="CEP " /><Run Text="*" Foreground="{StaticResource Mostarda}" />
+                            </TextBlock>
+                            <Border Classes="campo"
+                                    Classes.erro="{Binding ErroCep, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    ToolTip.Tip="Somente os 8 numeros, sem traco. Ex: 89201100">
+                                <Panel>
+                                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                                    <TextBox Classes="pixel" MaxLength="10"
+                                             Text="{Binding Cep, UpdateSourceTrigger=LostFocus}" />
+                                </Panel>
+                            </Border>
+                            <TextBlock Classes="msgErro" Text="{Binding ErroCep}"
+                                       IsVisible="{Binding ErroCep, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Rodape -->
+                    <Grid ColumnDefinitions="*,Auto,10,Auto" Margin="0,6,0,0">
+                        <TextBlock Text="* campos obrigatorios" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OlivaEscuro}" />
+                        <Button Grid.Column="1" Content="CANCELAR" FontSize="22"
+                                Theme="{StaticResource BotaoEscuro}"
+                                Command="{Binding CancelarCommand}" />
+                        <Button Grid.Column="3" Content="SALVAR" FontSize="22"
+                                Theme="{StaticResource BotaoVerde}"
+                                Command="{Binding SalvarCommand}" />
+                    </Grid>
+
+                </StackPanel>
+            </Panel>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

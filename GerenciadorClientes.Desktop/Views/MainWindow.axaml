@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GerenciadorClientes.Desktop.ViewModels"
         xmlns:models="using:GerenciadorClientes.Core.Models"
+        xmlns:ctl="using:GerenciadorClientes.Desktop.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
@@ -11,143 +12,209 @@
         Width="1280" Height="800" MinWidth="1000" MinHeight="600"
         FontFamily="{StaticResource FontePixel}"
         FontSize="16"
-        Background="{StaticResource FundoJanela}"
+        Background="{StaticResource PretoAzulado}"
         Title="Gerenciador de Clientes">
 
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="130,8,*" Margin="8">
+    <Window.Styles>
+        <!-- Estado normal da linha. Transparente, mas nao nulo: sem cor de
+             fundo a Border nao recebe o mouse. -->
+        <Style Selector="Border.linha">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.linha > Grid > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        </Style>
+        <Style Selector="Border.linha > Grid > TextBlock.fraco">
+            <Setter Property="Foreground" Value="{StaticResource Sage}" />
+        </Style>
+        <Style Selector="Border.linha > Grid > TextBlock.email">
+            <Setter Property="Foreground" Value="{StaticResource AzulAco}" />
+        </Style>
 
-        <!-- ===================== MENU LATERAL ===================== -->
-        <Border Grid.Column="0" Background="{StaticResource Menu}"
-                BorderBrush="{StaticResource Contorno}" BorderThickness="3">
-            <DockPanel Margin="0,14">
-                <TextBlock DockPanel.Dock="Bottom" Text="V1.1 · OK"
-                           Foreground="{StaticResource MenuFraco}"
-                           HorizontalAlignment="Center" Margin="0,10,0,0" />
-                <StackPanel Spacing="6">
-                    <!-- Provisorio: blocos coloridos no lugar dos icones,
-                         ate a arte de 64x64 ficar pronta. -->
-                    <StackPanel Background="{StaticResource Selecao}">
-                        <Border Width="64" Height="64" Margin="0,8,0,4"
-                                Background="{StaticResource Verde}"
-                                BorderBrush="{StaticResource Contorno}" BorderThickness="3" />
-                        <TextBlock Text="CLIENTES" Foreground="{StaticResource MenuTexto}"
-                                   HorizontalAlignment="Center" Margin="0,0,0,8" />
+        <!-- Linha sob o mouse. O ">" limita aos textos da propria linha,
+             para nao mexer no texto de dentro dos botoes. -->
+        <Style Selector="Border.linha:pointerover">
+            <Setter Property="Background" Value="{StaticResource Mostarda}" />
+        </Style>
+        <Style Selector="Border.linha:pointerover > Grid > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PretoAzulado}" />
+        </Style>
+
+        <!-- Toda moldura usa a mesma regra de corte. -->
+        <Style Selector="ctl|NineSlice.moldura">
+            <Setter Property="Slice" Value="8" />
+            <Setter Property="Escala" Value="2" />
+        </Style>
+    </Window.Styles>
+
+    <Panel>
+        <Grid ColumnDefinitions="130,8,*" Margin="8">
+
+            <!-- ===================== MENU LATERAL ===================== -->
+            <Panel Grid.Column="0">
+                <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+                <DockPanel Margin="8,16">
+                    <TextBlock DockPanel.Dock="Bottom" Text="V1.1 · OK"
+                               Foreground="{StaticResource OlivaEscuro}"
+                               HorizontalAlignment="Center" Margin="0,10,0,0" />
+                    <StackPanel Spacing="6">
+                        <!-- Provisorio: blocos coloridos no lugar dos icones,
+                             ate a arte de 64x64 ficar pronta. -->
+                        <StackPanel Background="{StaticResource Mostarda}">
+                            <Border Width="64" Height="64" Margin="0,8,0,4"
+                                    Background="{StaticResource Verde}"
+                                    BorderBrush="{StaticResource PretoAzulado}" BorderThickness="3" />
+                            <TextBlock Text="CLIENTES" Foreground="{StaticResource PretoAzulado}"
+                                       HorizontalAlignment="Center" Margin="0,0,0,8" />
+                        </StackPanel>
+                        <StackPanel>
+                            <Border Width="64" Height="64" Margin="0,8,0,4"
+                                    Background="{StaticResource Marrom}"
+                                    BorderBrush="{StaticResource PretoAzulado}" BorderThickness="3" />
+                            <TextBlock Text="RELATORIOS" Foreground="{StaticResource CinzaClaro}"
+                                       HorizontalAlignment="Center" Margin="0,0,0,8" />
+                        </StackPanel>
                     </StackPanel>
-                    <StackPanel>
-                        <Border Width="64" Height="64" Margin="0,8,0,4"
-                                Background="#876E52"
-                                BorderBrush="{StaticResource Contorno}" BorderThickness="3" />
-                        <TextBlock Text="RELATORIOS" Foreground="{StaticResource MenuTexto}"
-                                   HorizontalAlignment="Center" Margin="0,0,0,8" />
-                    </StackPanel>
-                </StackPanel>
-            </DockPanel>
-        </Border>
-
-        <!-- ===================== CONTEUDO ===================== -->
-        <Grid Grid.Column="2" RowDefinitions="Auto,8,*">
-
-            <!-- Barra do topo: titulo, busca e acoes -->
-            <Border Grid.Row="0" Background="{StaticResource Painel}"
-                    BorderBrush="{StaticResource Contorno}" BorderThickness="3" Padding="10,7">
-                <Grid ColumnDefinitions="Auto,*,Auto,8,Auto,8,Auto">
-                    <TextBlock Grid.Column="0" Text="CLIENTES" FontSize="32"
-                               Foreground="{StaticResource Texto}" VerticalAlignment="Center" />
-
-                    <TextBox Grid.Column="2" Width="220" Height="48"
-                             Watermark="Buscar nome ou CPF..."
-                             FontFamily="{StaticResource FontePixel}" FontSize="16"
-                             VerticalContentAlignment="Center"
-                             Background="{StaticResource PainelLuz}"
-                             Foreground="{StaticResource Texto}"
-                             BorderBrush="{StaticResource Contorno}" BorderThickness="3"
-                             CornerRadius="0" />
-
-                    <Button Grid.Column="4" Content="ATUALIZAR"
-                            Theme="{StaticResource BotaoNeutro}"
-                            Command="{Binding CarregarClientesCommand}" />
-
-                    <Button Grid.Column="6" Content="+ NOVO CLIENTE"
-                            Theme="{StaticResource BotaoVerde}" />
-                </Grid>
-            </Border>
-
-            <!-- Painel da lista -->
-            <Border Grid.Row="2" Background="{StaticResource Painel}"
-                    BorderBrush="{StaticResource Contorno}" BorderThickness="3">
-                <DockPanel>
-
-                    <Border DockPanel.Dock="Top" Background="{StaticResource Cabecalho}"
-                            BorderBrush="{StaticResource Contorno}" BorderThickness="0,0,0,3"
-                            Padding="10,5">
-                        <TextBlock Text="/CLIENTES/LISTA" Foreground="{StaticResource Texto}" />
-                    </Border>
-
-                    <Border DockPanel.Dock="Bottom" Background="{StaticResource Cabecalho}"
-                            BorderBrush="{StaticResource Contorno}" BorderThickness="0,3,0,0"
-                            Padding="10,6">
-                        <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextoFraco}" />
-                    </Border>
-
-                    <!-- Cabecalho das colunas. As larguras aqui precisam ser
-                         iguais as da linha, la embaixo. -->
-                    <Border DockPanel.Dock="Top" Background="{StaticResource Cabecalho}"
-                            BorderBrush="{StaticResource Contorno}" BorderThickness="0,0,0,3"
-                            Padding="8,6">
-                        <Grid ColumnDefinitions="70,2*,170,3*,170,120,180">
-                            <TextBlock Grid.Column="0" Text="ID" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="1" Text="NOME" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="2" Text="CPF" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="3" Text="E-MAIL" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="4" Text="TELEFONE" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="5" Text="CADASTRO" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock Grid.Column="6" Text="ACOES" Foreground="{StaticResource TextoFraco}" />
-                        </Grid>
-                    </Border>
-
-                    <ScrollViewer>
-                        <ItemsControl ItemsSource="{Binding Clientes}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:Cliente">
-                                    <Border BorderBrush="{StaticResource Linha}" BorderThickness="0,0,0,2"
-                                            Padding="8,5">
-                                        <Grid ColumnDefinitions="70,2*,170,3*,170,120,180">
-                                            <TextBlock Grid.Column="0" Text="{Binding Id}"
-                                                       Foreground="{StaticResource TextoFraco}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="1" Text="{Binding Nome}"
-                                                       Foreground="{StaticResource Texto}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="2" Text="{Binding Cpf}"
-                                                       Foreground="{StaticResource Texto}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Email}"
-                                                       Foreground="{StaticResource Etiqueta}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="4" Text="{Binding Telefone}"
-                                                       Foreground="{StaticResource Texto}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="5"
-                                                       Text="{Binding DataCadastro, StringFormat={}{0:dd/MM/yyyy}}"
-                                                       Foreground="{StaticResource Texto}"
-                                                       VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6">
-                                                <Button Content="EDIT" Theme="{StaticResource BotaoLinhaNeutro}" />
-                                                <Button Content="DEL" Theme="{StaticResource BotaoLinhaVinho}" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-
                 </DockPanel>
-            </Border>
+            </Panel>
+
+            <!-- ===================== CONTEUDO ===================== -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,8,*">
+
+                <!-- Barra do topo: titulo, busca e acoes -->
+                <Panel Grid.Row="0">
+                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,8,Auto,8,Auto" Margin="16,10">
+                        <TextBlock Grid.Column="0" Text="CLIENTES" FontSize="32"
+                                   Foreground="{StaticResource CinzaClaro}" VerticalAlignment="Center" />
+
+                        <!-- Campo de busca: a moldura clara vai atras do TextBox,
+                             que fica sem fundo e sem borda propria. -->
+                        <Panel Grid.Column="2" Width="230" Height="40">
+                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                            <TextBox Classes="pixel" Watermark="Buscar nome ou CPF..."
+                                     FontFamily="{StaticResource FontePixel}" FontSize="16"
+                                     VerticalContentAlignment="Center" Margin="14,0"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="{StaticResource CinzaClaro}" CornerRadius="0" />
+                        </Panel>
+
+                        <Button Grid.Column="4" Content="A" ToolTip.Tip="Atualizar lista"
+                                Theme="{StaticResource BotaoEscuro}"
+                                Command="{Binding CarregarClientesCommand}" />
+
+                        <Button Grid.Column="6" Content="+" ToolTip.Tip="Novo cliente"
+                                Theme="{StaticResource BotaoVerde}"
+                                Command="{Binding AbrirNovoClienteCommand}" />
+                    </Grid>
+                </Panel>
+
+                <!-- Painel da lista -->
+                <Panel Grid.Row="2">
+                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+                    <DockPanel Margin="14,12">
+
+                        <!-- Caminho -->
+                        <Panel DockPanel.Dock="Top" Height="34">
+                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                            <TextBlock Text="/CLIENTES/LISTA" Margin="14,0"
+                                       Foreground="{StaticResource CinzaClaro}" VerticalAlignment="Center" />
+                        </Panel>
+
+                        <!-- Rodape com o resultado da ultima carga -->
+                        <Panel DockPanel.Dock="Bottom" Height="34" Margin="0,8,0,0">
+                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                            <TextBlock Text="{Binding Status}" Margin="14,0"
+                                       Foreground="{StaticResource Sage}" VerticalAlignment="Center" />
+                        </Panel>
+
+                        <!-- Cabecalho das colunas. As larguras aqui precisam ser
+                             iguais as da linha, la embaixo. -->
+                        <Panel DockPanel.Dock="Top" Height="34" Margin="0,4,0,4">
+                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                            <Grid ColumnDefinitions="70,2*,170,3*,170,120,110" Margin="14,0">
+                                <TextBlock Grid.Column="0" Text="ID" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="1" Text="NOME" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="2" Text="CPF" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="3" Text="E-MAIL" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="4" Text="TELEFONE" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="5" Text="CADASTRO" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                                <TextBlock Grid.Column="6" Text="ACOES" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Sage}" />
+                            </Grid>
+                        </Panel>
+
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding Clientes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Cliente">
+                                        <!-- As cores nao vao aqui: ficam nos estilos la em cima,
+                                             senao o realce do mouse nao consegue sobrescrever. -->
+                                        <Border Classes="linha"
+                                                BorderBrush="{StaticResource PretoAzulado}" BorderThickness="0,0,0,2"
+                                                Padding="14,5">
+                                            <Grid ColumnDefinitions="70,2*,170,3*,170,120,110">
+                                                <TextBlock Grid.Column="0" Classes="fraco" Text="{Binding Id}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Nome}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Cpf}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="3" Classes="email" Text="{Binding Email}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="4" Text="{Binding Telefone}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="5"
+                                                           Text="{Binding DataCadastro, StringFormat={}{0:dd/MM/yyyy}}"
+                                                           VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6">
+                                                    <Button Content="E" ToolTip.Tip="Editar"
+                                                            Theme="{StaticResource BotaoLinhaEscuro}" />
+                                                    <Button Content="X" ToolTip.Tip="Excluir"
+                                                            Theme="{StaticResource BotaoLinhaVinho}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                    </DockPanel>
+                </Panel>
+            </Grid>
         </Grid>
-    </Grid>
+
+        <!-- Formulario de novo cliente, por cima de tudo. O ViewLocator escolhe
+             a tela (NovoClienteView) a partir do ViewModel. -->
+        <ContentControl Content="{Binding NovoCliente}"
+                        IsVisible="{Binding NovoCliente, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <!-- Aviso rapido no canto inferior esquerdo: some sozinho em 3 s,
+             mas continua na tela enquanto o mouse estiver em cima. -->
+        <ctl:Notificacao Texto="{Binding Notificacao}" Background="Transparent"
+                         HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                         Margin="16" MaxWidth="380">
+            <Panel>
+                <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="18,12">
+                    <Border Width="12" Height="12" VerticalAlignment="Center"
+                            Background="{StaticResource Verde}"
+                            BorderBrush="{StaticResource PretoAzulado}" BorderThickness="2" />
+                    <TextBlock Text="{Binding Notificacao}" TextWrapping="Wrap" MaxWidth="310"
+                               Foreground="{StaticResource QuaseBranco}" VerticalAlignment="Center" />
+                </StackPanel>
+            </Panel>
+        </ctl:Notificacao>
+    </Panel>
 </Window>
