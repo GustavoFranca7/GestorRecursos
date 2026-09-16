@@ -308,8 +308,11 @@
                                                     <SelectableTextBlock Grid.Column="7"
                                                                          Text="{Binding Cliente.DataCadastro, StringFormat={}{0:dd/MM/yyyy}}" />
                                                     <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="6">
+                                                        <!-- Abre o formulario com os dados desta linha -->
                                                         <Button Content="E" ToolTip.Tip="Editar"
-                                                                Theme="{StaticResource BotaoLinhaEscuro}" />
+                                                                Theme="{StaticResource BotaoLinhaEscuro}"
+                                                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).AbrirEdicaoCommand}"
+                                                                CommandParameter="{Binding}" />
                                                         <Button Content="X" ToolTip.Tip="Excluir"
                                                                 Theme="{StaticResource BotaoLinhaVinho}" />
                                                     </StackPanel>
@@ -359,10 +362,10 @@
             </Grid>
         </Grid>
 
-        <!-- Formulario de novo cliente, por cima de tudo. O ViewLocator escolhe
-             a tela (NovoClienteView) a partir do ViewModel. -->
-        <ContentControl Content="{Binding NovoCliente}"
-                        IsVisible="{Binding NovoCliente, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <!-- Formulario de cliente (novo ou edicao), por cima de tudo. O ViewLocator escolhe
+             a tela (FormularioClienteView) a partir do ViewModel. -->
+        <ContentControl Content="{Binding Formulario}"
+                        IsVisible="{Binding Formulario, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
         <!-- Aviso rapido no canto inferior esquerdo: some sozinho em 3 s,
              mas continua na tela enquanto o mouse estiver em cima. -->

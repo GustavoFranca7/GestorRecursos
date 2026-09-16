@@ -5,13 +5,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
-             x:Class="GerenciadorClientes.Desktop.Views.NovoClienteView"
-             x:DataType="vm:NovoClienteViewModel"
+             x:Class="GerenciadorClientes.Desktop.Views.FormularioClienteView"
+             x:DataType="vm:FormularioClienteViewModel"
              FontFamily="{StaticResource FontePixel}"
              FontSize="16">
 
     <Design.DataContext>
-        <vm:NovoClienteViewModel />
+        <vm:FormularioClienteViewModel />
     </Design.DataContext>
 
     <!-- Esc fecha o formulario sem salvar -->
@@ -65,7 +65,7 @@
 
                     <!-- Titulo -->
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-                        <TextBlock Text="NOVO CLIENTE" FontSize="32" VerticalAlignment="Center"
+                        <TextBlock Text="{Binding Titulo}" FontSize="32" VerticalAlignment="Center"
                                    Foreground="{StaticResource QuaseBranco}" />
                         <Button Grid.Column="1" Content="X" ToolTip.Tip="Fechar (Esc)"
                                 Theme="{StaticResource BotaoLinhaVinho}"

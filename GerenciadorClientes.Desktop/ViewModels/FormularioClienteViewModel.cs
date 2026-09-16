@@ -8,25 +8,39 @@ using GerenciadorClientes.Core.Validacao;
 
 namespace GerenciadorClientes.Desktop.ViewModels;
 
-// Formulario de novo cliente, aberto por cima da lista.
+// Formulario de cliente (novo ou edicao), aberto por cima da lista.
 // Cliente e endereco sao validados e gravados juntos.
-public partial class NovoClienteViewModel : ViewModelBase
+public partial class FormularioClienteViewModel : ViewModelBase
 {
     private readonly ClienteDAO _clienteDao;
 
-    // Avisos para a tela principal: salvou (com o cliente criado) ou fechou.
+    // Avisos para a tela principal: salvou (com o cliente gravado) ou fechou.
     private readonly Action<Cliente> _aoSalvar;
     private readonly Action _aoFechar;
 
-    public NovoClienteViewModel(ClienteDAO clienteDao, Action<Cliente> aoSalvar, Action aoFechar)
+    // Cliente sendo editado. Nulo = cadastro de um cliente novo.
+    private readonly Cliente? _clienteEditado;
+
+    public FormularioClienteViewModel(ClienteDAO clienteDao, Action<Cliente> aoSalvar, Action aoFechar,
+                                      Cliente? clienteEditado = null)
     {
         _clienteDao = clienteDao;
         _aoSalvar = aoSalvar;
         _aoFechar = aoFechar;
+        _clienteEditado = clienteEditado;
+
+        if (clienteEditado is not null)
+        {
+            PreencherCampos(clienteEditado);
+        }
     }
 
+    public bool EmEdicao => _clienteEditado is not null;
+
+    public string Titulo => EmEdicao ? "EDITAR CLIENTE" : "NOVO CLIENTE";
+
     // Construtor vazio so para o preview da IDE conseguir desenhar a tela.
-    public NovoClienteViewModel() : this(new ClienteDAO(), _ => { }, () => { })
+    public FormularioClienteViewModel() : this(new ClienteDAO(), _ => { }, () => { })
     {
     }
 
@@ -113,13 +127,30 @@ public partial class NovoClienteViewModel : ViewModelBase
                 return;
             }
 
-            Cliente novoCliente = new Cliente(Nome, Cpf, Email, Telefone)
+            Cliente cliente = new Cliente(Nome, Cpf, Email, Telefone)
             {
                 Endereco = new Endereco(Logradouro, Numero, Cidade, Uf, Cep)
             };
 
-            _clienteDao.CadastrarComEndereco(novoCliente);
-            _aoSalvar(novoCliente);
+            if (_clienteEditado is null)
+            {
+                _clienteDao.CadastrarComEndereco(cliente);
+            }
+            else
+            {
+                // Mantem os IDs: Endereco.Id = 0 faz o DAO inserir um endereco novo.
+                cliente.Id = _clienteEditado.Id;
+                cliente.Endereco.Id = _clienteEditado.Endereco?.Id ?? 0;
+                cliente.Endereco.ClienteId = cliente.Id;
+
+                if (!_clienteDao.AtualizarComEndereco(cliente))
+                {
+                    Aviso = "NAO FOI POSSIVEL SALVAR. Este cliente nao existe mais no banco.";
+                    return;
+                }
+            }
+
+            _aoSalvar(cliente);
         }
         catch (Exception ex)
         {
@@ -154,7 +185,7 @@ public partial class NovoClienteViewModel : ViewModelBase
                 : Cep.Length != 8 ? "PRECISA TER 8 NUMEROS" : null;
 
         // O banco so e consultado se o CPF ja estiver no formato certo.
-        if (ErroCpf is null && _clienteDao.CpfJaCadastrado(Cpf))
+        if (ErroCpf is null && _clienteDao.CpfJaCadastrado(Cpf, _clienteEditado?.Id ?? 0))
         {
             ErroCpf = "CPF JA CADASTRADO";
         }
@@ -166,7 +197,7 @@ public partial class NovoClienteViewModel : ViewModelBase
 
         if (errosEndereco > 0)
         {
-            Aviso = "NAO FOI POSSIVEL SALVAR. Um cliente so pode ser cadastrado junto com o endereco completo.";
+            Aviso = "NAO FOI POSSIVEL SALVAR. O cliente precisa ter o endereco completo.";
         }
         else if (errosCliente)
         {
@@ -178,6 +209,24 @@ public partial class NovoClienteViewModel : ViewModelBase
         }
 
         return Aviso is null;
+    }
+
+    // Edicao: os campos ja abrem com os dados atuais do cliente.
+    private void PreencherCampos(Cliente cliente)
+    {
+        Nome = cliente.Nome;
+        Cpf = cliente.Cpf;
+        Telefone = cliente.Telefone;
+        Email = cliente.Email;
+
+        if (cliente.Endereco is not null)
+        {
+            Logradouro = cliente.Endereco.Logradouro;
+            Numero = cliente.Endereco.Numero;
+            Cidade = cliente.Endereco.Cidade;
+            Uf = cliente.Endereco.Estado;
+            Cep = cliente.Endereco.Cep;
+        }
     }
 
     private static string? Obrigatorio(string valor, int maximo)

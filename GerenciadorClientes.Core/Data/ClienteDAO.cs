@@ -292,17 +292,90 @@ namespace GerenciadorClientes.Core.Data
         }
 
         // Confere se o CPF ja existe antes de gravar (a coluna CPF e UNIQUE).
-        public bool CpfJaCadastrado(string cpf)
+        // Na edicao, idIgnorado e o proprio cliente, que pode manter o CPF dele.
+        public bool CpfJaCadastrado(string cpf, int idIgnorado = 0)
         {
-            string query = "SELECT COUNT(*) FROM CLIENTES WHERE CPF = :cpf";
+            string query = "SELECT COUNT(*) FROM CLIENTES WHERE CPF = :cpf AND ID <> :idIgnorado";
 
             using (OracleConnection conexao = Database.GetConnection())
             {
                 conexao.Open();
                 using (OracleCommand cmd = new OracleCommand(query, conexao))
                 {
+                    cmd.BindByName = true;
                     cmd.Parameters.Add(new OracleParameter("cpf", cpf));
+                    cmd.Parameters.Add(new OracleParameter("idIgnorado", idIgnorado));
                     return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
+        // Grava a edicao do cliente e do endereco juntos, na mesma transacao.
+        // Se o cliente ainda nao tinha endereco (Endereco.Id = 0), o endereco e inserido.
+        public bool AtualizarComEndereco(Cliente cliente)
+        {
+            string sqlCliente = @"UPDATE CLIENTES
+                                  SET NOME = :nome, CPF = :cpf, EMAIL = :email, TELEFONE = :telefone
+                                  WHERE ID = :id";
+
+            string sqlEndereco = cliente.Endereco.Id > 0
+                ? @"UPDATE ENDERECOS
+                    SET LOGRADOURO = :logradouro, NUMERO = :numero, CIDADE = :cidade, ESTADO = :estado, CEP = :cep
+                    WHERE ID = :enderecoId AND CLIENTE_ID = :clienteId"
+                : @"INSERT INTO ENDERECOS (ID, CLIENTE_ID, LOGRADOURO, NUMERO, CIDADE, ESTADO, CEP)
+                    VALUES (SEQ_ENDERECOS.NEXTVAL, :clienteId, :logradouro, :numero, :cidade, :estado, :cep)";
+
+            using (OracleConnection conexao = Database.GetConnection())
+            {
+                conexao.Open();
+                using (OracleTransaction transacao = conexao.BeginTransaction())
+                {
+                    try
+                    {
+                        using (OracleCommand cmdCliente = new OracleCommand(sqlCliente, conexao))
+                        {
+                            cmdCliente.Transaction = transacao;
+                            cmdCliente.BindByName = true;
+                            cmdCliente.Parameters.Add(new OracleParameter("nome", cliente.Nome));
+                            cmdCliente.Parameters.Add(new OracleParameter("cpf", cliente.Cpf));
+                            cmdCliente.Parameters.Add(new OracleParameter("email", TextoOuNulo(cliente.Email)));
+                            cmdCliente.Parameters.Add(new OracleParameter("telefone", cliente.Telefone));
+                            cmdCliente.Parameters.Add(new OracleParameter("id", cliente.Id));
+
+                            // Nenhuma linha: o cliente foi excluido enquanto a tela estava aberta.
+                            if (cmdCliente.ExecuteNonQuery() == 0)
+                            {
+                                transacao.Rollback();
+                                return false;
+                            }
+                        }
+
+                        using (OracleCommand cmdEndereco = new OracleCommand(sqlEndereco, conexao))
+                        {
+                            cmdEndereco.Transaction = transacao;
+                            cmdEndereco.BindByName = true;
+                            cmdEndereco.Parameters.Add(new OracleParameter("clienteId", cliente.Id));
+                            cmdEndereco.Parameters.Add(new OracleParameter("logradouro", cliente.Endereco.Logradouro));
+                            cmdEndereco.Parameters.Add(new OracleParameter("numero", cliente.Endereco.Numero));
+                            cmdEndereco.Parameters.Add(new OracleParameter("cidade", cliente.Endereco.Cidade));
+                            cmdEndereco.Parameters.Add(new OracleParameter("estado", cliente.Endereco.Estado));
+                            cmdEndereco.Parameters.Add(new OracleParameter("cep", cliente.Endereco.Cep));
+                            if (cliente.Endereco.Id > 0)
+                            {
+                                cmdEndereco.Parameters.Add(new OracleParameter("enderecoId", cliente.Endereco.Id));
+                            }
+
+                            cmdEndereco.ExecuteNonQuery();
+                        }
+
+                        transacao.Commit();
+                        return true;
+                    }
+                    catch (Exception)
+                    {
+                        transacao.Rollback();
+                        throw;
+                    }
                 }
             }
         }

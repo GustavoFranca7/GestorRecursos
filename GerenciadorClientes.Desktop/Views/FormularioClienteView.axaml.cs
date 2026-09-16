@@ -4,9 +4,9 @@ using Avalonia.Threading;
 
 namespace GerenciadorClientes.Desktop.Views;
 
-public partial class NovoClienteView : UserControl
+public partial class FormularioClienteView : UserControl
 {
-    public NovoClienteView()
+    public FormularioClienteView()
     {
         InitializeComponent();
     }

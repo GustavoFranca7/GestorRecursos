@@ -53,9 +53,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial double LarguraCidade { get; set; } = 140;
 
-    // Formulario de novo cliente aberto por cima da lista. Nulo = fechado.
+    // Formulario (novo ou edicao) aberto por cima da lista. Nulo = fechado.
     [ObservableProperty]
-    public partial NovoClienteViewModel? NovoCliente { get; set; }
+    public partial FormularioClienteViewModel? Formulario { get; set; }
 
     // Aviso rapido do canto inferior esquerdo. Nulo = nenhum aviso na tela.
     [ObservableProperty]
@@ -147,22 +147,39 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    // ===================== Novo cliente =====================
+    // ===================== Formulario (novo e edicao) =====================
 
-    // Botao "+": abre o formulario.
+    // Botao "+": abre o formulario vazio.
     [RelayCommand]
     private void AbrirNovoCliente()
     {
-        NovoCliente = new NovoClienteViewModel(_clienteDao, AoSalvarNovoCliente, () => NovoCliente = null);
+        Formulario = new FormularioClienteViewModel(_clienteDao, AoSalvarNovoCliente, FecharFormulario);
     }
+
+    // Botao "E" da linha: abre o mesmo formulario ja preenchido.
+    [RelayCommand]
+    private void AbrirEdicao(ClienteItemViewModel item)
+    {
+        Formulario = new FormularioClienteViewModel(_clienteDao, AoSalvarEdicao, FecharFormulario, item.Cliente);
+    }
+
+    private void FecharFormulario() => Formulario = null;
 
     // Chamado pelo formulario depois de gravar: fecha, vai para a ultima pagina
     // (onde o cliente novo aparece, pela ordem de ID) e mostra o aviso.
     private void AoSalvarNovoCliente(Cliente cliente)
     {
-        NovoCliente = null;
+        Formulario = null;
         CarregarPagina(int.MaxValue);
         Notificacao = $"Cliente {cliente.Nome} cadastrado com sucesso.";
+    }
+
+    // Na edicao o cliente continua na mesma pagina: so recarrega a atual.
+    private void AoSalvarEdicao(Cliente cliente)
+    {
+        Formulario = null;
+        CarregarPagina(PaginaAtual);
+        Notificacao = $"Cliente {cliente.Nome} atualizado com sucesso.";
     }
 
     // Dados ficticios para a tela nao aparecer vazia no preview da IDE.
