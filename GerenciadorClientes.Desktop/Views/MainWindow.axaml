@@ -1,7 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GerenciadorClientes.Desktop.ViewModels"
-        xmlns:models="using:GerenciadorClientes.Core.Models"
         xmlns:ctl="using:GerenciadorClientes.Desktop.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -25,25 +24,65 @@
         <Style Selector="Border.linha">
             <Setter Property="Background" Value="Transparent" />
         </Style>
-        <Style Selector="Border.linha > Grid > TextBlock">
+        <Style Selector="Border.linha > Grid > SelectableTextBlock">
+            <Setter Property="Padding" Value="0,0,8,0" />
             <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="{x:Static ctl:Corte.TresPontos}" />
         </Style>
-        <Style Selector="Border.linha > Grid > TextBlock.fraco">
+        <Style Selector="Border.linha > Grid > SelectableTextBlock.fraco">
             <Setter Property="Foreground" Value="{StaticResource Sage}" />
         </Style>
-        <Style Selector="Border.linha > Grid > TextBlock.email">
+        <Style Selector="Border.linha > Grid > SelectableTextBlock.email">
             <Setter Property="Foreground" Value="{StaticResource AzulAco}" />
         </Style>
 
-        <!-- Linha sob o mouse. O ">" limita aos textos da propria linha,
-             para nao mexer no texto de dentro dos botoes. -->
-        <Style Selector="Border.linha:pointerover">
-            <Setter Property="Background" Value="{StaticResource Mostarda}" />
+        <!-- Linha sob o mouse ou com o endereco aberto. O ">" limita aos textos
+             da propria linha, para nao mexer no texto de dentro dos botoes. -->
+        <Style Selector="Border.linha:pointerover, Border.linha.aberta">
+            <Setter Property="Background" Value="{StaticResource Sage}" />
         </Style>
-        <Style Selector="Border.linha:pointerover > Grid > TextBlock">
+        <Style Selector="Border.linha:pointerover > Grid > SelectableTextBlock, Border.linha.aberta > Grid > SelectableTextBlock">
             <Setter Property="Foreground" Value="{StaticResource PretoAzulado}" />
         </Style>
 
+        <!-- Setinha com a arte do botao escuro pressionado quando o endereco esta aberto -->
+        <Style Selector="Border.linha.aberta Button.seta /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-escuro-press.png" />
+        </Style>
+
+        <!-- Numero da pagina que esta na tela fica verde -->
+        <Style Selector="Button.atual /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-verde-normal.png" />
+        </Style>
+        <Style Selector="Button.atual">
+            <Setter Property="Foreground" Value="{StaticResource QuaseBranco}" />
+        </Style>
+
+        <!-- Texto selecionado na lista (para copiar) -->
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="SelectionBrush" Value="{StaticResource AzulAco}" />
+            <!-- Recebe o foco ao clicar: sem foco, o Ctrl+C do teclado nao chega ate o texto -->
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+
+        <!-- Titulos do cabecalho -->
+        <Style Selector="TextBlock.titulo">
+            <Setter Property="Foreground" Value="{StaticResource Sage}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- Barrinhas entre as colunas: todas da mesma cor; so as que arrastam acendem com o mouse -->
+        <Style Selector="ctl|DivisorColuna">
+            <Setter Property="Margin" Value="0,8" />
+        </Style>
+        <Style Selector="ctl|DivisorColuna > Border">
+            <Setter Property="Background" Value="{StaticResource Sage}" />
+        </Style>
+        <Style Selector="ctl|DivisorColuna.ativo:pointerover > Border">
+            <Setter Property="Background" Value="{StaticResource Mostarda}" />
+        </Style>
         <!-- Toda moldura usa a mesma regra de corte. -->
         <Style Selector="ctl|NineSlice.moldura">
             <Setter Property="Slice" Value="8" />
@@ -125,71 +164,196 @@
                                        Foreground="{StaticResource CinzaClaro}" VerticalAlignment="Center" />
                         </Panel>
 
-                        <!-- Rodape com o resultado da ultima carga -->
-                        <Panel DockPanel.Dock="Bottom" Height="34" Margin="0,8,0,0">
+                        <!-- ============ Rodape: paginacao ============ -->
+                        <Panel DockPanel.Dock="Bottom" Height="50" Margin="0,8,0,0">
                             <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
-                            <TextBlock Text="{Binding Status}" Margin="14,0"
-                                       Foreground="{StaticResource Sage}" VerticalAlignment="Center" />
-                        </Panel>
+                            <Grid ColumnDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto,16,*,Auto,8,Auto"
+                                  Margin="12,0" VerticalAlignment="Center">
 
-                        <!-- Cabecalho das colunas. As larguras aqui precisam ser
-                             iguais as da linha, la embaixo. -->
-                        <Panel DockPanel.Dock="Top" Height="34" Margin="0,4,0,4">
-                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
-                            <Grid ColumnDefinitions="70,2*,170,3*,170,120,110" Margin="14,0">
-                                <TextBlock Grid.Column="0" Text="ID" VerticalAlignment="Center"
+                                <Button Grid.Column="0" Content="&lt; ANTERIOR"
+                                        Theme="{StaticResource BotaoLinhaEscuro}"
+                                        Command="{Binding PaginaAnteriorCommand}" />
+
+                                <Button Grid.Column="2" Content="&lt;&lt;" ToolTip.Tip="Primeira pagina"
+                                        Theme="{StaticResource BotaoLinhaEscuro}"
+                                        Command="{Binding PrimeiraPaginaCommand}" />
+
+                                <!-- Ate 3 botoes numerados, que andam junto com a pagina atual -->
+                                <ItemsControl Grid.Column="4" ItemsSource="{Binding NumerosPagina}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PaginaBotao">
+                                            <!-- O comando mora no MainViewModel, entao a ligacao sobe ate a lista -->
+                                            <Button Content="{Binding Numero}" Classes.atual="{Binding Atual}"
+                                                    Theme="{StaticResource BotaoLinhaEscuro}"
+                                                    Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).IrParaPaginaCommand}"
+                                                    CommandParameter="{Binding Numero}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Button Grid.Column="6" Content="&gt;&gt;" ToolTip.Tip="Ultima pagina"
+                                        Theme="{StaticResource BotaoLinhaEscuro}"
+                                        Command="{Binding UltimaPaginaCommand}" />
+
+                                <Button Grid.Column="8" Content="PROXIMA &gt;"
+                                        Theme="{StaticResource BotaoLinhaEscuro}"
+                                        Command="{Binding ProximaPaginaCommand}" />
+
+                                <TextBlock Grid.Column="10" Text="{Binding Status}" VerticalAlignment="Center"
+                                           TextTrimming="{x:Static ctl:Corte.TresPontos}"
                                            Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="1" Text="NOME" VerticalAlignment="Center"
+
+                                <TextBlock Grid.Column="11" Text="POR PAGINA" VerticalAlignment="Center"
                                            Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="2" Text="CPF" VerticalAlignment="Center"
-                                           Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="3" Text="E-MAIL" VerticalAlignment="Center"
-                                           Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="4" Text="TELEFONE" VerticalAlignment="Center"
-                                           Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="5" Text="CADASTRO" VerticalAlignment="Center"
-                                           Foreground="{StaticResource Sage}" />
-                                <TextBlock Grid.Column="6" Text="ACOES" VerticalAlignment="Center"
-                                           Foreground="{StaticResource Sage}" />
+
+                                <!-- Lista de 10 a 100: escolhe quantos clientes aparecem por pagina -->
+                                <ComboBox Grid.Column="13" Classes="pixel" Width="74" Padding="8,0"
+                                          ItemsSource="{Binding TamanhosPagina}"
+                                          SelectedItem="{Binding TamanhoPagina}" />
                             </Grid>
                         </Panel>
 
-                        <ScrollViewer>
+                        <!-- Cabecalho das colunas. As larguras precisam bater com as da linha, la embaixo:
+                             NOME, E-MAIL e CIDADE vem do ViewModel (arrastaveis); as outras sao fixas. -->
+                        <Panel DockPanel.Dock="Top" Height="34" Margin="0,4,0,4">
+                            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                            <!-- Segue a rolagem horizontal da lista. A margem da direita e o espaco
+                                 da barra de rolagem vertical, que a lista tem e o cabecalho nao. -->
+                            <ScrollViewer Margin="0,0,14,0" Offset="{Binding #ListaRolagem.Offset, Mode=OneWay}"
+                                          HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,120,100,110,*" Margin="14,0">
+                                    <Panel Grid.Column="1">
+                                        <TextBlock Classes="titulo" Text="ID" />
+                                        <ctl:DivisorColuna PodeRedimensionar="False" />
+                                    </Panel>
+                                    <Panel Grid.Column="2" Width="{Binding LarguraNome}">
+                                        <TextBlock Classes="titulo" Text="NOME" />
+                                        <ctl:DivisorColuna Largura="{Binding LarguraNome}" Minimo="80" Maximo="600" />
+                                    </Panel>
+                                    <Panel Grid.Column="3">
+                                        <TextBlock Classes="titulo" Text="CPF" />
+                                        <ctl:DivisorColuna PodeRedimensionar="False" />
+                                    </Panel>
+                                    <Panel Grid.Column="4" Width="{Binding LarguraEmail}">
+                                        <TextBlock Classes="titulo" Text="E-MAIL" />
+                                        <ctl:DivisorColuna Largura="{Binding LarguraEmail}" Minimo="80" Maximo="600" />
+                                    </Panel>
+                                    <Panel Grid.Column="5" Width="{Binding LarguraCidade}">
+                                        <TextBlock Classes="titulo" Text="CIDADE" />
+                                        <ctl:DivisorColuna Largura="{Binding LarguraCidade}" Minimo="80" Maximo="400" />
+                                    </Panel>
+                                    <Panel Grid.Column="6">
+                                        <TextBlock Classes="titulo" Text="TELEFONE" />
+                                        <ctl:DivisorColuna PodeRedimensionar="False" />
+                                    </Panel>
+                                    <Panel Grid.Column="7">
+                                        <TextBlock Classes="titulo" Text="CADASTRO" />
+                                        <ctl:DivisorColuna PodeRedimensionar="False" />
+                                    </Panel>
+                                    <TextBlock Grid.Column="8" Classes="titulo" Text="ACOES" />
+                                </Grid>
+                            </ScrollViewer>
+                        </Panel>
+
+                        <!-- Rolagem simples, sem arte por enquanto. A vertical fica sempre no lugar para as
+                             colunas nao sairem do alinhamento com o cabecalho; a horizontal so aparece
+                             quando as colunas alargadas nao cabem mais na tela. -->
+                        <ScrollViewer Name="ListaRolagem" AllowAutoHide="False"
+                                      VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Clientes}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="models:Cliente">
-                                        <!-- As cores nao vao aqui: ficam nos estilos la em cima,
-                                             senao o realce do mouse nao consegue sobrescrever. -->
-                                        <Border Classes="linha"
-                                                BorderBrush="{StaticResource PretoAzulado}" BorderThickness="0,0,0,2"
-                                                Padding="14,5">
-                                            <Grid ColumnDefinitions="70,2*,170,3*,170,120,110">
-                                                <TextBlock Grid.Column="0" Classes="fraco" Text="{Binding Id}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Nome}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Cpf}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="3" Classes="email" Text="{Binding Email}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="4" Text="{Binding Telefone}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="5"
-                                                           Text="{Binding DataCadastro, StringFormat={}{0:dd/MM/yyyy}}"
-                                                           VerticalAlignment="Center" />
-                                                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6">
-                                                    <Button Content="E" ToolTip.Tip="Editar"
-                                                            Theme="{StaticResource BotaoLinhaEscuro}" />
-                                                    <Button Content="X" ToolTip.Tip="Excluir"
-                                                            Theme="{StaticResource BotaoLinhaVinho}" />
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
+                                    <DataTemplate x:DataType="vm:ClienteItemViewModel">
+                                        <StackPanel>
+                                            <!-- Linha do cliente. As cores ficam nos estilos la em cima, senao o realce
+                                                 do mouse nao consegue sobrescrever. SelectableTextBlock deixa
+                                                 selecionar o texto e copiar (Ctrl+C ou botao direito). -->
+                                            <Border Classes="linha" Classes.aberta="{Binding Expandido}"
+                                                    BorderBrush="{StaticResource PretoAzulado}" BorderThickness="0,0,0,2"
+                                                    Padding="14,5">
+                                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,120,100,110,*">
+                                                    <Button Grid.Column="0" Classes="seta" Content="{Binding Seta}"
+                                                            ToolTip.Tip="Ver endereco"
+                                                            Theme="{StaticResource BotaoLinhaEscuro}"
+                                                            Width="32" MinWidth="32" Padding="0"
+                                                            HorizontalAlignment="Left"
+                                                            Command="{Binding AlternarCommand}" />
+                                                    <SelectableTextBlock Grid.Column="1" Classes="fraco" Text="{Binding Cliente.Id}" />
+                                                    <!-- Colunas arrastaveis: a largura vem do MainViewModel, la da lista -->
+                                                    <SelectableTextBlock Grid.Column="2" Text="{Binding Cliente.Nome}"
+                                                                         Width="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).LarguraNome}" />
+                                                    <SelectableTextBlock Grid.Column="3" Text="{Binding Cliente.Cpf}" />
+                                                    <SelectableTextBlock Grid.Column="4" Classes="email" Text="{Binding Cliente.Email}"
+                                                                         Width="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).LarguraEmail}" />
+
+                                                    <!-- Etiqueta da cidade (fica fora do realce do mouse) -->
+                                                    <Panel Grid.Column="5"
+                                                           Width="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).LarguraCidade}">
+                                                        <Border IsVisible="{Binding TemEndereco}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                                Background="{StaticResource AzulAco}"
+                                                                BorderBrush="{StaticResource PretoAzulado}" BorderThickness="2"
+                                                                Padding="6,0" Margin="0,0,8,0">
+                                                            <SelectableTextBlock Text="{Binding CidadeUf}"
+                                                                                 TextTrimming="{x:Static ctl:Corte.TresPontos}"
+                                                                                 Foreground="{StaticResource QuaseBranco}" />
+                                                        </Border>
+                                                    </Panel>
+
+                                                    <SelectableTextBlock Grid.Column="6" Text="{Binding Cliente.Telefone}" />
+                                                    <SelectableTextBlock Grid.Column="7"
+                                                                         Text="{Binding Cliente.DataCadastro, StringFormat={}{0:dd/MM/yyyy}}" />
+                                                    <StackPanel Grid.Column="8" Orientation="Horizontal" Spacing="6">
+                                                        <Button Content="E" ToolTip.Tip="Editar"
+                                                                Theme="{StaticResource BotaoLinhaEscuro}" />
+                                                        <Button Content="X" ToolTip.Tip="Excluir"
+                                                                Theme="{StaticResource BotaoLinhaVinho}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Endereco: so aparece com a setinha aberta -->
+                                            <Border IsVisible="{Binding Expandido}"
+                                                    Background="{StaticResource PretoAzulado}" Padding="58,10,14,10">
+                                                <Panel>
+                                                    <StackPanel Orientation="Horizontal" Spacing="26"
+                                                                IsVisible="{Binding TemEndereco}">
+                                                        <Border Width="4" Background="{StaticResource Verde}" />
+                                                        <SelectableTextBlock>
+                                                            <Run Text="LOGRADOURO " Foreground="{StaticResource Sage}" />
+                                                            <Run Text="{Binding Cliente.Endereco.Logradouro}" Foreground="{StaticResource CinzaClaro}" />
+                                                        </SelectableTextBlock>
+                                                        <SelectableTextBlock>
+                                                            <Run Text="NUMERO " Foreground="{StaticResource Sage}" />
+                                                            <Run Text="{Binding Cliente.Endereco.Numero}" Foreground="{StaticResource CinzaClaro}" />
+                                                        </SelectableTextBlock>
+                                                        <SelectableTextBlock>
+                                                            <Run Text="CIDADE " Foreground="{StaticResource Sage}" />
+                                                            <Run Text="{Binding Cliente.Endereco.Cidade}" Foreground="{StaticResource CinzaClaro}" />
+                                                        </SelectableTextBlock>
+                                                        <SelectableTextBlock>
+                                                            <Run Text="UF " Foreground="{StaticResource Sage}" />
+                                                            <Run Text="{Binding Cliente.Endereco.Estado}" Foreground="{StaticResource CinzaClaro}" />
+                                                        </SelectableTextBlock>
+                                                        <SelectableTextBlock>
+                                                            <Run Text="CEP " Foreground="{StaticResource Sage}" />
+                                                            <Run Text="{Binding Cliente.Endereco.Cep}" Foreground="{StaticResource CinzaClaro}" />
+                                                        </SelectableTextBlock>
+                                                    </StackPanel>
+                                                    <TextBlock Text="Cliente sem endereco cadastrado."
+                                                               Foreground="{StaticResource Sage}"
+                                                               IsVisible="{Binding !TemEndereco}" />
+                                                </Panel>
+                                            </Border>
+                                        </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-
                     </DockPanel>
                 </Panel>
             </Grid>

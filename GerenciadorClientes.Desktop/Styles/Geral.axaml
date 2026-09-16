@@ -34,4 +34,19 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
+
+    <!-- Lista de opcoes simples, ainda sem arte -->
+    <Style Selector="ComboBox.pixel">
+        <Setter Property="FontFamily" Value="{StaticResource FontePixel}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        <Setter Property="Background" Value="{StaticResource AzulPetroleo}" />
+        <Setter Property="BorderBrush" Value="{StaticResource PretoAzulado}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
 </Styles>

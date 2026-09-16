@@ -15,6 +15,11 @@
                 <ResourceInclude Source="/Styles/Tema.axaml" />
                 <ResourceInclude Source="/Styles/Botoes.axaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Textos do menu do botao direito (copiar, colar...) em portugues -->
+            <x:String x:Key="StringTextFlyoutCutText">Recortar</x:String>
+            <x:String x:Key="StringTextFlyoutCopyText">Copiar</x:String>
+            <x:String x:Key="StringTextFlyoutPasteText">Colar</x:String>
         </ResourceDictionary>
     </Application.Resources>
 

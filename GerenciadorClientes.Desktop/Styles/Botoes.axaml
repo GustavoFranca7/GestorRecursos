@@ -27,6 +27,11 @@
                 </Panel>
             </ControlTemplate>
         </Setter>
+
+        <!-- Botao desativado (ex.: ANTERIOR na primeira pagina) fica apagado -->
+        <Style Selector="^:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
     </ControlTheme>
 
     <!-- Verde: acao principal (cadastrar, salvar). -->

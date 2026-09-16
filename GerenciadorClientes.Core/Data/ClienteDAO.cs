@@ -208,6 +208,83 @@ namespace GerenciadorClientes.Core.Data
             return null; // Retorna null se o ID não existir no banco
         }
 
+        // Quantidade total de clientes, usada para calcular o numero de paginas.
+        public int ContarTodos()
+        {
+            using (OracleConnection conexao = Database.GetConnection())
+            {
+                conexao.Open();
+                using (OracleCommand cmd = new OracleCommand("SELECT COUNT(*) FROM CLIENTES", conexao))
+                {
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        // Busca so os clientes de uma pagina, ja com o endereco de cada um.
+        // LEFT JOIN traz o cliente mesmo sem endereco; ROW_NUMBER garante um endereco por cliente.
+        // OFFSET pula os clientes das paginas anteriores e FETCH NEXT limita a quantidade.
+        public List<Cliente> ListarPagina(int pagina, int tamanhoPagina)
+        {
+            string query = @"SELECT C.ID, C.NOME, C.CPF, C.EMAIL, C.TELEFONE, C.DATA_CADASTRO,
+                                    E.ID, E.LOGRADOURO, E.NUMERO, E.CIDADE, E.ESTADO, E.CEP
+                             FROM CLIENTES C
+                             LEFT JOIN (SELECT EN.*, ROW_NUMBER() OVER (PARTITION BY EN.CLIENTE_ID ORDER BY EN.ID) AS ORDEM
+                                        FROM ENDERECOS EN) E
+                                    ON E.CLIENTE_ID = C.ID AND E.ORDEM = 1
+                             ORDER BY C.ID
+                             OFFSET :pular ROWS FETCH NEXT :quantidade ROWS ONLY";
+
+            List<Cliente> lista = new List<Cliente>();
+
+            using (OracleConnection conexao = Database.GetConnection())
+            {
+                conexao.Open();
+                using (OracleCommand cmd = new OracleCommand(query, conexao))
+                {
+                    // Liga os parametros pelo nome, e nao pela ordem em que foram adicionados.
+                    cmd.BindByName = true;
+                    cmd.Parameters.Add(new OracleParameter("pular", (pagina - 1) * tamanhoPagina));
+                    cmd.Parameters.Add(new OracleParameter("quantidade", tamanhoPagina));
+
+                    using (OracleDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Cliente cliente = new Cliente
+                            {
+                                Id = reader.GetInt32(0),
+                                Nome = reader.GetString(1),
+                                Cpf = reader.GetString(2),
+                                Email = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                                Telefone = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                                DataCadastro = reader.GetDateTime(5)
+                            };
+
+                            // Cliente sem endereco: as colunas do LEFT JOIN vem nulas.
+                            if (!reader.IsDBNull(6))
+                            {
+                                cliente.Endereco = new Endereco
+                                {
+                                    Id = reader.GetInt32(6),
+                                    ClienteId = cliente.Id,
+                                    Logradouro = reader.GetString(7),
+                                    Numero = reader.GetString(8),
+                                    Cidade = reader.GetString(9),
+                                    Estado = reader.GetString(10),
+                                    Cep = reader.GetString(11)
+                                };
+                            }
+
+                            lista.Add(cliente);
+                        }
+                    }
+                }
+            }
+
+            return lista;
+        }
+
         // Converte texto vazio em NULL para o banco (o e-mail e opcional).
         private static object TextoOuNulo(string? valor)
         {
