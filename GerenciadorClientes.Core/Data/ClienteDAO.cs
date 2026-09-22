@@ -446,5 +446,46 @@ namespace GerenciadorClientes.Core.Data
                 }
             }
         }
+
+        // Exclui varios clientes (e seus enderecos) numa transacao so: ou todos saem, ou nenhum.
+        // Retorna quantos clientes foram realmente removidos (IDs inexistentes sao ignorados).
+        public int ExcluirVariosComEndereco(IEnumerable<int> ids)
+        {
+            using (OracleConnection conexao = Database.GetConnection())
+            {
+                conexao.Open();
+                using (OracleTransaction transacao = conexao.BeginTransaction())
+                {
+                    try
+                    {
+                        int excluidos = 0;
+                        foreach (int id in ids)
+                        {
+                            using (OracleCommand cmdEndereco = new OracleCommand("DELETE FROM ENDERECOS WHERE CLIENTE_ID = :clienteId", conexao))
+                            {
+                                cmdEndereco.Transaction = transacao;
+                                cmdEndereco.Parameters.Add(new OracleParameter("clienteId", id));
+                                cmdEndereco.ExecuteNonQuery();
+                            }
+
+                            using (OracleCommand cmdCliente = new OracleCommand("DELETE FROM CLIENTES WHERE ID = :id", conexao))
+                            {
+                                cmdCliente.Transaction = transacao;
+                                cmdCliente.Parameters.Add(new OracleParameter("id", id));
+                                excluidos += cmdCliente.ExecuteNonQuery();
+                            }
+                        }
+
+                        transacao.Commit();
+                        return excluidos;
+                    }
+                    catch (Exception)
+                    {
+                        transacao.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
     }
 }

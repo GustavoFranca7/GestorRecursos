@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
@@ -61,6 +62,34 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? Notificacao { get; set; }
 
+    // Janela "tem certeza?" antes de excluir. Nulo = fechada.
+    [ObservableProperty]
+    public partial ConfirmacaoExclusaoViewModel? Confirmacao { get; set; }
+
+    // Informativo a esquerda da lixeira, ex.: "3 SELECIONADOS". Vazio = nada marcado.
+    public string TextoSelecionados
+    {
+        get
+        {
+            int quantidade = Clientes.Count(c => c.Selecionado);
+            return quantidade == 0 ? string.Empty : $"{quantidade} SELECIONADO{(quantidade > 1 ? "S" : "")}";
+        }
+    }
+
+    // Caixinha do cabecalho: marcada quando todos da pagina estao marcados;
+    // clicar nela marca ou desmarca a pagina inteira.
+    public bool TodosSelecionados
+    {
+        get => Clientes.Count > 0 && Clientes.All(c => c.Selecionado);
+        set
+        {
+            foreach (ClienteItemViewModel item in Clientes)
+            {
+                item.Selecionado = value;
+            }
+        }
+    }
+
     public MainViewModel()
     {
         // O preview da IDE cria este ViewModel para desenhar a tela. Sem esta
@@ -116,9 +145,11 @@ public partial class MainViewModel : ViewModelBase
             Clientes.Clear();
             foreach (Cliente cliente in _clienteDao.ListarPagina(PaginaAtual, TamanhoPagina))
             {
-                Clientes.Add(new ClienteItemViewModel(cliente));
+                Clientes.Add(new ClienteItemViewModel(cliente, AtualizarSelecao));
             }
 
+            // Linhas novas chegam desmarcadas: nada fica marcado fora da tela.
+            AtualizarSelecao();
             AtualizarNumerosPagina();
 
             int primeiro = (PaginaAtual - 1) * TamanhoPagina + 1;
@@ -180,6 +211,48 @@ public partial class MainViewModel : ViewModelBase
         Formulario = null;
         CarregarPagina(PaginaAtual);
         Notificacao = $"Cliente {cliente.Nome} atualizado com sucesso.";
+    }
+
+    // ===================== Exclusao =====================
+
+    // Botao "X" da linha: pergunta antes de excluir so este cliente.
+    [RelayCommand]
+    private void PedirExclusao(ClienteItemViewModel item)
+    {
+        AbrirConfirmacao(new[] { item.Cliente });
+    }
+
+    // Lixeira da barra de cima: pergunta antes de excluir os marcados.
+    [RelayCommand(CanExecute = nameof(TemSelecionados))]
+    private void ExcluirSelecionados()
+    {
+        AbrirConfirmacao(Clientes.Where(c => c.Selecionado).Select(c => c.Cliente).ToList());
+    }
+
+    private bool TemSelecionados() => Clientes.Any(c => c.Selecionado);
+
+    private void AbrirConfirmacao(IReadOnlyList<Cliente> clientes)
+    {
+        Confirmacao = new ConfirmacaoExclusaoViewModel(_clienteDao, clientes,
+            excluidos => AoExcluir(clientes, excluidos), () => Confirmacao = null);
+    }
+
+    // Depois de excluir: fecha, recarrega (a pagina pode ter ficado vazia) e avisa.
+    private void AoExcluir(IReadOnlyList<Cliente> clientes, int excluidos)
+    {
+        Confirmacao = null;
+        CarregarPagina(PaginaAtual);
+        Notificacao = clientes.Count == 1
+            ? $"Cliente {clientes[0].Nome} excluido com sucesso."
+            : $"{excluidos} clientes excluidos com sucesso.";
+    }
+
+    // Chamado a cada caixinha marcada ou desmarcada.
+    private void AtualizarSelecao()
+    {
+        OnPropertyChanged(nameof(TextoSelecionados));
+        OnPropertyChanged(nameof(TodosSelecionados));
+        ExcluirSelecionadosCommand.NotifyCanExecuteChanged();
     }
 
     // Dados ficticios para a tela nao aparecer vazia no preview da IDE.

@@ -35,6 +35,25 @@
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
+    <!-- Botao com icone de 11x11 px, desenhado em dobro (ctl:IconePixel nao borra).
+         Dentro dele vao duas imagens: .normal e .hover; o mouse troca uma pela outra. -->
+    <Style Selector="Button.icone">
+        <Setter Property="Padding" Value="9,0" />
+    </Style>
+    <Style Selector="Button.icone Image">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+    </Style>
+    <Style Selector="Button.icone Image.hover">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.icone:pointerover Image.hover">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.icone:pointerover Image.normal">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
     <!-- Lista de opcoes simples, ainda sem arte -->
     <Style Selector="ComboBox.pixel">
         <Setter Property="FontFamily" Value="{StaticResource FontePixel}" />

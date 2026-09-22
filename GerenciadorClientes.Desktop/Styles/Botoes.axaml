@@ -103,4 +103,34 @@
         <Setter Property="MinWidth" Value="44" />
     </ControlTheme>
 
+    <!-- Caixinha de selecao: quadrado de 16 px, pintado de verde por dentro quando marcada.
+         A area de clique (22 px) e um pouco maior que o desenho. -->
+    <ControlTheme x:Key="CaixaPixel" TargetType="CheckBox">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Background="Transparent">
+                    <Border Width="16" Height="16" Padding="2" Background="{StaticResource PretoAzulado}">
+                        <Border Name="Anel" Padding="2" Background="{StaticResource Sage}">
+                            <Border Name="Miolo" Background="{StaticResource AzulPetroleo}" />
+                        </Border>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:checked /template/ Border#Anel">
+            <Setter Property="Background" Value="{StaticResource VerdeOliva}" />
+        </Style>
+        <Style Selector="^:checked /template/ Border#Miolo">
+            <Setter Property="Background" Value="{StaticResource Verde}" />
+        </Style>
+        <!-- Mouse em cima: o anel clareia, marcada ou nao -->
+        <Style Selector="^:pointerover /template/ Border#Anel">
+            <Setter Property="Background" Value="{StaticResource CinzaClaro}" />
+        </Style>
+    </ControlTheme>
+
 </ResourceDictionary>

@@ -37,6 +37,17 @@
             <Setter Property="Foreground" Value="{StaticResource AzulAco}" />
         </Style>
 
+        <!-- Linha marcada na caixinha. Vem antes do realce do mouse, que tem prioridade. -->
+        <Style Selector="Border.linha.selecionada">
+            <Setter Property="Background" Value="{StaticResource VerdeProfundo}" />
+        </Style>
+        <Style Selector="Border.linha.selecionada > Grid > SelectableTextBlock.fraco">
+            <Setter Property="Foreground" Value="{StaticResource Areia}" />
+        </Style>
+        <Style Selector="Border.linha.selecionada > Grid > SelectableTextBlock.email">
+            <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        </Style>
+
         <!-- Linha sob o mouse ou com o endereco aberto. O ">" limita aos textos
              da propria linha, para nao mexer no texto de dentro dos botoes. -->
         <Style Selector="Border.linha:pointerover, Border.linha.aberta">
@@ -127,13 +138,27 @@
                 <!-- Barra do topo: titulo, busca e acoes -->
                 <Panel Grid.Row="0">
                     <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
-                    <Grid ColumnDefinitions="Auto,*,Auto,8,Auto,8,Auto" Margin="16,10">
+                    <Grid ColumnDefinitions="Auto,*,Auto,16,Auto,12,Auto,8,Auto,8,Auto" Margin="16,10">
                         <TextBlock Grid.Column="0" Text="CLIENTES" FontSize="32"
                                    Foreground="{StaticResource CinzaClaro}" VerticalAlignment="Center" />
 
+                        <!-- Quantos clientes estao marcados (some quando nenhum) -->
+                        <TextBlock Grid.Column="2" Text="{Binding TextoSelecionados}"
+                                   Foreground="{StaticResource Mostarda}" VerticalAlignment="Center" />
+
+                        <!-- Lixeira: exclui os marcados. Apagada enquanto nada estiver marcado. -->
+                        <Button Grid.Column="4" Classes="icone" ToolTip.Tip="Excluir selecionados"
+                                Theme="{StaticResource BotaoVinho}"
+                                Command="{Binding ExcluirSelecionadosCommand}">
+                            <Panel>
+                                <ctl:IconePixel Classes="normal" Source="/Assets/Icons/lixeira-normal.png" />
+                                <ctl:IconePixel Classes="hover" Source="/Assets/Icons/lixeira-hover.png" />
+                            </Panel>
+                        </Button>
+
                         <!-- Campo de busca: a moldura clara vai atras do TextBox,
                              que fica sem fundo e sem borda propria. -->
-                        <Panel Grid.Column="2" Width="230" Height="40">
+                        <Panel Grid.Column="6" Width="230" Height="40">
                             <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
                             <TextBox Classes="pixel" Watermark="Buscar nome ou CPF..."
                                      FontFamily="{StaticResource FontePixel}" FontSize="16"
@@ -142,13 +167,24 @@
                                      Foreground="{StaticResource CinzaClaro}" CornerRadius="0" />
                         </Panel>
 
-                        <Button Grid.Column="4" Content="A" ToolTip.Tip="Atualizar lista"
+                        <Button Grid.Column="8" Classes="icone" ToolTip.Tip="Atualizar lista"
                                 Theme="{StaticResource BotaoEscuro}"
-                                Command="{Binding CarregarClientesCommand}" />
+                                Command="{Binding CarregarClientesCommand}">
+                            <Panel>
+                                <ctl:IconePixel Classes="normal" Source="/Assets/Icons/atualizar-normal.png" />
+                                <ctl:IconePixel Classes="hover" Source="/Assets/Icons/atualizar-hover.png" />
+                            </Panel>
+                        </Button>
 
-                        <Button Grid.Column="6" Content="+" ToolTip.Tip="Novo cliente"
-                                Theme="{StaticResource BotaoVerde}"
-                                Command="{Binding AbrirNovoClienteCommand}" />
+                        <!-- Botao escuro: o verde do icone some em cimaclk da arte verde -->
+                        <Button Grid.Column="10" Classes="icone" ToolTip.Tip="Novo cliente"
+                                Theme="{StaticResource BotaoEscuro}"
+                                Command="{Binding AbrirNovoClienteCommand}">
+                            <Panel>
+                                <ctl:IconePixel Classes="normal" Source="/Assets/Icons/mais-normal.png" />
+                                <ctl:IconePixel Classes="hover" Source="/Assets/Icons/mais-hover.png" />
+                            </Panel>
+                        </Button>
                     </Grid>
                 </Panel>
 
@@ -226,7 +262,7 @@
                                  da barra de rolagem vertical, que a lista tem e o cabecalho nao. -->
                             <ScrollViewer Margin="0,0,14,0" Offset="{Binding #ListaRolagem.Offset, Mode=OneWay}"
                                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,120,100,110,*" Margin="14,0">
+                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,110,100,96,22,*" Margin="14,0,8,0">
                                     <Panel Grid.Column="1">
                                         <TextBlock Classes="titulo" Text="ID" />
                                         <ctl:DivisorColuna PodeRedimensionar="False" />
@@ -255,7 +291,15 @@
                                         <TextBlock Classes="titulo" Text="CADASTRO" />
                                         <ctl:DivisorColuna PodeRedimensionar="False" />
                                     </Panel>
-                                    <TextBlock Grid.Column="8" Classes="titulo" Text="ACOES" />
+                                    <Panel Grid.Column="8">
+                                        <TextBlock Classes="titulo" Text="ACOES" />
+                                        <ctl:DivisorColuna PodeRedimensionar="False" />
+                                    </Panel>
+                                    <!-- Marca ou desmarca todos os clientes da pagina -->
+                                    <CheckBox Grid.Column="9" Theme="{StaticResource CaixaPixel}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              ToolTip.Tip="Marcar todos da pagina"
+                                              IsChecked="{Binding TodosSelecionados}" />
                                 </Grid>
                             </ScrollViewer>
                         </Panel>
@@ -273,9 +317,10 @@
                                                  do mouse nao consegue sobrescrever. SelectableTextBlock deixa
                                                  selecionar o texto e copiar (Ctrl+C ou botao direito). -->
                                             <Border Classes="linha" Classes.aberta="{Binding Expandido}"
+                                                    Classes.selecionada="{Binding Selecionado}"
                                                     BorderBrush="{StaticResource PretoAzulado}" BorderThickness="0,0,0,2"
-                                                    Padding="14,5">
-                                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,120,100,110,*">
+                                                    Padding="14,5,8,5">
+                                                <Grid ColumnDefinitions="44,60,Auto,120,Auto,Auto,110,100,96,22,*">
                                                     <Button Grid.Column="0" Classes="seta" Content="{Binding Seta}"
                                                             ToolTip.Tip="Ver endereco"
                                                             Theme="{StaticResource BotaoLinhaEscuro}"
@@ -313,9 +358,16 @@
                                                                 Theme="{StaticResource BotaoLinhaEscuro}"
                                                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).AbrirEdicaoCommand}"
                                                                 CommandParameter="{Binding}" />
+                                                        <!-- Pergunta antes de excluir este cliente -->
                                                         <Button Content="X" ToolTip.Tip="Excluir"
-                                                                Theme="{StaticResource BotaoLinhaVinho}" />
+                                                                Theme="{StaticResource BotaoLinhaVinho}"
+                                                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).PedirExclusaoCommand}"
+                                                                CommandParameter="{Binding}" />
                                                     </StackPanel>
+                                                    <!-- Caixinha para excluir varios de uma vez -->
+                                                    <CheckBox Grid.Column="9" Theme="{StaticResource CaixaPixel}"
+                                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                              IsChecked="{Binding Selecionado}" />
                                                 </Grid>
                                             </Border>
 
@@ -366,6 +418,10 @@
              a tela (FormularioClienteView) a partir do ViewModel. -->
         <ContentControl Content="{Binding Formulario}"
                         IsVisible="{Binding Formulario, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <!-- Confirmacao de exclusao (ConfirmacaoExclusaoView), tambem por cima de tudo -->
+        <ContentControl Content="{Binding Confirmacao}"
+                        IsVisible="{Binding Confirmacao, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
         <!-- Aviso rapido no canto inferior esquerdo: some sozinho em 3 s,
              mas continua na tela enquanto o mouse estiver em cima. -->

@@ -1,21 +1,32 @@
+using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GerenciadorClientes.Core.Models;
 
 namespace GerenciadorClientes.Desktop.ViewModels;
 
-// Uma linha da lista: o cliente mais o estado da setinha (endereco aberto ou fechado).
+// Uma linha da lista: o cliente, o estado da setinha e a caixinha de selecao.
 public partial class ClienteItemViewModel : ViewModelBase
 {
-    public ClienteItemViewModel(Cliente cliente)
+    // Avisa a tela principal quando a caixinha muda (para contar os selecionados).
+    private readonly Action? _aoMudarSelecao;
+
+    public ClienteItemViewModel(Cliente cliente, Action? aoMudarSelecao = null)
     {
         Cliente = cliente;
+        _aoMudarSelecao = aoMudarSelecao;
     }
 
     public Cliente Cliente { get; }
 
     [ObservableProperty]
     public partial bool Expandido { get; set; }
+
+    // Caixinha da direita, marcada para exclusao em grupo.
+    [ObservableProperty]
+    public partial bool Selecionado { get; set; }
+
+    partial void OnSelecionadoChanged(bool value) => _aoMudarSelecao?.Invoke();
 
     // Setinha: ">" fechado, "v" aberto.
     public string Seta => Expandido ? "v" : ">";
