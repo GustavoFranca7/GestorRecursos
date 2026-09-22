@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="GerenciadorClientes.Core/GerenciadorClientes.Core.csproj" />
-  <Project Path="GerenciadorClientes.ConsoleApp/GerenciadorClientes.ConsoleApp.csproj" />
-  <Project Path="GerenciadorClientes.Desktop/GerenciadorClientes.Desktop.csproj" />
-</Solution>

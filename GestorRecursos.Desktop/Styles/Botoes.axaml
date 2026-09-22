@@ -1,0 +1,136 @@
+<!-- Aparencia dos botoes usando a arte em pixel art.
+     A arte tem 96x24 px e e cortada em 9 fatias, entao o botao pode ter
+     qualquer largura sem deformar os cantos. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="using:GestorRecursos.Desktop.Controls">
+
+    <!-- Base comum: o desenho do fundo fica atras do texto. -->
+    <ControlTheme x:Key="BotaoPixelBase" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource FontePixel}" />
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{StaticResource QuaseBranco}" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <ctl:NineSlice Name="Fundo" Slice="8" Escala="2" />
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- Botao desativado (ex.: ANTERIOR na primeira pagina) fica apagado -->
+        <Style Selector="^:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Verde: acao principal (cadastrar, salvar). -->
+    <ControlTheme x:Key="BotaoVerde" TargetType="Button" BasedOn="{StaticResource BotaoPixelBase}">
+        <Style Selector="^ /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-verde-normal.png" />
+        </Style>
+        <Style Selector="^:pointerover /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-verde-hover.png" />
+        </Style>
+        <Style Selector="^:pressed /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-verde-press.png" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Vinho: acao destrutiva (excluir). -->
+    <ControlTheme x:Key="BotaoVinho" TargetType="Button" BasedOn="{StaticResource BotaoPixelBase}">
+        <Style Selector="^ /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-vinho-normal.png" />
+        </Style>
+        <Style Selector="^:pointerover /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-vinho-hover.png" />
+        </Style>
+        <Style Selector="^:pressed /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-vinho-press.png" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Escuro: acoes secundarias. Assumiu o lugar do antigo botao branco. -->
+    <ControlTheme x:Key="BotaoEscuro" TargetType="Button" BasedOn="{StaticResource BotaoPixelBase}">
+        <Setter Property="Foreground" Value="{StaticResource CinzaClaro}" />
+        <Style Selector="^ /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-escuro-normal.png" />
+        </Style>
+        <Style Selector="^:pointerover /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-escuro-hover.png" />
+        </Style>
+        <Style Selector="^:pressed /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-escuro-press.png" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Branco: guardado para quando o tema claro voltar. -->
+    <ControlTheme x:Key="BotaoBranco" TargetType="Button" BasedOn="{StaticResource BotaoPixelBase}">
+        <Setter Property="Foreground" Value="{StaticResource PretoAzulado}" />
+        <Style Selector="^ /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-branco-normal.png" />
+        </Style>
+        <Style Selector="^:pointerover /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-branco-hover.png" />
+        </Style>
+        <Style Selector="^:pressed /template/ ctl|NineSlice#Fundo">
+            <Setter Property="Source" Value="/Assets/UI/botao-branco-press.png" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Versoes pequenas, para as acoes de cada linha da tabela. -->
+    <ControlTheme x:Key="BotaoLinhaEscuro" TargetType="Button" BasedOn="{StaticResource BotaoEscuro}">
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="44" />
+    </ControlTheme>
+
+    <ControlTheme x:Key="BotaoLinhaVinho" TargetType="Button" BasedOn="{StaticResource BotaoVinho}">
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="44" />
+    </ControlTheme>
+
+    <!-- Caixinha de selecao: quadrado de 16 px, pintado de verde por dentro quando marcada.
+         A area de clique (22 px) e um pouco maior que o desenho. -->
+    <ControlTheme x:Key="CaixaPixel" TargetType="CheckBox">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Background="Transparent">
+                    <Border Width="16" Height="16" Padding="2" Background="{StaticResource PretoAzulado}">
+                        <Border Name="Anel" Padding="2" Background="{StaticResource Sage}">
+                            <Border Name="Miolo" Background="{StaticResource AzulPetroleo}" />
+                        </Border>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:checked /template/ Border#Anel">
+            <Setter Property="Background" Value="{StaticResource VerdeOliva}" />
+        </Style>
+        <Style Selector="^:checked /template/ Border#Miolo">
+            <Setter Property="Background" Value="{StaticResource Verde}" />
+        </Style>
+        <!-- Mouse em cima: o anel clareia, marcada ou nao -->
+        <Style Selector="^:pointerover /template/ Border#Anel">
+            <Setter Property="Background" Value="{StaticResource CinzaClaro}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

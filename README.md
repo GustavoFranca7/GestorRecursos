@@ -31,13 +31,13 @@ CRUD completo de clientes e endereços em **C# / .NET 10** com banco **Oracle**,
 ## Estrutura
 
 ```
-GerenciadorClientes.Core/         Regras e acesso ao banco (não conhece nenhuma tela)
+GestorRecursos.Core/         Regras e acesso ao banco (não conhece nenhuma tela)
 ├── Data/                         Database (conexão) e os DAOs de cliente e endereço
 ├── Models/                       Cliente e Endereco
 └── Validacao/                    Normalização de CPF, telefone, UF e CEP
 
-GerenciadorClientes.ConsoleApp/   Interface de linha de comando
-GerenciadorClientes.Desktop/      Interface gráfica em Avalonia (MVVM)
+GestorRecursos.ConsoleApp/   Interface de linha de comando
+GestorRecursos.Desktop/      Interface gráfica em Avalonia (MVVM)
 ├── Assets/                       Arte em pixel art, ícones e fonte
 ├── Controls/                     Controles próprios (moldura fatiada, notificação, etc.)
 ├── Styles/                       Paleta de cores e aparência dos botões
@@ -74,13 +74,13 @@ Nenhuma senha fica no código. A aplicação procura a connection string `Oracle
 2. **User Secrets** do .NET (recomendado: fica fora da pasta do projeto, longe do Git)
 3. Variáveis de ambiente
 
-A forma mais simples, na pasta do projeto `GerenciadorClientes.Core`:
+A forma mais simples, na pasta do projeto `GestorRecursos.Core`:
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:Oracle" "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=localhost:1521/XEPDB1;"
 ```
 
-Prefere arquivo? Copie `GerenciadorClientes.ConsoleApp/appsettings.example.json` para `appsettings.json`, na mesma pasta, e preencha os valores. Esse nome está no `.gitignore` e não vai para o repositório. Isso vale para o console; a interface gráfica lê o User Secrets ou as variáveis de ambiente.
+Prefere arquivo? Copie `GestorRecursos.ConsoleApp/appsettings.example.json` para `appsettings.json`, na mesma pasta, e preencha os valores. Esse nome está no `.gitignore` e não vai para o repositório. Isso vale para o console; a interface gráfica lê o User Secrets ou as variáveis de ambiente.
 
 Pelas variáveis de ambiente, o nome é `ConnectionStrings__Oracle` (dois sublinhados).
 
@@ -91,13 +91,13 @@ Se nada estiver configurado, a aplicação avisa na hora de acessar o banco, diz
 Interface gráfica:
 
 ```bash
-dotnet run --project GerenciadorClientes.Desktop
+dotnet run --project GestorRecursos.Desktop
 ```
 
 Interface de console:
 
 ```bash
-dotnet run --project GerenciadorClientes.ConsoleApp
+dotnet run --project GestorRecursos.ConsoleApp
 ```
 
 ## Detalhes da implementação

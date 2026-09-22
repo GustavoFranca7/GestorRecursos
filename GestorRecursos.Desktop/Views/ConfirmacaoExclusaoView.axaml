@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:ctl="using:GestorRecursos.Desktop.Controls"
+             xmlns:m="using:GestorRecursos.Core.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
+             x:Class="GestorRecursos.Desktop.Views.ConfirmacaoExclusaoView"
+             x:DataType="vm:ConfirmacaoExclusaoViewModel"
+             FontFamily="{StaticResource FontePixel}"
+             FontSize="16">
+
+    <Design.DataContext>
+        <vm:ConfirmacaoExclusaoViewModel />
+    </Design.DataContext>
+
+    <!-- Esc fecha sem excluir -->
+    <UserControl.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelarCommand}" />
+    </UserControl.KeyBindings>
+
+    <UserControl.Styles>
+        <Style Selector="ctl|NineSlice.moldura">
+            <Setter Property="Slice" Value="8" />
+            <Setter Property="Escala" Value="2" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- Fundo escurecido: cobre a tela inteira e bloqueia cliques na lista -->
+        <Border Background="{StaticResource PretoAzulado}" Opacity="0.75" />
+
+        <Panel Width="520" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-escura.png" />
+
+            <StackPanel Margin="26,22">
+                <!-- Titulo -->
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+                    <TextBlock Text="{Binding Titulo}" FontSize="32" VerticalAlignment="Center"
+                               Foreground="{StaticResource QuaseBranco}" />
+                    <Button Grid.Column="1" Content="X" ToolTip.Tip="Fechar (Esc)"
+                            Theme="{StaticResource BotaoLinhaVinho}"
+                            Command="{Binding CancelarCommand}" />
+                </Grid>
+
+                <TextBlock Text="{Binding Pergunta}" Margin="0,0,0,12"
+                           Foreground="{StaticResource CinzaClaro}" />
+
+                <!-- Clientes que serao excluidos: ID, nome e CPF. Rola se forem muitos. -->
+                <Panel Margin="0,0,0,12">
+                    <ctl:NineSlice Classes="moldura" Source="/Assets/UI/moldura-clara.png" />
+                    <ScrollViewer MaxHeight="260" Margin="18,10" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Clientes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="m:Cliente">
+                                    <Grid ColumnDefinitions="46,*,Auto" Height="25">
+                                        <TextBlock Text="{Binding Id}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource VerdeOliva}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Nome}" VerticalAlignment="Center"
+                                                   TextTrimming="{x:Static ctl:Corte.TresPontos}" Margin="0,0,12,0"
+                                                   Foreground="{StaticResource CinzaClaro}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Cpf}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource Sage}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Panel>
+
+                <!-- Alerta: tarja vinho a esquerda -->
+                <Border Background="{StaticResource PretoAzulado}" BorderBrush="{StaticResource Vinho}"
+                        BorderThickness="4,0,0,0" Padding="10,6" Margin="0,0,0,14">
+                    <TextBlock TextWrapping="Wrap">
+                        <Run Text="{Binding AvisoEndereco}" Foreground="{StaticResource Areia}" />
+                        <Run Text="Esta acao nao pode ser desfeita." Foreground="{StaticResource QuaseBranco}" />
+                    </TextBlock>
+                </Border>
+
+                <!-- Erro do banco, se a exclusao falhar -->
+                <Border Background="{StaticResource Vinho}" BorderBrush="{StaticResource PretoAzulado}"
+                        BorderThickness="3" Padding="10,6" Margin="0,0,0,14"
+                        IsVisible="{Binding Erro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding Erro}" TextWrapping="Wrap" Foreground="{StaticResource QuaseBranco}" />
+                </Border>
+
+                <!-- Rodape. O foco comeca em CANCELAR: um Enter sem querer nao apaga nada. -->
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <Button Name="BotaoCancelar" Content="CANCELAR" FontSize="22"
+                            Theme="{StaticResource BotaoEscuro}"
+                            Command="{Binding CancelarCommand}" />
+                    <Button Content="{Binding TextoBotao}" FontSize="22"
+                            Theme="{StaticResource BotaoVinho}"
+                            Command="{Binding ConfirmarCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Panel>
+    </Panel>
+</UserControl>

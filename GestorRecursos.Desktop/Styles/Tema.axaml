@@ -1,0 +1,28 @@
+<!-- Paleta do projeto: as 16 cores, cada uma com o proprio nome.
+     A ordem e a mesma da imagem 00-paleta.png e do arquivo .gpl do Aseprite. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <FontFamily x:Key="FontePixel">avares://GestorRecursos.Desktop/Assets/Fonts#monogram</FontFamily>
+
+    <!-- 01 a 08: escada de neutros, do mais escuro ao mais claro -->
+    <SolidColorBrush x:Key="PretoAzulado"  Color="#05090F" />
+    <SolidColorBrush x:Key="AzulPetroleo"  Color="#19252E" />
+    <SolidColorBrush x:Key="VerdeProfundo" Color="#324D4B" />
+    <SolidColorBrush x:Key="OlivaEscuro"   Color="#5F6B4B" />
+    <SolidColorBrush x:Key="Sage"          Color="#7F8A75" />
+    <SolidColorBrush x:Key="Areia"         Color="#ABA89A" />
+    <SolidColorBrush x:Key="CinzaClaro"    Color="#CCCBC2" />
+    <SolidColorBrush x:Key="QuaseBranco"   Color="#EDEDED" />
+
+    <!-- 09 a 16: acentos, em pares (o segundo e o parceiro mais claro) -->
+    <SolidColorBrush x:Key="Verde"         Color="#208763" />
+    <SolidColorBrush x:Key="VerdeOliva"    Color="#5D8756" />
+    <SolidColorBrush x:Key="Vinho"         Color="#87203F" />
+    <SolidColorBrush x:Key="Tijolo"        Color="#87423E" />
+    <SolidColorBrush x:Key="Azul"          Color="#204687" />
+    <SolidColorBrush x:Key="AzulAco"       Color="#4E7B87" />
+    <SolidColorBrush x:Key="Mostarda"      Color="#877920" />
+    <SolidColorBrush x:Key="Marrom"        Color="#876E52" />
+
+</ResourceDictionary>

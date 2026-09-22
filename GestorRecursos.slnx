@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="GestorRecursos.Core/GestorRecursos.Core.csproj" />
+  <Project Path="GestorRecursos.ConsoleApp/GestorRecursos.ConsoleApp.csproj" />
+  <Project Path="GestorRecursos.Desktop/GestorRecursos.Desktop.csproj" />
+</Solution>
