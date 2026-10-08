@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Configuracao local com credenciais reais - nunca versionar
 appsettings.json
+
+# Dados reais do escritorio (CPF e RG): nao versionar
+Database/03-DadosEscritorio.sql
