@@ -41,18 +41,36 @@ GestorRecursos.Core/         Regras e acesso ao banco (não conhece nenhuma tela
 ├── Models/                  Entidades
 └── Validacao/               Normalização de CPF, telefone, UF e CEP
 
-GestorRecursos.ConsoleApp/   Interface de linha de comando
-GestorRecursos.Desktop/      Interface gráfica em Avalonia (MVVM)
-├── Assets/                  Artes, ícones e fonte
-├── Controls/                Controles próprios
-├── Styles/                  Paleta de cores e aparência dos botões
-├── ViewModels/              Estado e comandos das telas
-└── Views/                   Telas em XAML
+GestorRecursos.Api/          API REST em ASP.NET Core
 
-Database/CriacaoTabelas.sql  Script de criação das tabelas
+GestorRecursos.Desktop/      Interface gráfica em Avalonia (MVVM)
+├── Assets/Icones.axaml      Os desenhos dos ícones, por nome
+├── Styles/
+│   ├── Cores.axaml          A paleta: toda cor do sistema sai daqui
+│   └── Componentes.axaml    O que mais de uma tela usa (dado copiável, busca, selo)
+├── Servicos/                Área de transferência e máscaras de digitação
+├── Views/                   As telas, em XAML
+│   ├── Janela/              A moldura: menu lateral e barra de cima
+│   ├── Clientes/            Listagem, ficha e o cadastro
+│   └── Arquivados/          O arquivo
+└── ViewModels/              O que cada tela sabe e faz, nas mesmas pastas das Views
+    └── Comum/               Base, formatação, prazos e conversores
+
+Database/                    Scripts numerados, na ordem em que se roda
+├── 01-CriacaoBanco.sql      Tabelas, índices e constraints
+├── 02-CargaInicial.sql      Dados que o sistema precisa para funcionar
+├── 03-DadosEscritorio.sql   Dados reais do escritório (fora do Git)
+├── 04-DadosTeste.sql        30 clientes de teste
+└── 99-LimpezaDesenvolvimento.sql
 ```
 
-A dependência aponta em um sentido só: as duas interfaces usam a `Core`, e a `Core` não conhece nenhuma delas.
+**Views e ViewModels andam em par.** `Views/Clientes/FichaClienteView.axaml` é a tela de
+`ViewModels/Clientes/FichaClienteViewModel.cs`: mesmo nome, mesma pasta. É assim que o
+`ViewLocator` liga as duas, trocando "ViewModel" por "View" no nome do tipo. As pastas são
+arrumação — o namespace continua sendo um por camada.
+
+A dependência aponta em um sentido só: as interfaces usam a `Core`, e a `Core` não conhece
+nenhuma delas.
 
 ## Como rodar
 
@@ -63,17 +81,20 @@ A dependência aponta em um sentido só: as duas interfaces usam a `Core`, e a `
 
 ### 2. Criar as tabelas
 
-Conecte no banco com o seu usuário (SQL Developer, SQLcl, SQL*Plus ou o de sua preferência) e execute o script:
+Conecte no banco com o seu usuário (SQL Developer, SQLcl, SQL*Plus ou o de sua preferência) e execute os scripts da pasta `Database/` na ordem do número:
 
 ```
-Database/CriacaoTabelas.sql
+01-CriacaoBanco.sql
+02-CargaInicial.sql
 ```
+
+Para povoar com clientes de teste, rode também o `04-DadosTeste.sql`.
 
 ### 3. Informar a conexão com o banco
 
 Nenhuma senha fica no código. A aplicação procura a connection string `Oracle` em três lugares, nesta ordem (o seguinte sobrescreve o anterior):
 
-1. `appsettings.json`, na pasta do executável (hoje só o projeto de console copia esse arquivo para lá)
+1. `appsettings.json`, na pasta do executável
 2. **User Secrets** do .NET (recomendado: fica fora da pasta do projeto, longe do Git)
 3. Variáveis de ambiente
 
@@ -83,7 +104,7 @@ A forma mais simples, na pasta do projeto `GestorRecursos.Core`:
 dotnet user-secrets set "ConnectionStrings:Oracle" "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=localhost:1521/XEPDB1;"
 ```
 
-Prefere arquivo? Copie `GestorRecursos.ConsoleApp/appsettings.example.json` para `appsettings.json`, na mesma pasta, e preencha os valores. Esse nome está no `.gitignore` e não vai para o repositório.
+Prefere arquivo? Crie um `appsettings.json` na pasta do executável com a seção `ConnectionStrings`. Esse nome está no `.gitignore` e não vai para o repositório.
 
 Pelas variáveis de ambiente, o nome é `ConnectionStrings__Oracle` (dois sublinhados).
 
@@ -95,11 +116,18 @@ Interface gráfica:
 dotnet run --project GestorRecursos.Desktop
 ```
 
-Interface de console:
+### 5. Se a tela piscar ou rasgar
+
+Em placas NVIDIA, a composição padrão do Windows faz a janela aparecer semitransparente por
+um quadro de vez em quando ([Avalonia #13620](https://github.com/AvaloniaUI/Avalonia/issues/13620)).
+Por isso o aplicativo pede `RedirectionSurface`, que não passa por esse caminho. Para
+comparar os modos sem recompilar:
 
 ```bash
-dotnet run --project GestorRecursos.ConsoleApp
+GESTOR_COMPOSICAO=winui dotnet run --project GestorRecursos.Desktop
 ```
+
+Valores aceitos: `redirection` (padrão), `winui` e `directcomposition`.
 
 ## Detalhes da implementação
 
