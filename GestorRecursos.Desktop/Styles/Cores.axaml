@@ -1,0 +1,76 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Paleta do sistema, retirada de Prints/PrintsEu/Paleta (BLK NX64).
+         Cor sempre pelo nome: nada de hexadecimal solto no XAML. Trocar o tom
+         do sistema inteiro passa a ser mudar uma linha daqui. -->
+
+    <!-- ===================== MENU LATERAL =====================
+         As cinco linhas marcadas com (*) são as que controlam a aparência do item
+         selecionado e do item sob o mouse. É só trocar o hexadecimal e rodar. -->
+    <Color x:Key="MenuFundoCor">#0F4A4C</Color>
+    <Color x:Key="MenuLinhaCor">#176063</Color>
+    <SolidColorBrush x:Key="MenuFundo" Color="#0F4A4C"/>
+    <SolidColorBrush x:Key="MenuLinha" Color="#176063"/>
+    <SolidColorBrush x:Key="MenuAtivo" Color="#00AAA5"/>
+    <SolidColorBrush x:Key="MenuTexto" Color="#78FAE6"/>
+    <SolidColorBrush x:Key="MenuSeparador" Color="#4C8486"/>
+
+    <!-- (*) ícone e texto dos itens em repouso -->
+    <SolidColorBrush x:Key="MenuTextoApagado" Color="#8FBFBF"/>
+    <!-- (*) pílula do item selecionado -->
+    <SolidColorBrush x:Key="MenuItemAtivoFundo" Color="#008782"/>
+    <!-- (*) ícone e texto do item selecionado -->
+    <SolidColorBrush x:Key="MenuItemAtivoTexto" Color="#FFFFFF"/>
+    <!-- (*) pílula do item sob o mouse -->
+    <SolidColorBrush x:Key="MenuItemSobre" Color="#14565A"/>
+    <!-- (*) ícone e texto do item sob o mouse -->
+    <SolidColorBrush x:Key="MenuItemSobreTexto" Color="#FFFFFF"/>
+    <!-- Alavanca que recolhe a barra: fundo ao passar o mouse e ao clicar -->
+    <SolidColorBrush x:Key="MenuAlavancaSobre" Color="#1C5E60"/>
+    <SolidColorBrush x:Key="MenuAlavancaClique" Color="#24716F"/>
+
+    <!-- Arredondamento da pílula do menu: 20 deixa cápsula (os dois lados redondos),
+         0 deixa retangular, valores no meio dão o canto suave. -->
+    <CornerRadius x:Key="RaioItemMenu">20</CornerRadius>
+
+    <!-- Cores de ação -->
+    <SolidColorBrush x:Key="Primaria" Color="#008782"/>
+    <SolidColorBrush x:Key="PrimariaEscura" Color="#14665B"/>
+    <SolidColorBrush x:Key="PrimariaClara" Color="#E6F4F3"/>
+    <SolidColorBrush x:Key="PrimariaBorda" Color="#C9E6E4"/>
+
+    <!-- Superfícies -->
+    <SolidColorBrush x:Key="Fundo" Color="#F3F7F7"/>
+    <SolidColorBrush x:Key="Cartao" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CartaoSuave" Color="#FBFDFD"/>
+    <SolidColorBrush x:Key="Borda" Color="#DDE8E8"/>
+    <SolidColorBrush x:Key="BordaClara" Color="#EDF3F3"/>
+
+    <!-- Texto -->
+    <SolidColorBrush x:Key="Texto" Color="#0A2A33"/>
+    <SolidColorBrush x:Key="TextoFraco" Color="#5F7B80"/>
+    <SolidColorBrush x:Key="TextoApagado" Color="#A9BFC2"/>
+
+    <!-- Situações -->
+    <SolidColorBrush x:Key="Sucesso" Color="#22896E"/>
+    <SolidColorBrush x:Key="SucessoClaro" Color="#D6F2E6"/>
+    <SolidColorBrush x:Key="Alerta" Color="#DD3745"/>
+    <SolidColorBrush x:Key="AlertaEscuro" Color="#B82A36"/>
+    <SolidColorBrush x:Key="AlertaClaro" Color="#FFE3E6"/>
+    <SolidColorBrush x:Key="AlertaBorda" Color="#F3C9CD"/>
+    <SolidColorBrush x:Key="Aviso" Color="#C87A2A"/>
+    <SolidColorBrush x:Key="AvisoClaro" Color="#FFF1E3"/>
+    <SolidColorBrush x:Key="Roxo" Color="#854CBF"/>
+    <SolidColorBrush x:Key="RoxoClaro" Color="#F0E7FA"/>
+
+    <!-- Medidas repetidas: cantos em 7, botões em 6 — o meio-termo escolhido -->
+    <CornerRadius x:Key="RaioCartao">7</CornerRadius>
+    <CornerRadius x:Key="RaioBotao">6</CornerRadius>
+    <CornerRadius x:Key="RaioSelo">11</CornerRadius>
+
+    <!-- Larguras do menu lateral -->
+    <x:Double x:Key="MenuLargura">210</x:Double>
+    <x:Double x:Key="MenuLarguraRetraido">72</x:Double>
+
+</ResourceDictionary>

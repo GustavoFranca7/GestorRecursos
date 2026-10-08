@@ -6,9 +6,15 @@ using GestorRecursos.Desktop.ViewModels;
 
 namespace GestorRecursos.Desktop;
 
-/// <summary>
-/// Given a view model, returns the corresponding view if possible.
-/// </summary>
+/// <summary>Acha a tela do ViewModel pelo nome: ClientesViewModel → ClientesView.</summary>
+/// <remarks>
+/// A troca vale para o nome do tipo e também para o namespace, então quem renomear um
+/// precisa renomear o outro.
+///
+/// As pastas dentro de Views e ViewModels (Janela, Clientes, Arquivados, Comum) são só
+/// arrumação: o namespace continua sendo um por camada. Se um dia as pastas virarem
+/// namespace, isto continua funcionando, desde que as duas árvores tenham os mesmos nomes.
+/// </remarks>
 [RequiresUnreferencedCode(
     "Default implementation of ViewLocator involves reflection which may be trimmed away.",
     Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]

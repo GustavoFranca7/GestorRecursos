@@ -1,0 +1,349 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.NovoClienteView"
+             x:DataType="vm:NovoClienteViewModel">
+
+    <UserControl.Styles>
+        <!-- Linha do índice da esquerda -->
+        <Style Selector="Button.grupo">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Fundo}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="11,10"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.grupo /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.grupo:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+        </Style>
+        <Style Selector="Button.grupo.escolhido /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+        <Style Selector="Border.bolha">
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="CornerRadius" Value="11"/>
+            <Setter Property="Background" Value="{StaticResource Borda}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style Selector="Button.grupo.escolhido Border.bolha">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Button.grupo.completo Border.bolha">
+            <Setter Property="Background" Value="{StaticResource Sucesso}"/>
+        </Style>
+
+        <!-- Campos -->
+        <Style Selector="TextBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="ComboBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.secao">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.7"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Sombra por cima da tela de clientes -->
+    <Border Background="#73102A2C">
+        <Border Width="900" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
+            <Grid ColumnDefinitions="248,*">
+
+                <!-- ============ ÍNDICE ============ -->
+                <!-- A lista sai dos grupos do ViewModel: mudar o que entra no cadastro é
+                     acrescentar um grupo lá, não mexer nesta tela. -->
+                <Border Grid.Column="0" Background="{StaticResource Fundo}"
+                        BorderBrush="{StaticResource Borda}" BorderThickness="0,0,1,0">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20,24,20,20">
+                        <StackPanel Grid.Row="0" Spacing="3" Margin="0,0,0,18">
+                            <TextBlock Text="{Binding Titulo}" FontSize="17" FontWeight="Bold"
+                                       Foreground="{StaticResource Texto}"/>
+                            <TextBlock Text="Clique para ir a qualquer grupo" FontSize="11.5"
+                                       Foreground="{StaticResource TextoFraco}"/>
+                        </StackPanel>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Grupos}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GrupoCadastroViewModel">
+                                    <Button Classes="grupo"
+                                            Classes.escolhido="{Binding Escolhido}"
+                                            Classes.completo="{Binding Completo}"
+                                            Command="{Binding $parent[ItemsControl].((vm:NovoClienteViewModel)DataContext).IrParaGrupoCommand}"
+                                            CommandParameter="{Binding Grupo}">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <Border Grid.Column="0" Classes="bolha">
+                                                <Panel>
+                                                    <TextBlock Text="{Binding Numero}" FontSize="11"
+                                                               FontWeight="Bold" Foreground="White"
+                                                               IsVisible="{Binding !Completo}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Text="✓" FontSize="11" FontWeight="Bold"
+                                                               Foreground="White"
+                                                               IsVisible="{Binding Completo}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                </Panel>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="11,0,0,0" Spacing="1">
+                                                <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource Texto}"/>
+                                                <TextBlock Text="{Binding Resumo}" FontSize="10.5"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Grid.Row="3" Background="{StaticResource Cartao}"
+                                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                CornerRadius="{StaticResource RaioCartao}" Padding="12,11">
+                            <TextBlock FontSize="11" TextWrapping="Wrap" LineHeight="16"
+                                       Foreground="{StaticResource TextoFraco}"
+                                       Text="{Binding Instrucao}"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ============ CAMPOS ============ -->
+                <Grid Grid.Column="1" RowDefinitions="*,Auto">
+                    <Panel Grid.Row="0" Margin="30,26,30,12" MinHeight="370">
+
+                        <!-- Dados pessoais -->
+                        <StackPanel IsVisible="{Binding NosDadosPessoais}">
+                            <TextBlock Classes="secao" Text="DADOS PESSOAIS"/>
+                            <StackPanel Margin="0,0,0,18">
+                                <TextBlock Classes="rotulo" Text="Nome completo *"/>
+                                <TextBox Classes="entrada" Text="{Binding Nome}"
+                                         Classes.erro="{Binding ErroNome, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         Watermark="Nome como está no documento"/>
+                                <TextBlock Classes="erroCampo" Text="{Binding ErroNome}"
+                                           IsVisible="{Binding ErroNome, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="CPF *"/>
+                                    <TextBox Classes="entrada" Text="{Binding Cpf}" servicos:Mascara.Padrao="cpf"
+                                             Classes.erro="{Binding ErroCpf, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             Watermark="000.000.000-00"/>
+                                    <TextBlock Classes="erroCampo" Text="{Binding ErroCpf}"
+                                               IsVisible="{Binding ErroCpf, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Nacionalidade"/>
+                                    <TextBox Classes="entrada" Text="{Binding Nacionalidade}"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="RG"/>
+                                    <TextBox Classes="entrada" Text="{Binding Rg}" servicos:Mascara.Padrao="rg" Watermark="0.000.000"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Órgão emissor"/>
+                                    <!-- Sigla e UF em campos separados: há órgão de 2 a 6 letras
+                                         (SSP, SESP, DETRAN), então a barra não cai em lugar fixo. -->
+                                    <Grid ColumnDefinitions="*,Auto,86">
+                                        <TextBox Grid.Column="0" Classes="entrada" Text="{Binding RgOrgaoSigla}"
+                                                 servicos:Mascara.Padrao="letras:6" Watermark="SESP"/>
+                                        <TextBlock Grid.Column="1" Text="/" Margin="9,0" FontSize="15"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextoFraco}"/>
+                                        <ComboBox Grid.Column="2" Classes="entrada" ItemsSource="{Binding Ufs}"
+                                                  SelectedItem="{Binding RgOrgaoUf}" PlaceholderText="UF"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Estado civil"/>
+                                    <ComboBox Classes="entrada" ItemsSource="{Binding EstadosCivis}"
+                                              SelectedItem="{Binding EstadoCivil}"
+                                              PlaceholderText="Selecione"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Profissão"/>
+                                    <TextBox Classes="entrada" Text="{Binding Profissao}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Contato e endereço -->
+                        <StackPanel IsVisible="{Binding NoContatoEndereco}">
+                            <TextBlock Classes="secao" Text="CONTATO"/>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="WhatsApp *"/>
+                                    <TextBox Classes="entrada" Text="{Binding Whatsapp}" servicos:Mascara.Padrao="telefone"
+                                             Classes.erro="{Binding ErroWhatsapp, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             Watermark="(00) 00000-0000"/>
+                                    <TextBlock Classes="erroCampo" Text="{Binding ErroWhatsapp}"
+                                               IsVisible="{Binding ErroWhatsapp, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="E-mail"/>
+                                    <TextBox Classes="entrada" Text="{Binding Email}" Watermark="nome@exemplo.com"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Classes="secao" Text="ENDEREÇO" Margin="0,8,0,12"/>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="CEP"/>
+                                    <TextBox Classes="entrada" Text="{Binding Cep}" servicos:Mascara.Padrao="cep" Watermark="00000-000"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Cidade"/>
+                                    <TextBox Classes="entrada" Text="{Binding Cidade}"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Logradouro"/>
+                                    <TextBox Classes="entrada" Text="{Binding Logradouro}" Watermark="Rua, avenida..."/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Bairro"/>
+                                    <TextBox Classes="entrada" Text="{Binding Bairro}"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,16,*,16,90">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Número"/>
+                                    <TextBox Classes="entrada" Text="{Binding Numero}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Complemento"/>
+                                    <TextBox Classes="entrada" Text="{Binding Complemento}" Watermark="ap, sala..."/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Classes="rotulo" Text="UF"/>
+                                    <ComboBox Classes="entrada" ItemsSource="{Binding Ufs}"
+                                              SelectedItem="{Binding Uf}"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- CNH -->
+                        <StackPanel IsVisible="{Binding NaCnh}">
+                            <TextBlock Classes="secao" Text="CNH"/>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Número"/>
+                                    <TextBox Classes="entrada" Text="{Binding CnhNumero}" servicos:Mascara.Padrao="numero:11" Watermark="00000000000"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,18">
+                                    <TextBlock Classes="rotulo" Text="Categoria"/>
+                                    <ComboBox Classes="entrada" ItemsSource="{Binding Categorias}"
+                                              SelectedItem="{Binding CnhCategoria}"
+                                              PlaceholderText="Selecione"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Validade"/>
+                                    <TextBox Classes="entrada" Text="{Binding CnhValidade}" servicos:Mascara.Padrao="data"
+                                             Classes.erro="{Binding ErroValidade, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             Watermark="dd/mm/aaaa"/>
+                                    <TextBlock Classes="erroCampo" Text="{Binding ErroValidade}"
+                                               IsVisible="{Binding ErroValidade, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Registro"/>
+                                    <TextBox Classes="entrada" Text="{Binding CnhRegistro}" servicos:Mascara.Padrao="numero:11" Watermark="00000000000"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Background="{StaticResource PrimariaClara}"
+                                    BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                                    CornerRadius="{StaticResource RaioCartao}" Padding="13,11" Margin="0,16,0,0">
+                                <TextBlock FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{StaticResource PrimariaEscura}"
+                                           Text="A CNH é usada nos documentos e nos processos de suspensão. Pode ficar em branco agora."/>
+                            </Border>
+                        </StackPanel>
+                    </Panel>
+
+                    <!-- Rodapé -->
+                    <Border Grid.Row="1" Background="{StaticResource CartaoSuave}"
+                            BorderBrush="{StaticResource BordaClara}" BorderThickness="0,1,0,0"
+                            Padding="30,16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="12"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"
+                                       Foreground="{StaticResource Alerta}"
+                                       IsVisible="{Binding TemErro}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <Button Classes="neutro" Content="Cancelar"
+                                        Command="{Binding CancelarCommand}"/>
+                                <Button Classes="neutro" Content="{Binding ProximoGrupo}"
+                                        IsVisible="{Binding TemProximoGrupo}"
+                                        Command="{Binding AvancarCommand}"/>
+                                <Button Classes="primario" Content="{Binding TextoSalvar}"
+                                        IsEnabled="{Binding !Salvando}"
+                                        Command="{Binding SalvarCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

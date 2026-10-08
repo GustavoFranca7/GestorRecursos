@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.ArquivadosView"
+             x:DataType="vm:ArquivadosViewModel">
+
+    <UserControl.Styles>
+        <!-- Aba de tipo: sublinhado em vez de cápsula, para não disputar com as abas de
+             filtro da lista que aparece logo abaixo. -->
+        <Style Selector="Button.tipo">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="4,8"/>
+            <Setter Property="Margin" Value="0,0,22,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.tipo:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+        <Style Selector="Button.tipo:disabled">
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+        <Style Selector="Button.tipo.escolhida">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.tipo /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.tipo:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- O nome da seção já está na barra de cima; aqui fica só o que ela explica. -->
+        <StackPanel Grid.Row="0" Margin="24,20,24,0">
+            <TextBlock FontSize="12" Foreground="{StaticResource TextoFraco}"
+                       Text="O que saiu das listas e ainda pode voltar. É daqui que se apaga de vez."/>
+        </StackPanel>
+
+        <!-- Abas por tipo -->
+        <Border Grid.Row="1" BorderBrush="{StaticResource Borda}" BorderThickness="0,0,0,1"
+                Margin="24,14,24,0">
+            <ItemsControl ItemsSource="{Binding Abas}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AbaArquivoViewModel">
+                        <Button Classes="tipo" Content="{Binding Titulo}"
+                                Classes.escolhida="{Binding Escolhida}"
+                                IsEnabled="{Binding Pronta}"
+                                Command="{Binding $parent[ItemsControl].((vm:ArquivadosViewModel)DataContext).AbrirCommand}"
+                                CommandParameter="{Binding Tipo}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <Panel Grid.Row="2">
+            <ContentControl Content="{Binding Conteudo}"/>
+
+            <TextBlock IsVisible="{Binding Conteudo, Converter={x:Static vm:Conversores.EhNulo}}"
+                       Text="Esta parte do arquivo ainda será construída."
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="13" Foreground="{StaticResource TextoApagado}"/>
+        </Panel>
+    </Grid>
+</UserControl>

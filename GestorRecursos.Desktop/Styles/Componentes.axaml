@@ -1,0 +1,160 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Estilos que valem em mais de uma tela. Ficam aqui, e não dentro de cada View,
+         porque dado que aparece em duas telas tem que aparecer igual nas duas. -->
+
+    <!-- ===================== DADO COPIÁVEL =====================
+         Parece texto, responde como botão: realça ao passar o mouse e copia ao clicar.
+
+         O fundo de repouso precisa ser a cor que está atrás (ver BUG-07 e BUG-08): por
+         padrão é o branco do cartão; sobre a área de conteúdo, use .sobrefundo. -->
+    <Style Selector="Button.copiavel">
+        <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Cartao}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Quem pinta o realce é o ContentPresenter do template do tema. O canto vem do
+         CornerRadius do botão, por TemplateBinding — é assim que os outros botões do
+         app (aba, página, ação) ficam arredondados. -->
+    <Style Selector="Button.copiavel /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Cartao}"/>
+    </Style>
+    <Style Selector="Button.copiavel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+    <Style Selector="Button.copiavel:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaBorda}"/>
+    </Style>
+    <Style Selector="Button.copiavel:focus /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Cartao}"/>
+    </Style>
+    <Style Selector="Button.copiavel:focus:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+    <Style Selector="Button.copiavel:disabled">
+        <Setter Property="Cursor" Value="Arrow"/>
+    </Style>
+
+    <!-- Fora dos cartões o fundo é o da área de conteúdo -->
+    <Style Selector="Button.copiavel.sobrefundo /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Fundo}"/>
+    </Style>
+    <Style Selector="Button.copiavel.sobrefundo:focus /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Fundo}"/>
+    </Style>
+    <Style Selector="Button.copiavel.sobrefundo:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+
+    <!-- Variações de tipografia do dado copiável -->
+    <Style Selector="Button.copiavel.placa">
+        <Setter Property="FontFamily" Value="Consolas,monospace"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+    </Style>
+    <Style Selector="Button.copiavel.titulo">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+    </Style>
+    <Style Selector="Button.copiavel.secundario">
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+    </Style>
+    <Style Selector="Button.copiavel.normal">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+    </Style>
+
+    <!-- Selo de placa: a moldura clara que a placa usa dentro das listas -->
+    <Style Selector="Button.copiavel.seloplaca /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+    </Style>
+
+    <Style Selector="Button.copiavel.seloplaca">
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily" Value="Consolas,monospace"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        <Setter Property="Padding" Value="7,3"/>
+    </Style>
+    <Style Selector="Button.copiavel.seloplaca:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaBorda}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+    </Style>
+
+    <!-- Botão só de ícone: na ponta da linha da lista e no cabeçalho da ficha -->
+    <Style Selector="Button.acao">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Width" Value="29"/>
+        <Setter Property="Height" Value="29"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+    </Style>
+    <Style Selector="Button.acao /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+    </Style>
+    <Style Selector="Button.acao:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+    <!-- A lixeira avisa que é destrutiva antes mesmo do clique -->
+    <Style Selector="Button.acao.perigosa:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AlertaClaro}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AlertaBorda}"/>
+    </Style>
+
+    <!-- Atalho no canto do cartão: "editar", "ver todos", "+ adicionar". -->
+    <Style Selector="Button.atalhocartao">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Padding" Value="7,2"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+    </Style>
+    <Style Selector="Button.atalhocartao /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.atalhocartao:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+
+    <!-- Campo de busca. Mora aqui porque cada tela tem o seu: a aparência é uma só. -->
+    <Style Selector="TextBox.busca">
+        <Setter Property="Background" Value="#FAFCFC"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Padding" Value="12,9,40,9"/>
+        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="TextBox.busca:focus">
+        <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        <Setter Property="Background" Value="White"/>
+    </Style>
+</Styles>

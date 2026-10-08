@@ -1,0 +1,524 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.FichaClienteView"
+             x:DataType="vm:FichaClienteViewModel">
+
+    <UserControl.Resources>
+        <!-- Um template só para os três cartões de campos: eles diferem no conteúdo,
+             não na forma, e copiar precisa funcionar igual nos três. -->
+        <DataTemplate x:Key="CampoTemplate" x:DataType="vm:CampoFicha">
+            <!-- Sem coluna para dica de "copiar": invisível ela continuava ocupando
+                 espaço e empurrava os valores para longe da borda direita. O realce, o
+                 cursor e o tooltip já dizem que dá para clicar. -->
+            <Button Classes="copiavel campo" IsEnabled="{Binding Preenchido}"
+                    ToolTip.Tip="Clique para copiar"
+                    Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                    CommandParameter="{Binding Valor}">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="{Binding Rotulo}" FontSize="12.5"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextoFraco}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Valor}" FontSize="12.5"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" Margin="12,0,0,0"
+                               Foreground="{Binding Preenchido, Converter={x:Static vm:Conversores.CorDoCampo}}"
+                               FontStyle="{Binding Preenchido, Converter={x:Static vm:Conversores.EstiloDoCampo}}"/>
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- A linha do campo é um dado copiável que ocupa a largura do cartão: herda
+             tudo de Button.copiavel (Styles/Componentes.axaml) e só se estica.
+
+             Sem margem negativa: com ela o botão transbordava o cartão, que recorta —
+             e o recorte comia justamente os cantos arredondados do realce. -->
+        <Style Selector="Button.campo">
+            <Setter Property="Padding" Value="0,4"/>
+            <Setter Property="Margin" Value="0,0,0,3"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- Aba da ficha: sublinhado, sem cápsula -->
+        <Style Selector="Button.abaficha">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="2,9"/>
+            <Setter Property="Margin" Value="0,0,24,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.abaficha:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+        <Style Selector="Button.abaficha:disabled">
+            <Setter Property="Opacity" Value="0.45"/>
+        </Style>
+        <Style Selector="Button.abaficha.escolhida">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.abaficha /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.abaficha:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+
+        <!-- Cartão de informação -->
+        <Style Selector="Border.cartao">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="18,15"/>
+        </Style>
+        <Style Selector="TextBlock.titulocartao">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.7"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+
+        <!-- Cliente na lista do lado -->
+        <Style Selector="Button.vizinho">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <!-- Repouso escrito, e não herdado: ao trocar de cliente a classe "aberta" sai de
+             todos ao mesmo tempo, e sem um fundo definido a animação do tema passa pelo
+             preto — era o que fazia a lista inteira piscar. -->
+        <Style Selector="Button.vizinho /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Cartao}"/>
+        </Style>
+        <Style Selector="Button.vizinho:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource CartaoSuave}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        </Style>
+        <Style Selector="Button.vizinho.aberta /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+
+        <Style Selector="TextBox.filtro">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="FontSize" Value="12.5"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="296,*">
+
+        <!-- ===================== LISTA REDUZIDA ===================== -->
+        <!-- Fica junto porque o escritório trabalha em sequência: trocar de cliente não
+             deveria custar voltar para a listagem e procurar o lugar de novo. -->
+        <Border Grid.Column="0" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="0,0,1,0">
+            <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,18,16,12">
+
+                <!-- No lugar do rótulo "Clientes": é a única ação que faz falta aqui. -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+                    <Button Grid.Column="0" Classes="primario" Content="+ Novo cliente"
+                            FontSize="11.5" Padding="11,6"
+                            Command="{Binding NovoClienteCommand}"/>
+                    <Button Grid.Column="1" Classes="neutro" Content="← Expandir lista"
+                            FontSize="11.5" Padding="10,6" Margin="8,0,0,0"
+                            HorizontalAlignment="Right"
+                            Command="{Binding VoltarCommand}"
+                            ToolTip.Tip="Voltar para a listagem inteira"/>
+                </Grid>
+
+                <TextBox Grid.Row="1" Classes="filtro" Margin="0,12,0,10"
+                         Text="{Binding FiltroDaLista}"
+                         PlaceholderText="Filtrar nesta lista...">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding FiltrarListaCommand}"/>
+                    </TextBox.KeyBindings>
+                </TextBox>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                              ScrollChanged="AoRolarVizinhos">
+                    <ItemsControl ItemsSource="{Binding Vizinhos}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LinhaReduzidaViewModel">
+                                <Button Classes="vizinho" Classes.aberta="{Binding Aberta}"
+                                        Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).AbrirVizinhoCommand}"
+                                        CommandParameter="{Binding Id}">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="{Binding Nome}" FontSize="12.5"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource Texto}"/>
+                                        <TextBlock Text="{Binding Detalhe}" FontSize="10.5"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,2,0,0">
+                                            <Border IsVisible="{Binding TemPlaca}"
+                                                    Background="{StaticResource PrimariaClara}"
+                                                    BorderBrush="{StaticResource PrimariaBorda}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="{StaticResource RaioBotao}"
+                                                    Padding="6,2">
+                                                <TextBlock Text="{Binding PrimeiraPlaca}" FontSize="10.5"
+                                                           FontFamily="Consolas,monospace"
+                                                           Foreground="{StaticResource PrimariaEscura}"/>
+                                            </Border>
+                                            <Border CornerRadius="{StaticResource RaioSelo}" Padding="7,2"
+                                                    Background="{Binding DevendoAlgo, Converter={x:Static vm:Conversores.FundoDoSaldo}}">
+                                                <TextBlock Text="{Binding Situacao}" FontSize="10.5"
+                                                           Foreground="{Binding DevendoAlgo, Converter={x:Static vm:Conversores.CorDoSaldo}}"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock Grid.Row="3" Text="{Binding ContagemDaLista}" FontSize="11"
+                           Margin="2,10,0,0" Foreground="{StaticResource TextoApagado}"/>
+            </Grid>
+        </Border>
+
+        <!-- ===================== FICHA ===================== -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*">
+
+            <!-- Cabeçalho -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,20,24,0">
+                <StackPanel Grid.Column="0" Spacing="6">
+                    <Button Classes="copiavel sobrefundo" Content="{Binding Nome}"
+                            FontSize="21" FontWeight="Bold" Margin="-5,0,0,0"
+                            Foreground="{StaticResource Texto}"
+                            ToolTip.Tip="Clique para copiar o nome"
+                            Command="{Binding CopiarCommand}"
+                            CommandParameter="{Binding Nome}"/>
+                    <!--<TextBlock Text="{Binding Identificacao}" FontSize="12"
+                               Foreground="{StaticResource TextoFraco}"/>-->
+
+                    <ItemsControl ItemsSource="{Binding Selos}" Margin="0,3,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SeloViewModel">
+                                <Border CornerRadius="{StaticResource RaioSelo}"
+                                        Padding="9,3" Margin="0,2,6,2"
+                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Editar e Nova contratação saíram daqui; ficou a lixeira, que manda
+                     este cliente para Arquivados. -->
+                <Button Grid.Column="1" Classes="acao perigosa" VerticalAlignment="Top"
+                        Command="{Binding PedirArquivamentoCommand}"
+                        ToolTip.Tip="Mover este cliente para Arquivados">
+                    <Viewbox Width="15" Height="15">
+                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                              Data="{StaticResource IconeExcluir}"/>
+                    </Viewbox>
+                </Button>
+            </Grid>
+
+            <!-- Abas -->
+            <Border Grid.Row="1" BorderBrush="{StaticResource Borda}" BorderThickness="0,0,0,1"
+                    Margin="24,16,24,0">
+                <ItemsControl ItemsSource="{Binding Abas}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AbaFichaViewModel">
+                            <Button Classes="abaficha" Classes.escolhida="{Binding Escolhida}"
+                                    IsEnabled="{Binding Pronta}"
+                                    Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).TrocarAbaCommand}"
+                                    CommandParameter="{Binding Aba}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center"/>
+                                    <Border IsVisible="{Binding TemContador}"
+                                            Background="{StaticResource BordaClara}"
+                                            CornerRadius="9" Padding="6,1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Contador}" FontSize="10.5"
+                                                   Foreground="{StaticResource TextoFraco}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <!-- Conteúdo da aba -->
+            <Panel Grid.Row="2">
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaDados}">
+                    <StackPanel Margin="24,18,24,20" Spacing="14">
+
+                        <!-- Duas colunas de cartões -->
+                        <Grid ColumnDefinitions="*,14,*">
+                            <StackPanel Grid.Column="0" Spacing="14">
+                                <!-- Cada cartão abre a edição no grupo dele, mas lá dentro
+                                     dá para trocar de grupo sem salvar e voltar. -->
+                                <Border Classes="cartao">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Classes="titulocartao" Text="DADOS PESSOAIS"/>
+                                            <Button Grid.Column="1" Classes="atalhocartao" Content="editar"
+                                                    Command="{Binding EditarCommand}"
+                                                    CommandParameter="{x:Static vm:GrupoCadastro.DadosPessoais}"/>
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding DadosPessoais}"
+                                                      ItemTemplate="{StaticResource CampoTemplate}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="cartao">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Classes="titulocartao" Text="CNH"/>
+                                            <Button Grid.Column="1" Classes="atalhocartao" Content="editar"
+                                                    Command="{Binding EditarCommand}"
+                                                    CommandParameter="{x:Static vm:GrupoCadastro.Cnh}"/>
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding DadosCnh}"
+                                                      ItemTemplate="{StaticResource CampoTemplate}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Spacing="14">
+                                <Border Classes="cartao">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Classes="titulocartao"
+                                                       Text="CONTATO E ENDEREÇO"/>
+                                            <Button Grid.Column="1" Classes="atalhocartao" Content="editar"
+                                                    Command="{Binding EditarCommand}"
+                                                    CommandParameter="{x:Static vm:GrupoCadastro.ContatoEndereco}"/>
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding ContatoEndereco}"
+                                                      ItemTemplate="{StaticResource CampoTemplate}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="cartao">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Classes="titulocartao" Text="VEÍCULOS"/>
+                                            <TextBlock Grid.Column="1" Text="+ adicionar" FontSize="11.5"
+                                                       Foreground="{StaticResource TextoApagado}"/>
+                                        </Grid>
+
+                                        <TextBlock IsVisible="{Binding !TemVeiculos}" FontSize="12"
+                                                   Text="Nenhum veículo ligado a este cliente."
+                                                   Foreground="{StaticResource TextoApagado}"/>
+
+                                        <ItemsControl ItemsSource="{Binding Veiculos}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:VeiculoDaFichaViewModel">
+                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                                                        <StackPanel Grid.Column="0" Spacing="2">
+                                                            <!-- A placa é o dado mais copiado do sistema -->
+                                                            <Button Classes="copiavel placa" Content="{Binding Placa}"
+                                                                    ToolTip.Tip="Clique para copiar a placa"
+                                                                    Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                                                                    CommandParameter="{Binding Placa}"/>
+                                                            <TextBlock Text="{Binding Descricao}" FontSize="11.5"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                        </StackPanel>
+                                                        <Border Grid.Column="1" VerticalAlignment="Center"
+                                                                CornerRadius="{StaticResource RaioSelo}" Padding="9,3"
+                                                                Background="{Binding TemMultas, Converter={x:Static vm:Conversores.FundoDoSaldo}}">
+                                                            <TextBlock Text="{Binding Multas}" FontSize="11"
+                                                                       Foreground="{Binding TemMultas, Converter={x:Static vm:Conversores.CorDoSaldo}}"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Processos em andamento -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="titulocartao"
+                                               Text="PROCESSOS EM ANDAMENTO"/>
+                                    <TextBlock Grid.Column="1" Text="ver todos" FontSize="11.5"
+                                               Foreground="{StaticResource TextoApagado}"/>
+                                </Grid>
+
+                                <TextBlock IsVisible="{Binding !TemProcessos}" FontSize="12"
+                                           Text="Nenhum processo em andamento."
+                                           Foreground="{StaticResource TextoApagado}"/>
+
+                                <ItemsControl ItemsSource="{Binding Processos}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ProcessoDaFichaViewModel">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,11">
+                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                    <!-- Copia o AIT junto com o nome do serviço -->
+                                                    <Button Classes="copiavel titulo" Content="{Binding Titulo}"
+                                                            ToolTip.Tip="Clique para copiar"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Titulo}"/>
+                                                    <TextBlock Text="{Binding Detalhe}" FontSize="11.5"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="1" VerticalAlignment="Center"
+                                                        Background="{StaticResource RoxoClaro}"
+                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                        Padding="9,3" Margin="8,0">
+                                                    <TextBlock Text="{Binding Fase}" FontSize="11"
+                                                               Foreground="{StaticResource Roxo}"/>
+                                                </Border>
+
+                                                <Border Grid.Column="2" DataContext="{Binding SeloPrazo}"
+                                                        VerticalAlignment="Center"
+                                                        CornerRadius="{StaticResource RaioSelo}" Padding="9,3"
+                                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                </Border>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Resumo financeiro: contratado → pago → em aberto -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="14">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="titulocartao" Text="RESUMO FINANCEIRO"/>
+                                    <TextBlock Grid.Column="1" Text="ver lançamentos" FontSize="11.5"
+                                               Foreground="{StaticResource TextoApagado}"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                                    <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,34,0">
+                                        <TextBlock Text="{Binding TotalContratado}" FontSize="19"
+                                                   FontWeight="Bold" Foreground="{StaticResource Texto}"/>
+                                        <TextBlock Text="TOTAL CONTRATADO" FontSize="9.5"
+                                                   LetterSpacing="0.5"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,34,0">
+                                        <TextBlock Text="{Binding JaPago}" FontSize="19" FontWeight="Bold"
+                                                   Foreground="{StaticResource Sucesso}"/>
+                                        <TextBlock Text="JÁ PAGO" FontSize="9.5" LetterSpacing="0.5"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Spacing="2" Margin="0,0,34,0">
+                                        <TextBlock Text="{Binding EmAberto}" FontSize="19" FontWeight="Bold"
+                                                   Foreground="{StaticResource Alerta}"/>
+                                        <TextBlock Text="EM ABERTO" FontSize="9.5" LetterSpacing="0.5"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="6">
+                                        <ProgressBar Minimum="0" Maximum="100"
+                                                     Value="{Binding PercentualQuitado}"
+                                                     IsVisible="{Binding TemContratacao}"
+                                                     Height="8" CornerRadius="4"
+                                                     Foreground="{StaticResource Sucesso}"
+                                                     Background="{StaticResource BordaClara}"/>
+                                        <TextBlock Text="{Binding NotaDoFinanceiro}" FontSize="11"
+                                                   HorizontalAlignment="Right"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <TextBlock IsVisible="{Binding AbaEmConstrucao}"
+                           Text="Esta aba ainda será construída."
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoApagado}"/>
+
+                <TextBlock Text="Carregando..." IsVisible="{Binding Carregando}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+                <Border IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                        Background="{StaticResource AlertaClaro}"
+                        BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioCartao}" Padding="18,14"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                    <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                               Foreground="{StaticResource Alerta}"/>
+                </Border>
+
+            </Panel>
+        </Grid>
+
+        <!-- ============ CONFIRMAÇÃO DE ARQUIVAMENTO ============
+             Cobre as duas colunas: tirar alguém das listas não é clique de passagem. -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2"
+                IsVisible="{Binding ArquivamentoAberto}" Background="#66102A2C">
+            <Border Background="{StaticResource Cartao}"
+                    CornerRadius="{StaticResource RaioCartao}"
+                    BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                    Padding="24,20" MaxWidth="440"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Arquivar este cliente?" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock FontSize="12.5" TextWrapping="Wrap" LineHeight="19"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="Ele sai das listas, o histórico fica guardado e dá para
+                                     encontrá-lo em Arquivados, de onde também se restaura."/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Classes="neutro" Content="Cancelar"
+                                Command="{Binding CancelarArquivamentoCommand}"/>
+                        <Button Classes="perigo" Content="Arquivar"
+                                Command="{Binding ConfirmarArquivamentoCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

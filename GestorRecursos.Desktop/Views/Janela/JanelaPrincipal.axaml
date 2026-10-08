@@ -1,0 +1,334 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1500" d:DesignHeight="950"
+        x:Class="GestorRecursos.Desktop.Views.JanelaPrincipal"
+        x:DataType="vm:JanelaPrincipalViewModel"
+        Title="Gestor de Recursos"
+        Width="1500" Height="950" MinWidth="1100" MinHeight="700"
+        Background="{StaticResource Fundo}"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:JanelaPrincipalViewModel/>
+    </Design.DataContext>
+
+    <Window.Resources>
+        <!-- Um template só para os dois grupos do menu: o item muda de grupo, não de forma.
+             O item atual vira uma pílula solta dentro da barra, arredondada dos dois lados e
+             com folga à esquerda e à direita. -->
+        <DataTemplate x:Key="ItemMenuTemplate" x:DataType="vm:ItemMenuViewModel">
+            <!-- "ativo" vira classe do botão: assim a aparência do item atual sai de estilos,
+                 e não de valores escritos no próprio elemento (que nenhum estilo conseguiria
+                 depois sobrepor). -->
+            <Button Classes="menu" Classes.ativo="{Binding Ativo}"
+                    Command="{Binding $parent[Window].((vm:JanelaPrincipalViewModel)DataContext).NavegarCommand}"
+                    CommandParameter="{Binding Secao}"
+                    ToolTip.Tip="{Binding Titulo}"
+                    ToolTip.Placement="Right">
+                <Panel>
+                    <Border x:Name="Pilula"
+                            CornerRadius="{StaticResource RaioItemMenu}"
+                            Margin="{Binding $parent[Window].((vm:JanelaPrincipalViewModel)DataContext).MenuRetraido, Converter={x:Static vm:Conversores.MargemItemMenu}}"
+                            Padding="0,10">
+                        <Border.Transitions>
+                            <Transitions>
+                                <!-- A troca de item acende o fundo aos poucos, em vez de piscar -->
+                                <BrushTransition Property="Background" Duration="0:0:0.18"/>
+                                <ThicknessTransition Property="Margin" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                            </Transitions>
+                        </Border.Transitions>
+
+                        <StackPanel Orientation="Horizontal" Spacing="13" HorizontalAlignment="Left"
+                                    Margin="{Binding $parent[Window].((vm:JanelaPrincipalViewModel)DataContext).MenuRetraido, Converter={x:Static vm:Conversores.RecuoItemMenu}}">
+                            <StackPanel.Transitions>
+                                <Transitions>
+                                    <ThicknessTransition Property="Margin" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                                </Transitions>
+                            </StackPanel.Transitions>
+
+                            <Viewbox Width="20" Height="20">
+                                <Path x:Name="IconeItem" Stretch="Uniform"
+                                      Data="{Binding ChaveIcone, Converter={x:Static vm:Conversores.Icone}}"/>
+                            </Viewbox>
+                            <TextBlock x:Name="RotuloItem" Text="{Binding Titulo}"
+                                       VerticalAlignment="Center" FontSize="13.5"
+                                       IsVisible="{Binding $parent[Window].((vm:JanelaPrincipalViewModel)DataContext).MenuRetraido, Converter={x:Static vm:Conversores.Negar}}"/>
+                        </StackPanel>
+                    </Border>
+                </Panel>
+            </Button>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.Styles>
+        <!-- Item do menu: um botão sem cara de botão, que acende quando é o atual -->
+        <Style Selector="Button.menu">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <!-- Sem isto, o clique deixava um retângulo escuro em volta do item -->
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+
+        <!-- O botão em si nunca pinta fundo: ele é retangular e ocupa a barra toda.
+             Quem pinta é a pílula, que tem a forma e a folga certas. -->
+        <Style Selector="Button.menu /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.menu:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.menu:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.menu:focus /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.menu:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- Repouso: ícone e texto apagados, fundo da barra sem alteração nenhuma -->
+        <!-- Repouso: a pílula fica na cor da própria barra, e não "Transparent".
+             Transparent é branco com alfa zero; a animação interpolava do branco até a cor
+             do realce, e era esse caminho que piscava branco ao entrar e ao sair. -->
+        <Style Selector="Button.menu Border#Pilula">
+            <Setter Property="Background" Value="{StaticResource MenuFundo}"/>
+        </Style>
+        <Style Selector="Button.menu Path#IconeItem">
+            <Setter Property="Fill" Value="{StaticResource MenuTextoApagado}"/>
+        </Style>
+        <Style Selector="Button.menu TextBlock#RotuloItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuTextoApagado}"/>
+        </Style>
+
+        <!-- Mouse em cima: pílula discreta, na mesma forma da pílula do item atual -->
+        <Style Selector="Button.menu:pointerover Border#Pilula">
+            <Setter Property="Background" Value="{StaticResource MenuItemSobre}"/>
+        </Style>
+        <Style Selector="Button.menu:pointerover Path#IconeItem">
+            <Setter Property="Fill" Value="{StaticResource MenuItemSobreTexto}"/>
+        </Style> 
+        <Style Selector="Button.menu:pointerover TextBlock#RotuloItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuItemSobreTexto}"/>
+        </Style>
+
+        <!-- Item atual: pílula cheia. Vem depois do estado do mouse de propósito, e repete
+             o seletor com :pointerover para o item atual não mudar ao passar o mouse. -->
+        <Style Selector="Button.menu.ativo Border#Pilula">
+            <Setter Property="Background" Value="{StaticResource MenuItemAtivoFundo}"/>
+        </Style>
+        <Style Selector="Button.menu.ativo:pointerover Border#Pilula">
+            <Setter Property="Background" Value="{StaticResource MenuItemAtivoFundo}"/>
+        </Style>
+        <Style Selector="Button.menu.ativo Path#IconeItem, Button.menu.ativo:pointerover Path#IconeItem">
+            <Setter Property="Fill" Value="{StaticResource MenuItemAtivoTexto}"/>
+        </Style>
+        <Style Selector="Button.menu.ativo TextBlock#RotuloItem, Button.menu.ativo:pointerover TextBlock#RotuloItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuItemAtivoTexto}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Alavanca do menu: só o ícone. O fundo aparece quando o mouse chega,
+             para o botão não ficar com cara de caixinha desenhada na barra. -->
+        <Style Selector="Button.alavanca">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- Sem isto, o anel de foco fica desenhado em volta do ícone depois do clique,
+                 e era ele que parecia um quadradinho na barra. -->
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.alavanca /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuFundo}"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Sem o foco explícito, o botão continuava pintado depois do clique -->
+        <Style Selector="Button.alavanca:focus /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuFundo}"/>
+        </Style>
+        <Style Selector="Button.alavanca:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuFundo}"/>
+        </Style>
+        <Style Selector="Button.alavanca:focus-within /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuFundo}"/>
+        </Style>
+        <Style Selector="Button.alavanca:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuAlavancaSobre}"/>
+        </Style>
+        <Style Selector="Button.alavanca:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource MenuAlavancaClique}"/>
+        </Style>
+
+        <!-- Botões da barra de cima -->
+        <Style Selector="Button.primario">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.primario:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+
+        <Style Selector="Button.neutro">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.neutro:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        </Style>
+
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="Auto,*">
+
+        <!-- ===================== MENU LATERAL ===================== -->
+        <Border x:Name="BarraMenu" Grid.Column="0" Background="{StaticResource MenuFundo}"
+                Width="{Binding MenuRetraido, Converter={x:Static vm:Conversores.LarguraMenu}}">
+            <Border.Transitions>
+                <Transitions>
+                    <!-- Abrir e fechar o menu desliza, em vez de saltar -->
+                    <DoubleTransition Property="Width" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Border.Transitions>
+
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- Marca e alavanca.
+                     Painel, e não grade: com grade, a coluna da marca continuava ocupando
+                     espaço mesmo escondida, e a alavanca nunca chegava ao centro. -->
+                <Border Grid.Row="0" BorderBrush="{StaticResource MenuLinha}" BorderThickness="0,0,0,1"
+                        Padding="0,16" Height="63">
+                    <Panel>
+                        <StackPanel VerticalAlignment="Center" Margin="16,0,0,0"
+                                    IsVisible="{Binding !MenuRetraido}">
+                            <TextBlock Text="Gestor de Recursos" Foreground="White"
+                                       FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Text="DESPACHANTE" Foreground="{StaticResource MenuTexto}"
+                                       FontSize="9.5" Margin="0,2,0,0" LetterSpacing="1.5"/>
+                        </StackPanel>
+
+                        <!-- Recolhido, a alavanca ocupa o centro da barra, no mesmo eixo dos ícones -->
+                        <Button Classes="alavanca"
+                                Command="{Binding AlternarMenuCommand}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="{Binding MenuRetraido, Converter={x:Static vm:Conversores.AlinhamentoAlavanca}}"
+                                Margin="{Binding MenuRetraido, Converter={x:Static vm:Conversores.MargemAlavanca}}"
+                                ToolTip.Tip="Recolher ou expandir o menu">
+                            <Viewbox Width="15" Height="15">
+                                <!-- Hambúrguer quando recolhido (abre), seta quando aberto (recolhe) -->
+                                <Path Fill="{StaticResource MenuTexto}" Stretch="Uniform"
+                                      Data="{Binding MenuRetraido, Converter={x:Static vm:Conversores.IconeAlavanca}}"/>
+                            </Viewbox>
+                        </Button>
+                    </Panel>
+                </Border>
+
+                <!-- Itens -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled" Margin="0,12,0,0">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding ItensPrincipais}" ItemTemplate="{StaticResource ItemMenuTemplate}"/>
+
+                        <!-- Risco fino no lugar dos títulos: separa os grupos sem escrever nada -->
+                        <Border Height="1" Background="{StaticResource MenuLinha}" Margin="26,12,26,12"/>
+
+                        <ItemsControl ItemsSource="{Binding ItensCadastro}" ItemTemplate="{StaticResource ItemMenuTemplate}"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- O rodapé do menu ficou vazio: quem usa o sistema agora aparece no topo. -->
+            </Grid>
+        </Border>
+
+        <!-- ===================== ÁREA PRINCIPAL ===================== -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+
+            <!-- Barra de cima: só quem está usando o sistema. A busca e as ações desceram
+                 para dentro de cada tela, junto do que elas mexem. -->
+            <!-- Height igual ao do cabeçalho do menu: as duas linhas de baixo têm de
+                 encontrar-se na mesma altura, senão a emenda aparece. -->
+            <Border Grid.Row="0" Background="{StaticResource Cartao}"
+                    BorderBrush="{StaticResource Borda}" BorderThickness="0,0,0,1"
+                    Height="63" Padding="24,0">
+                <Grid ColumnDefinitions="*,Auto">
+
+                    <!-- Onde a pessoa está: é o título da tela, que saiu de dentro dela -->
+                    <TextBlock Grid.Column="0" Text="{Binding TituloSecao}"
+                               FontSize="30" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{StaticResource Texto}"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Border Width="29" Height="29" CornerRadius="15" Background="{StaticResource Primaria}">
+                            <TextBlock Text="R" Foreground="White" FontWeight="Bold" FontSize="12"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Despachante" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Texto}"/>
+                            <TextBlock Text="Despachante" FontSize="10.5"
+                                       Foreground="{StaticResource TextoFraco}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Conteúdo da seção -->
+            <Panel Grid.Row="1">
+                <ContentControl Content="{Binding Conteudo}"/>
+
+                <!-- O nome da seção já está na barra de cima; aqui basta o aviso -->
+                <TextBlock IsVisible="{Binding Conteudo, Converter={x:Static vm:Conversores.EhNulo}}"
+                           Text="Esta tela ainda será construída."
+                           FontSize="13" Foreground="{StaticResource TextoApagado}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                <!-- Aviso de cópia, um só para o sistema: qualquer tela que copie um dado
+                     dá exatamente este retorno, e diz o valor para conferência. -->
+                <Border IsVisible="{Binding MostrandoCopiado}"
+                        Background="{StaticResource MenuFundo}"
+                        CornerRadius="{StaticResource RaioCartao}"
+                        Padding="14,9" Margin="0,0,24,20"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Copiado:" FontSize="12"
+                                   Foreground="{StaticResource MenuTexto}"/>
+                        <TextBlock Text="{Binding TextoCopiado}" FontSize="12"
+                                   FontWeight="SemiBold" MaxWidth="340"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="White"/>
+                    </StackPanel>
+                </Border>
+            </Panel>
+        </Grid>
+    </Grid>
+</Window>

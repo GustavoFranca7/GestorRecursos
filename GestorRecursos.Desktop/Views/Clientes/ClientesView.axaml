@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.ClientesView"
+             x:DataType="vm:ClientesViewModel">
+
+    <!-- A seção Clientes é só o lugar: quem decide o que aparece é o ViewModel.
+         O cadastro entra por cima, sem desmontar o que estava na tela. -->
+    <Panel>
+        <ContentControl Content="{Binding Conteudo}"/>
+        <ContentControl Content="{Binding Cadastro}"
+                        IsVisible="{Binding Cadastro, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+    </Panel>
+</UserControl>
