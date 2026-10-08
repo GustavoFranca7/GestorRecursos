@@ -1,29 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace GestorRecursos.Core.Models;
 
-// Camada Core / Models: entidades que representam as tabelas do banco.
-namespace GestorRecursos.Core.Models
+// Um endereço por cliente. Existe para a procuração e para o recurso.
+public class Endereco
 {
-    public class Endereco
+    public int Id { get; set; }
+    public int ClienteId { get; set; }
+    public string? Cep { get; set; }
+    public string Logradouro { get; set; } = string.Empty;
+    public string? Numero { get; set; }
+    public string? Complemento { get; set; }
+    public string? Bairro { get; set; }
+    public string Cidade { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
+
+    /// <summary>Endereço em uma linha, como aparece na procuração.</summary>
+    public string Resumo()
     {
-        public int Id { get; set; }
-        public int ClienteId { get; set; }
-        public string Logradouro { get; set; }
-        public string Numero { get; set; }
-        public string Cidade { get; set; }
-        public string Estado { get; set; }
-        public string Cep { get; set; }
+        var partes = new List<string> { Logradouro };
 
-        public Endereco() { }
+        if (!string.IsNullOrWhiteSpace(Numero)) partes.Add($"nº {Numero}");
+        if (!string.IsNullOrWhiteSpace(Complemento)) partes.Add(Complemento);
+        if (!string.IsNullOrWhiteSpace(Bairro)) partes.Add($"bairro {Bairro}");
+        if (!string.IsNullOrWhiteSpace(Cep)) partes.Add($"CEP {Cep}");
 
-        public Endereco(string logradouro, string numero, string cidade, string estado, string cep)
-        {
-            Logradouro = logradouro;
-            Numero = numero;
-            Cidade = cidade;
-            Estado = estado;
-            Cep = cep;
-        }
+        partes.Add($"{Cidade} - {Estado}");
+        return string.Join(", ", partes);
     }
 }

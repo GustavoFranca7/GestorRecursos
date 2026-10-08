@@ -1,36 +1,37 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace GestorRecursos.Core.Models;
 
 // Camada Core / Models: entidades que representam as tabelas do banco.
-namespace GestorRecursos.Core.Models
+public class Cliente
 {
-    public class Cliente
-    {
-        // Classe que representa um cliente no sistema, com propriedades correspondentes aos campos do banco de dados.
-        // Get e Set funcionam como métodos de acesso para leitura e escrita das propriedades.
-        public int Id { get; set; }
-        public string Nome { get; set; }
-        public string Cpf { get; set; }
-        public string Email { get; set; }
-        public string Telefone { get; set; }
-        public DateTime DataCadastro { get; set; }
+    public int Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public string Cpf { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string Whatsapp { get; set; } = string.Empty;
 
-        // Propriedade de navegação para o Endereço
-        public Endereco Endereco { get; set; }
+    // CNH: um por cliente e sem histórico, por isso mora aqui e não em tabela própria.
+    public string? CnhNumero { get; set; }
+    public string? CnhCategoria { get; set; }
+    public DateTime? CnhValidade { get; set; }
+    public string? CnhRegistro { get; set; }
 
-        // Construtor padrão
-        public Cliente() { }
+    // Os cinco abaixo existem para a procuração, não para o processo.
+    // Ela disse não precisar deles no cadastro, mas os documentos usam todos.
+    public string? Rg { get; set; }
+    public string? RgOrgao { get; set; }
+    public string? Nacionalidade { get; set; }
+    public string? EstadoCivil { get; set; }
+    public string? Profissao { get; set; }
 
-        // Construtor auxiliar para novos cadastros
-        // Este construtor é usado para criar um cliente com os dados fornecidos pelo usuário.
-        public Cliente(string nome, string cpf, string email, string telefone)
-        {
-            Nome = nome;
-            Cpf = cpf;
-            Email = email;
-            Telefone = telefone;
+    public string? Observacoes { get; set; }
 
-        }
-    }
+    /// <summary>Cliente arquivado some das listas, mas o histórico continua.</summary>
+    public bool Arquivado { get; set; }
+
+    public DateTime DataCadastro { get; set; }
+
+    public Endereco? Endereco { get; set; }
+
+    /// <summary>Veículos ligados a este cliente, com o papel de cada um.</summary>
+    public List<VeiculoDoCliente> Veiculos { get; set; } = [];
 }
