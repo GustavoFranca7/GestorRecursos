@@ -34,6 +34,107 @@ public class FichaClienteDAO
         };
     }
 
+    /// <summary>Os veículos do cliente com as multas de cada um, para a aba Veículos e multas.</summary>
+    /// <remarks>
+    /// Fora da <see cref="BuscarAsync"/> de propósito: são duas consultas a mais que só
+    /// interessam a quem abriu a aba, e a ficha abre em Dados.
+    /// </remarks>
+    public async Task<List<VeiculoComMultas>> ListarVeiculosComMultasAsync(
+        int clienteId, CancellationToken cancelamento = default)
+    {
+        const string sqlVeiculos = """
+            SELECT V.ID, V.PLACA, V.RENAVAM, V.MARCA_MODELO, V.COR, V.ANO,
+                   V.OBSERVACAO, CV.VINCULO
+              FROM CLIENTE_VEICULO CV
+              JOIN VEICULOS V ON V.ID = CV.VEICULO_ID
+             WHERE CV.CLIENTE_ID = :id
+             ORDER BY V.PLACA
+            """;
+
+        // A situação que vale é a da instância mais recente da multa: o recurso anda de
+        // AUTUACAO para JARI e para CETRAN, e é na última que ele está agora.
+        const string sqlMultas = """
+            SELECT M.VEICULO_ID, M.ID, M.AIT, M.ENQUADRAMENTO, M.DESCRICAO,
+                   M.LOCAL_INFRACAO, M.DATA_HORA_INFRACAO, M.GRAVIDADE, M.PONTOS,
+                   M.VALOR, M.PRAZO_DEFESA,
+                   MAX(I.FASE)            KEEP (DENSE_RANK LAST ORDER BY I.ID) AS FASE,
+                   MAX(I.SITUACAO)        KEEP (DENSE_RANK LAST ORDER BY I.ID) AS SITUACAO,
+                   MAX(I.PRAZO_PROTOCOLO) KEEP (DENSE_RANK LAST ORDER BY I.ID) AS PRAZO
+              FROM MULTAS M
+              LEFT JOIN ITENS_CONTRATACAO IT ON IT.MULTA_ID = M.ID
+              LEFT JOIN INSTANCIAS I         ON I.ITEM_ID = IT.ID
+             WHERE M.VEICULO_ID IN (SELECT VEICULO_ID
+                                      FROM CLIENTE_VEICULO
+                                     WHERE CLIENTE_ID = :id)
+             GROUP BY M.VEICULO_ID, M.ID, M.AIT, M.ENQUADRAMENTO, M.DESCRICAO,
+                      M.LOCAL_INFRACAO, M.DATA_HORA_INFRACAO, M.GRAVIDADE, M.PONTOS,
+                      M.VALOR, M.PRAZO_DEFESA
+             ORDER BY M.DATA_HORA_INFRACAO DESC NULLS LAST, M.ID DESC
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+
+        var veiculos = new List<VeiculoComMultas>();
+        await using (var cmd = conexao.Comando(sqlVeiculos))
+        {
+            cmd.Param("id", clienteId);
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                veiculos.Add(new VeiculoComMultas
+                {
+                    Id = reader.Inteiro(0),
+                    Placa = reader.Texto(1),
+                    Renavam = reader.TextoOuNulo(2),
+                    MarcaModelo = reader.TextoOuNulo(3),
+                    Cor = reader.TextoOuNulo(4),
+                    Ano = reader.TextoOuNulo(5),
+                    Observacao = reader.TextoOuNulo(6),
+                    Vinculo = reader.Texto(7)
+                });
+            }
+        }
+
+        if (veiculos.Count == 0)
+        {
+            return veiculos;
+        }
+
+        var porVeiculo = veiculos.ToDictionary(v => v.Id);
+        await using (var cmd = conexao.Comando(sqlMultas))
+        {
+            cmd.Param("id", clienteId);
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                var veiculoId = reader.Inteiro(0);
+                if (!porVeiculo.TryGetValue(veiculoId, out var veiculo))
+                {
+                    continue;
+                }
+
+                veiculo.Multas.Add(new MultaDaFicha
+                {
+                    Id = reader.Inteiro(1),
+                    Ait = reader.Texto(2),
+                    Enquadramento = reader.TextoOuNulo(3),
+                    Descricao = reader.TextoOuNulo(4),
+                    LocalInfracao = reader.TextoOuNulo(5),
+                    DataHoraInfracao = reader.DataOuNulo(6),
+                    Gravidade = reader.TextoOuNulo(7),
+                    Pontos = reader.InteiroOuNulo(8),
+                    Valor = reader.DecimalOuNulo(9),
+                    PrazoDefesa = reader.DataOuNulo(10),
+                    Fase = reader.TextoOuNulo(11),
+                    Situacao = reader.TextoOuNulo(12),
+                    PrazoProtocolo = reader.DataOuNulo(13)
+                });
+            }
+        }
+
+        return veiculos;
+    }
+
     private static async Task<Cliente?> LerClienteAsync(
         OracleConnection conexao, int clienteId, CancellationToken cancelamento)
     {

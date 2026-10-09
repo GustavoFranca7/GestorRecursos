@@ -23,6 +23,10 @@ internal static class LeituraExtensoes
     public static decimal Decimal(this OracleDataReader reader, int coluna) =>
         reader.IsDBNull(coluna) ? 0m : reader.GetDecimal(coluna);
 
+    // Valor ausente é diferente de zero: uma multa sem valor informado não é uma multa de R$ 0.
+    public static decimal? DecimalOuNulo(this OracleDataReader reader, int coluna) =>
+        reader.IsDBNull(coluna) ? null : reader.GetDecimal(coluna);
+
     public static DateTime Data(this OracleDataReader reader, int coluna) =>
         reader.IsDBNull(coluna) ? default : reader.GetDateTime(coluna);
 

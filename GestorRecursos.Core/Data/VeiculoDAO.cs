@@ -121,6 +121,27 @@ public class VeiculoDAO
         await VincularAsync(conexao, null, clienteId, veiculoId, vinculo, cancelamento);
     }
 
+    /// <summary>Tira o veículo da ficha do cliente. O veículo e as multas dele ficam.</summary>
+    /// <remarks>
+    /// É o desfazer do engano mais comum: ligar o carro ao cliente errado. Não apaga
+    /// nada — o mesmo carro pode estar ligado a outros clientes, e as multas pertencem
+    /// a ele, não à ficha.
+    /// </remarks>
+    public async Task<bool> DesvincularDoClienteAsync(
+        int clienteId, int veiculoId, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            DELETE FROM CLIENTE_VEICULO
+             WHERE CLIENTE_ID = :clienteId AND VEICULO_ID = :veiculoId
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("clienteId", clienteId).Param("veiculoId", veiculoId);
+
+        return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
+    }
+
     public async Task<bool> DesvincularAsync(int vinculoId, CancellationToken cancelamento = default)
     {
         const string sql = "DELETE FROM CLIENTE_VEICULO WHERE ID = :id";

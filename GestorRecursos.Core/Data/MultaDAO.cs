@@ -134,6 +134,49 @@ public class MultaDAO
         return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
     }
 
+    /// <summary>Quem depende desta multa. Chamar antes de oferecer a exclusão.</summary>
+    public async Task<ResumoExclusaoMulta> ResumirExclusaoAsync(
+        int id, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT (SELECT COUNT(*) FROM ITENS_CONTRATACAO WHERE MULTA_ID = :id),
+                   (SELECT COUNT(*) FROM PROCESSO_MULTA    WHERE MULTA_ID = :id)
+              FROM DUAL
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("id", id);
+
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+        if (!await reader.ReadAsync(cancelamento))
+        {
+            return new ResumoExclusaoMulta();
+        }
+
+        return new ResumoExclusaoMulta
+        {
+            Recursos = reader.Inteiro(0),
+            ProcessosCnh = reader.Inteiro(1)
+        };
+    }
+
+    /// <summary>Apaga a multa de vez. Só vale para a que ninguém usa.</summary>
+    /// <remarks>
+    /// A checagem vem antes, em <see cref="ResumirExclusaoAsync"/>, para a tela poder
+    /// explicar o motivo. Aqui o DELETE ainda assim é protegido pelas chaves do banco.
+    /// </remarks>
+    public async Task<bool> ExcluirAsync(int id, CancellationToken cancelamento = default)
+    {
+        const string sql = "DELETE FROM MULTAS WHERE ID = :id";
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("id", id);
+
+        return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
+    }
+
     public async Task<bool> AitJaCadastradoAsync(string ait, int idIgnorado = 0, CancellationToken cancelamento = default)
     {
         const string sql = "SELECT COUNT(*) FROM MULTAS WHERE AIT = :ait AND ID <> :idIgnorado";

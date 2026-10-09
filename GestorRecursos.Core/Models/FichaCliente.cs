@@ -28,6 +28,50 @@ public class VeiculoDaFicha
     public int QuantidadeMultas { get; set; }
 }
 
+/// <summary>Um veículo com as multas dele, para a aba Veículos e multas.</summary>
+/// <remarks>
+/// Não entra na abertura da ficha: as multas são muitas e só interessam a quem abriu a
+/// aba. A ficha carrega isto sob demanda, na primeira vez que a aba aparece.
+/// </remarks>
+public class VeiculoComMultas
+{
+    public int Id { get; set; }
+    public string Placa { get; set; } = string.Empty;
+    public string? Renavam { get; set; }
+    public string? MarcaModelo { get; set; }
+    public string? Cor { get; set; }
+    public string? Ano { get; set; }
+    public string? Observacao { get; set; }
+
+    /// <summary>PROPRIETARIO ou CONDUTOR.</summary>
+    public string Vinculo { get; set; } = string.Empty;
+
+    public List<MultaDaFicha> Multas { get; set; } = [];
+}
+
+/// <summary>Uma multa do veículo, com a situação do recurso dela, se houver um.</summary>
+public class MultaDaFicha
+{
+    public int Id { get; set; }
+    public string Ait { get; set; } = string.Empty;
+    public string? Enquadramento { get; set; }
+    public string? Descricao { get; set; }
+    public string? LocalInfracao { get; set; }
+    public DateTime? DataHoraInfracao { get; set; }
+    public string? Gravidade { get; set; }
+    public int? Pontos { get; set; }
+    public decimal? Valor { get; set; }
+    public DateTime? PrazoDefesa { get; set; }
+
+    // Preenchidos só quando a multa virou recurso contratado, pela instância mais recente.
+    public string? Fase { get; set; }
+    public string? Situacao { get; set; }
+    public DateTime? PrazoProtocolo { get; set; }
+
+    /// <summary>Sem recurso, o prazo que vale é o da defesa; com recurso, o do protocolo.</summary>
+    public DateTime? PrazoQueVale => PrazoProtocolo ?? PrazoDefesa;
+}
+
 /// <summary>Um recurso em andamento, na fase em que está.</summary>
 public class ProcessoDaFicha
 {
