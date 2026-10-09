@@ -61,6 +61,7 @@ Database/                    Scripts numerados, na ordem em que se roda
 ├── 02-CargaInicial.sql      Dados que o sistema precisa para funcionar
 ├── 03-DadosEscritorio.sql   Dados reais do escritório (fora do Git)
 ├── 04-DadosTeste.sql        30 clientes de teste
+├── 90-EspacoNoBanco.sql     Quanto espaço o banco usa e qual tabela cresceu
 └── 99-LimpezaDesenvolvimento.sql
 ```
 

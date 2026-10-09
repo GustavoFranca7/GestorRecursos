@@ -42,7 +42,7 @@ GestorRecursos.Desktop/      Interface gráfica (Avalonia 12 + CommunityToolkit.
 └── ViewModels/              Estado e comandos, nas mesmas pastas das Views
     └── Comum/               Base, formatação, prazos e conversores
 
-Database/                    Scripts numerados, na ordem em que se roda (01, 02, 04, 99)
+Database/                    Scripts numerados: 01 a 04 montam o banco; 90 e 99 sao utilitarios
 ```
 
 **Cada tela é um par.** `Views/Clientes/FichaClienteView.axaml` ↔
