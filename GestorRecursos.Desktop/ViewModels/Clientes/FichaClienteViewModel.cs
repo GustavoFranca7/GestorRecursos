@@ -76,9 +76,9 @@ public partial class FichaClienteViewModel : ViewModelBase
     private readonly Action? _aoNovoCliente;
     private readonly Action<GrupoCadastro>? _aoEditar;
 
-    /// <summary>Confirmação da lixeira do cabeçalho.</summary>
+    /// <summary>Pergunta aberta por cima da ficha. Nula quando não há nenhuma.</summary>
     [ObservableProperty]
-    public partial bool ArquivamentoAberto { get; set; }
+    public partial ConfirmacaoViewModel? Confirmacao { get; set; }
 
     /// <summary>Quantos vizinhos já vieram do banco; a lista cresce conforme rola.</summary>
     private const int PorLote = 25;
@@ -89,7 +89,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     public ObservableCollection<AbaFichaViewModel> Abas { get; } =
     [
         new("Dados", AbaFicha.Dados, pronta: true),
-        new("Veículos e multas", AbaFicha.Veiculos, pronta: false),
+        new("Veículos e multas", AbaFicha.Veiculos, pronta: true),
         new("Processos", AbaFicha.Processos, pronta: false),
         new("Financeiro", AbaFicha.Financeiro, pronta: false),
         new("Documentos", AbaFicha.Documentos, pronta: false),
@@ -156,7 +156,27 @@ public partial class FichaClienteViewModel : ViewModelBase
     public bool TemVeiculos => Veiculos.Count > 0;
     public bool TemProcessos => Processos.Count > 0;
     public bool AbaDados => AbaAtual == AbaFicha.Dados;
-    public bool AbaEmConstrucao => AbaAtual != AbaFicha.Dados;
+    public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
+    public bool AbaEmConstrucao => AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos);
+
+    /// <summary>Os cartões da aba Veículos e multas.</summary>
+    public ObservableCollection<VeiculoComMultasViewModel> VeiculosEMultas { get; } = [];
+
+    /// <summary>Formulário aberto por cima da ficha. Nulo quando não há nenhum.</summary>
+    /// <remarks>
+    /// Mora na ficha, e não na casca da seção, porque quem abre veículo e multa é sempre
+    /// a ficha: o formulário nasce de um cartão e volta para ele.
+    /// </remarks>
+    [ObservableProperty]
+    public partial ViewModelBase? Formulario { get; set; }
+
+    [ObservableProperty]
+    public partial bool CarregandoVeiculos { get; set; }
+
+    /// <summary>Evita ir ao banco de novo a cada vez que a aba é reaberta.</summary>
+    private bool _veiculosCarregados;
+
+    public bool SemVeiculos => !CarregandoVeiculos && _veiculosCarregados && VeiculosEMultas.Count == 0;
 
     public FichaClienteViewModel()
     {
@@ -186,6 +206,11 @@ public partial class FichaClienteViewModel : ViewModelBase
         Carregando = true;
         Erro = null;
 
+        // A aba de veículos guarda o que já buscou; trocar de cliente invalida isso.
+        // Sem limpar aqui, abrir outro cliente mostrava os veículos do anterior.
+        _veiculosCarregados = false;
+        VeiculosEMultas.Clear();
+
         try
         {
             var ficha = await _fichas.BuscarAsync(ClienteId);
@@ -213,13 +238,57 @@ public partial class FichaClienteViewModel : ViewModelBase
 
 
     [RelayCommand]
-    private void TrocarAba(AbaFicha aba)
+    private async Task TrocarAba(AbaFicha aba)
+    {
+        MarcarAba(aba);
+
+        if (aba == AbaFicha.Veiculos && !_veiculosCarregados)
+        {
+            await CarregarVeiculosEMultas();
+        }
+    }
+
+    /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
+    /// precisa reaplicar a marcação sem disparar busca no banco.</summary>
+    private void MarcarAba(AbaFicha aba)
     {
         AbaAtual = aba;
 
         foreach (var item in Abas)
         {
             item.Escolhida = item.Aba == aba;
+        }
+    }
+
+    /// <summary>Busca os veículos e as multas na primeira vez que a aba é aberta.</summary>
+    /// <remarks>
+    /// Fora da carga da ficha porque são duas consultas a mais, e a ficha abre em Dados:
+    /// quem só quer o telefone do cliente não paga por elas.
+    /// </remarks>
+    private async Task CarregarVeiculosEMultas()
+    {
+        CarregandoVeiculos = true;
+
+        try
+        {
+            var veiculos = await _fichas.ListarVeiculosComMultasAsync(ClienteId);
+
+            VeiculosEMultas.Clear();
+            foreach (var veiculo in veiculos)
+            {
+                VeiculosEMultas.Add(new VeiculoComMultasViewModel(veiculo));
+            }
+
+            _veiculosCarregados = true;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível carregar os veículos: {excecao.Message}";
+        }
+        finally
+        {
+            CarregandoVeiculos = false;
+            OnPropertyChanged(nameof(SemVeiculos));
         }
     }
 
@@ -233,7 +302,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         }
 
         ClienteId = id;
-        TrocarAba(AbaFicha.Dados);
+        await TrocarAba(AbaFicha.Dados);
         await Carregar();
     }
 
@@ -286,7 +355,7 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         AchaAba(AbaFicha.Veiculos).Contador = ficha.Veiculos.Count;
         AchaAba(AbaFicha.Processos).Contador = ficha.Processos.Count;
-        TrocarAba(AbaAtual);
+        MarcarAba(AbaAtual);
 
         OnPropertyChanged(nameof(TemVeiculos));
         OnPropertyChanged(nameof(TemProcessos));
@@ -324,14 +393,7 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         foreach (var grupo in ficha.Processos.GroupBy(p => p.Fase))
         {
-            var nome = grupo.Key switch
-            {
-                "AUTUACAO" => "autuação",
-                "JARI" => "JARI",
-                "CETRAN" => "CETRAN",
-                _ => grupo.Key
-            };
-
+            var nome = Rotulos.Fase(grupo.Key);
             var quantos = grupo.Count();
             var texto = quantos == 1 ? $"1 processo na {nome}" : $"{quantos} processos na {nome}";
             Selos.Add(new SeloViewModel(texto, "RoxoClaro", "Roxo"));
@@ -406,27 +468,213 @@ public partial class FichaClienteViewModel : ViewModelBase
     [RelayCommand]
     private void Editar(GrupoCadastro grupo) => _aoEditar?.Invoke(grupo);
 
+    /// <summary>Cadastra um veículo e já o liga a este cliente.</summary>
+    [RelayCommand]
+    private void NovoVeiculo() =>
+        Formulario = new VeiculoFormularioViewModel(
+            ClienteId,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: _ => RecarregarVeiculos());
+
+    [RelayCommand]
+    private void EditarVeiculo(VeiculoComMultasViewModel? cartao)
+    {
+        if (cartao is null)
+        {
+            return;
+        }
+
+        Formulario = new VeiculoFormularioViewModel(
+            ClienteId,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: _ => RecarregarVeiculos(),
+            paraEditar: cartao.Dados);
+    }
+
+    /// <summary>Registra uma multa no veículo do cartão.</summary>
+    [RelayCommand]
+    private void NovaMulta(VeiculoComMultasViewModel? cartao)
+    {
+        if (cartao is null)
+        {
+            return;
+        }
+
+        Formulario = new MultaFormularioViewModel(
+            cartao.Id,
+            cartao.Placa,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: _ => RecarregarVeiculos());
+    }
+
+    [RelayCommand]
+    private void EditarMulta(MultaViewModel? multa)
+    {
+        if (multa is null || AchaVeiculoDaMulta(multa.Id) is not { } cartao)
+        {
+            return;
+        }
+
+        Formulario = new MultaFormularioViewModel(
+            cartao.Id,
+            cartao.Placa,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: _ => RecarregarVeiculos(),
+            paraEditar: multa.Dados);
+    }
+
+    /// <summary>Pergunta antes de tirar o veículo da ficha, e explica que nada é apagado.</summary>
+    [RelayCommand]
+    private void PedirDesvinculo(VeiculoComMultasViewModel? cartao)
+    {
+        if (cartao is null)
+        {
+            return;
+        }
+
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: $"Tirar o veículo {cartao.Placa} desta ficha?",
+            texto: "O veículo continua cadastrado no sistema, com as multas dele. Ele só "
+                 + "deixa de aparecer na ficha deste cliente. Para ligá-lo de novo, é só "
+                 + "cadastrar a mesma placa.",
+            botao: "Desvincular",
+            aoConfirmar: () => Desvincular(cartao.Id),
+            aoCancelar: () => Confirmacao = null);
+    }
+
+    private async void Desvincular(int veiculoId)
+    {
+        try
+        {
+            await new VeiculoDAO().DesvincularDoClienteAsync(ClienteId, veiculoId);
+            Confirmacao = null;
+            RecarregarVeiculos();
+        }
+        catch (Exception excecao)
+        {
+            Confirmacao = null;
+            Erro = $"Não foi possível desvincular: {excecao.Message}";
+        }
+    }
+
+    /// <summary>Confere quem depende da multa antes de oferecer apagá-la.</summary>
+    [RelayCommand]
+    private async Task PedirExclusaoMulta(MultaViewModel? multa)
+    {
+        if (multa is null)
+        {
+            return;
+        }
+
+        var resumo = await new MultaDAO().ResumirExclusaoAsync(multa.Id);
+
+        if (!resumo.PodeApagar)
+        {
+            Confirmacao = new ConfirmacaoViewModel(
+                titulo: $"A multa {multa.Ait} não pode ser apagada",
+                texto: MotivoDoBloqueio(resumo),
+                botao: null,
+                aoConfirmar: null,
+                aoCancelar: () => Confirmacao = null);
+            return;
+        }
+
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: $"Apagar a multa {multa.Ait}?",
+            texto: "Ninguém depende dela: não há recurso contratado nem processo de CNH "
+                 + "usando esta multa. Isto apaga o registro de vez, e não há como desfazer.",
+            botao: "Apagar multa",
+            aoConfirmar: () => ExcluirMulta(multa.Id),
+            aoCancelar: () => Confirmacao = null);
+    }
+
+    private static string MotivoDoBloqueio(ResumoExclusaoMulta resumo)
+    {
+        var partes = new List<string>();
+
+        if (resumo.Recursos > 0)
+        {
+            partes.Add(resumo.Recursos == 1
+                ? "há um recurso contratado sobre ela"
+                : $"há {resumo.Recursos} recursos contratados sobre ela");
+        }
+
+        if (resumo.ProcessosCnh > 0)
+        {
+            partes.Add(resumo.ProcessosCnh == 1
+                ? "ela conta na pontuação de um processo de CNH"
+                : $"ela conta na pontuação de {resumo.ProcessosCnh} processos de CNH");
+        }
+
+        return $"Não dá para apagar porque {string.Join(" e ", partes)}. Apagar aqui "
+             + "deixaria uma cobrança sem objeto. Cancele o recurso primeiro, e então "
+             + "a multa pode sair.";
+    }
+
+    private async void ExcluirMulta(int multaId)
+    {
+        try
+        {
+            await new MultaDAO().ExcluirAsync(multaId);
+            Confirmacao = null;
+            RecarregarVeiculos();
+        }
+        catch (Exception excecao)
+        {
+            Confirmacao = null;
+            Erro = $"Não foi possível apagar a multa: {excecao.Message}";
+        }
+    }
+
+    /// <summary>A linha da multa não carrega o veículo; aqui se descobre de quem ela é.</summary>
+    private VeiculoComMultasViewModel? AchaVeiculoDaMulta(int multaId)
+    {
+        foreach (var veiculo in VeiculosEMultas)
+        {
+            foreach (var multa in veiculo.Multas)
+            {
+                if (multa.Id == multaId)
+                {
+                    return veiculo;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Fecha o formulário e busca de novo, para a aba mostrar o que foi gravado.</summary>
+    private async void RecarregarVeiculos()
+    {
+        Formulario = null;
+        _veiculosCarregados = false;
+        await CarregarVeiculosEMultas();
+    }
+
     /// <summary>A lixeira do cabeçalho pergunta antes: arquivar tira o cliente das listas.</summary>
     [RelayCommand]
-    private void PedirArquivamento() => ArquivamentoAberto = true;
+    private void PedirArquivamento() =>
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: "Arquivar este cliente?",
+            texto: "Ele sai das listas, o histórico fica guardado e dá para encontrá-lo em "
+                 + "Arquivados, de onde também se restaura.",
+            botao: "Arquivar",
+            aoConfirmar: Arquivar,
+            aoCancelar: () => Confirmacao = null);
 
-    [RelayCommand]
-    private void CancelarArquivamento() => ArquivamentoAberto = false;
-
-    [RelayCommand]
-    private async Task ConfirmarArquivamento()
+    private async void Arquivar()
     {
         try
         {
             await _clientes.ArquivarAsync(ClienteId);
-            ArquivamentoAberto = false;
+            Confirmacao = null;
 
             // A ficha deixa de fazer sentido aqui: o cliente agora vive em Arquivados.
             _aoVoltar?.Invoke();
         }
         catch (Exception excecao)
         {
-            ArquivamentoAberto = false;
+            Confirmacao = null;
             Erro = $"Não foi possível arquivar: {excecao.Message}";
         }
     }
@@ -436,8 +684,11 @@ public partial class FichaClienteViewModel : ViewModelBase
     partial void OnAbaAtualChanged(AbaFicha valor)
     {
         OnPropertyChanged(nameof(AbaDados));
+        OnPropertyChanged(nameof(AbaVeiculos));
         OnPropertyChanged(nameof(AbaEmConstrucao));
     }
+
+    partial void OnCarregandoVeiculosChanged(bool valor) => OnPropertyChanged(nameof(SemVeiculos));
 
     private static string MontarIdentificacao(Cliente cliente)
     {
@@ -533,13 +784,7 @@ public class ProcessoDaFichaViewModel(ProcessoDaFicha dados)
             : TextoDaSituacao(dados.Situacao)
     }.Where(p => !string.IsNullOrWhiteSpace(p)));
 
-    public string Fase { get; } = dados.Fase switch
-    {
-        "AUTUACAO" => "autuação",
-        "JARI" => "JARI",
-        "CETRAN" => "CETRAN",
-        _ => dados.Fase
-    };
+    public string Fase { get; } = Rotulos.Fase(dados.Fase);
 
     /// <summary>Selo do prazo, na mesma régua de cor da lista de clientes.</summary>
     public SeloViewModel SeloPrazo { get; } = MontarSeloPrazo(dados);
@@ -560,15 +805,5 @@ public class ProcessoDaFichaViewModel(ProcessoDaFicha dados)
         return Prazos.Selo($"prazo {prazo:dd/MM}", dias);
     }
 
-    private static string TextoDaSituacao(string situacao) => situacao switch
-    {
-        "CONTRATADO" => "contratado",
-        "AGUARDANDO_DOCUMENTO" => "aguardando documento",
-        "AGUARDANDO_PROTOCOLO_JARI" => "aguardando protocolo na JARI",
-        "AGUARDANDO_PROTOCOLO_CETRAN" => "aguardando protocolo no CETRAN",
-        "PROTOCOLADO" => "protocolado",
-        "AGUARDANDO_JULGAMENTO" => "aguardando julgamento",
-        "PRAZO_PERDIDO" => "prazo perdido",
-        _ => situacao.ToLowerInvariant().Replace('_', ' ')
-    };
+    private static string TextoDaSituacao(string situacao) => Rotulos.Situacao(situacao);
 }

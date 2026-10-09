@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="GestorRecursos.Desktop.Views.ConfirmacaoView"
+             x:DataType="vm:ConfirmacaoViewModel">
+
+    <!-- A pergunta de sim ou não do sistema inteiro. Quem monta o texto é o ViewModel
+         que pediu; aqui só se decide como ela aparece. -->
+    <Border Background="#66102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                Padding="24,20" MaxWidth="460"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 14 40 0 #30102A2C">
+            <StackPanel Spacing="12">
+                <TextBlock Text="{Binding Titulo}" FontSize="16" FontWeight="Bold"
+                           TextWrapping="Wrap" Foreground="{StaticResource Texto}"/>
+                <TextBlock Text="{Binding Texto}" FontSize="12.5"
+                           TextWrapping="Wrap" LineHeight="19"
+                           Foreground="{StaticResource TextoFraco}"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Classes="neutro" Content="{Binding TextoCancelar}"
+                            Command="{Binding CancelarCommand}"/>
+                    <Button Classes="perigo" Content="{Binding Botao}"
+                            IsVisible="{Binding TemAcao}"
+                            Command="{Binding ConfirmarCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Border>
+</UserControl>

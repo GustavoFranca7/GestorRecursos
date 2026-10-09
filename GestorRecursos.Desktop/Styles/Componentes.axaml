@@ -68,10 +68,51 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource Texto}"/>
     </Style>
+    <!-- Sem o realce, nada dizia que dava para clicar e copiar -->
+    <Style Selector="Button.copiavel.placa:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+    </Style>
+
+    <!-- A placa no topo do cartão do veículo: é o nome do carro, não um selo. -->
+    <Style Selector="Button.copiavel.placagrande">
+        <Setter Property="FontFamily" Value="Consolas,monospace"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        <Setter Property="Padding" Value="7,3"/>
+    </Style>
+    <Style Selector="Button.copiavel.placagrande:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+    </Style>
+
+    <!-- Ação de cartão que é só um ícone: editar, mais opções. -->
+    <Style Selector="Button.atalhoicone">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+    </Style>
+    <Style Selector="Button.atalhoicone /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.atalhoicone:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+    <!-- Ação que desfaz alguma coisa avisa antes mesmo do clique -->
+    <Style Selector="Button.atalhoicone.perigosa:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AlertaClaro}"/>
+    </Style>
     <Style Selector="Button.copiavel.titulo">
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        <!-- Sem padding lateral o título nasce na mesma coluna da linha de baixo; com ele,
+             ficava deslocado dos 6px do botão. O realce do mouse abraça só o texto. -->
+        <Setter Property="Padding" Value="0,2"/>
     </Style>
     <Style Selector="Button.copiavel.secundario">
         <Setter Property="FontSize" Value="11.5"/>

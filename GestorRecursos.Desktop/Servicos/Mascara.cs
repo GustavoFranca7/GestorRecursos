@@ -138,21 +138,27 @@ public static class Mascara
             "data" => 8,
             "telefone" => 11,
             "rg" => 7,
+            "placa" => 7,
             _ => null
         };
     }
 
-    /// <summary>Alguns campos são de sigla; o resto é número.</summary>
-    private static bool Aceita(string padrao, char caractere) =>
-        Nome(padrao) == "letras" ? char.IsLetter(caractere) : char.IsDigit(caractere);
+    /// <summary>Cada padrão aceita um alfabeto: placa mistura os dois, sigla é letra,
+    /// o resto é número.</summary>
+    private static bool Aceita(string padrao, char caractere) => Nome(padrao) switch
+    {
+        "letras" => char.IsLetter(caractere),
+        "placa" => char.IsLetterOrDigit(caractere),
+        _ => char.IsDigit(caractere)
+    };
 
     /// <summary>Só o que conta como conteúdo, sem a pontuação que a máscara põe.</summary>
     private static string Conteudo(string padrao, string? texto)
     {
         var util = new string((texto ?? string.Empty).Where(c => Aceita(padrao, c)).ToArray());
 
-        // Sigla é sempre maiúscula: corrigir na entrada poupa a digitação.
-        return Nome(padrao) == "letras" ? util.ToUpperInvariant() : util;
+        // Sigla e placa são sempre maiúsculas: corrigir na entrada poupa a digitação.
+        return Nome(padrao) is "letras" or "placa" ? util.ToUpperInvariant() : util;
     }
 
     /// <summary>Onde o cursor cai depois de passar por tantos caracteres de conteúdo.</summary>
