@@ -1,0 +1,83 @@
+namespace GestorRecursos.Desktop.ViewModels;
+
+/// <summary>Como os valores fechados do banco aparecem escritos na tela.</summary>
+/// <remarks>
+/// O banco guarda AUTUACAO, GRAVISSIMA, AGUARDANDO_PROTOCOLO_JARI. A tela mostra isso em
+/// português de gente. A tradução mora aqui porque estava escrita em três lugares, e a
+/// mesma fase corria o risco de virar "autuação" numa tela e "Autuação" em outra —
+/// a mesma armadilha que já tinha pegado a cor dos prazos (ver <see cref="Prazos"/>).
+/// </remarks>
+public static class Rotulos
+{
+    /// <summary>A instância do recurso: autuação, JARI ou CETRAN.</summary>
+    public static string Fase(string? fase) => fase switch
+    {
+        "AUTUACAO" => "autuação",
+        "JARI" => "JARI",
+        "CETRAN" => "CETRAN",
+        _ => fase ?? string.Empty
+    };
+
+    /// <summary>Em que pé está a instância.</summary>
+    public static string Situacao(string? situacao) => situacao switch
+    {
+        "CONTRATADO" => "contratado",
+        "AGUARDANDO_DOCUMENTO" => "aguardando documento",
+        "AGUARDANDO_PROTOCOLO_JARI" => "aguardando protocolo na JARI",
+        "AGUARDANDO_PROTOCOLO_CETRAN" => "aguardando protocolo no CETRAN",
+        "PROTOCOLADO" => "protocolado",
+        "AGUARDANDO_JULGAMENTO" => "aguardando julgamento",
+        "DEFERIDO" => "deferido",
+        "INDEFERIDO" => "indeferido",
+        "CANCELADO" => "cancelado",
+        "DESISTENCIA" => "desistência",
+        "PRAZO_PERDIDO" => "prazo perdido",
+        _ => (situacao ?? string.Empty).ToLowerInvariant().Replace('_', ' ')
+    };
+
+    /// <summary>Situação de quem não anda mais: ganhou, perdeu ou saiu do caminho.</summary>
+    /// <remarks>
+    /// Serve para não gritar prazo em caso resolvido: um recurso deferido com data de
+    /// protocolo vencida não é urgência nenhuma, é trabalho concluído.
+    /// </remarks>
+    public static bool Encerrada(string? situacao) =>
+        situacao is "DEFERIDO" or "INDEFERIDO" or "CANCELADO" or "DESISTENCIA";
+
+    /// <summary>O papel do cliente no veículo.</summary>
+    public static string Vinculo(string? vinculo) => vinculo switch
+    {
+        "PROPRIETARIO" => "proprietário",
+        "CONDUTOR" => "condutor indicado",
+        _ => (vinculo ?? string.Empty).ToLowerInvariant()
+    };
+
+    /// <summary>Gravidade da infração, com os pontos que ela custa na carteira.</summary>
+    public static string Gravidade(string? gravidade, int? pontos)
+    {
+        var nome = gravidade switch
+        {
+            "LEVE" => "leve",
+            "MEDIA" => "média",
+            "GRAVE" => "grave",
+            "GRAVISSIMA" => "gravíssima",
+            _ => (gravidade ?? string.Empty).ToLowerInvariant()
+        };
+
+        if (nome.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        return pontos is > 0 ? $"{nome} · {pontos} pts" : nome;
+    }
+
+    /// <summary>Cores do selo de gravidade: a escala vai do verde ao vermelho.</summary>
+    public static (string Fundo, string Texto) CoresDaGravidade(string? gravidade) => gravidade switch
+    {
+        "LEVE" => ("SucessoClaro", "Sucesso"),
+        "MEDIA" => ("AvisoClaro", "Aviso"),
+        "GRAVE" => ("AlertaClaro", "Alerta"),
+        "GRAVISSIMA" => ("AlertaClaro", "AlertaEscuro"),
+        _ => ("Fundo", "TextoFraco")
+    };
+}

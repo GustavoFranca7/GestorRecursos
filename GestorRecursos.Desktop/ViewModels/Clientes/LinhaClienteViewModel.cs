@@ -79,14 +79,11 @@ public partial class LinhaClienteViewModel : ObservableObject
     /// <summary>Em que instância o recurso está. Coluna própria, para não disputar com o prazo.</summary>
     private static SeloViewModel? MontarSeloFase(string? fase)
     {
-        var nome = fase switch
+        if (string.IsNullOrWhiteSpace(fase))
         {
-            "AUTUACAO" => "autuação",
-            "JARI" => "JARI",
-            "CETRAN" => "CETRAN",
-            _ => null
-        };
+            return null;
+        }
 
-        return nome is null ? null : new SeloViewModel(nome, "RoxoClaro", "Roxo");
+        return new SeloViewModel(Rotulos.Fase(fase), "RoxoClaro", "Roxo");
     }
 }
