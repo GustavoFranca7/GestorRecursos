@@ -158,9 +158,17 @@ public class MultaDAO
         return multa.Id;
     }
 
+    /// <summary>Atualiza a multa e leva junto o prazo da autuação que ainda está aberta.</summary>
+    /// <remarks>
+    /// O prazo da defesa prévia é o prazo da autuação: não há outra fonte para ele. Sem
+    /// levar a correção adiante, arrumar a data no auto deixava o recurso com o prazo
+    /// velho — ou sem prazo nenhum, que é pior, porque o alarme simplesmente não toca.
+    ///
+    /// Para no protocolo: depois de protocolado, o prazo é história e não se mexe mais.
+    /// </remarks>
     public async Task<bool> AtualizarAsync(Multa multa, CancellationToken cancelamento = default)
     {
-        const string sql = """
+        const string sqlMulta = """
             UPDATE MULTAS SET
                 VEICULO_ID = :veiculoId, AIT = :ait, ORGAO_AUTUADOR = :orgaoAutuador,
                 CODIGO_ORGAO = :codigoOrgao, DATA_HORA_INFRACAO = :dataHoraInfracao,
@@ -170,12 +178,42 @@ public class MultaDAO
              WHERE ID = :id
             """;
 
-        await using var conexao = await Database.AbrirAsync(cancelamento);
-        await using var cmd = conexao.Comando(sql);
-        Preencher(cmd, multa);
-        cmd.Param("id", multa.Id);
+        const string sqlPrazo = """
+            UPDATE INSTANCIAS SET PRAZO_PROTOCOLO = :prazoDefesa
+             WHERE FASE = 'AUTUACAO'
+               AND DATA_PROTOCOLO IS NULL
+               AND SITUACAO NOT IN ('DEFERIDO','INDEFERIDO','CANCELADO','DESISTENCIA','PRAZO_PERDIDO')
+               AND ITEM_ID IN (SELECT ID FROM ITENS_CONTRATACAO
+                                WHERE MULTA_ID = :id AND SITUACAO <> 'CANCELADO')
+            """;
 
-        return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
+
+        try
+        {
+            int afetadas;
+            await using (var cmd = conexao.Comando(sqlMulta, transacao))
+            {
+                Preencher(cmd, multa);
+                cmd.Param("id", multa.Id);
+                afetadas = await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            await using (var cmd = conexao.Comando(sqlPrazo, transacao))
+            {
+                cmd.Param("prazoDefesa", multa.PrazoDefesa).Param("id", multa.Id);
+                await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            await transacao.CommitAsync(cancelamento);
+            return afetadas > 0;
+        }
+        catch
+        {
+            await transacao.RollbackAsync(cancelamento);
+            throw;
+        }
     }
 
     /// <summary>Quem depende desta multa. Chamar antes de oferecer a exclusão.</summary>

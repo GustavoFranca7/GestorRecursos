@@ -225,10 +225,10 @@ public partial class FichaClienteViewModel : ViewModelBase
         Carregando = true;
         Erro = null;
 
-        // A aba de veículos guarda o que já buscou; trocar de cliente invalida isso.
-        // Sem limpar aqui, abrir outro cliente mostrava os veículos do anterior.
-        _veiculosCarregados = false;
-        VeiculosEMultas.Clear();
+        // As abas pesadas guardam o que já buscaram; recarregar a ficha invalida isso.
+        // Sem limpar aqui, abrir outro cliente mostrava os veículos e os processos
+        // do anterior, e um recurso recém-criado não aparecia na aba já aberta.
+        EsquecerAbas();
 
         try
         {
@@ -261,15 +261,35 @@ public partial class FichaClienteViewModel : ViewModelBase
     {
         MarcarAba(aba);
 
-        if (aba == AbaFicha.Veiculos && !_veiculosCarregados)
+        await CarregarAbaAtual();
+    }
+
+    /// <summary>Enche a aba aberta, se ela ainda não tiver o que mostrar.</summary>
+    /// <remarks>
+    /// As duas abas pesadas carregam sob demanda e guardam o resultado. Quem precisa
+    /// delas cheias — trocar de aba ou recarregar depois de gravar — passa por aqui,
+    /// em vez de cada chamador lembrar qual aba busca o quê.
+    /// </remarks>
+    private async Task CarregarAbaAtual()
+    {
+        if (AbaAtual == AbaFicha.Veiculos && !_veiculosCarregados)
         {
             await CarregarVeiculosEMultas();
         }
-
-        if (aba == AbaFicha.Processos && !_recursosCarregados)
+        else if (AbaAtual == AbaFicha.Processos && !_recursosCarregados)
         {
             await CarregarRecursos();
         }
+    }
+
+    /// <summary>Faz as abas pesadas esquecerem o que buscaram.</summary>
+    private void EsquecerAbas()
+    {
+        _veiculosCarregados = false;
+        VeiculosEMultas.Clear();
+
+        _recursosCarregados = false;
+        Recursos.Clear();
     }
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
@@ -359,7 +379,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new AndamentoFormularioViewModel(
             AcaoAndamento.Protocolo, recurso, fase,
             aoCancelar: () => Formulario = null,
-            aoSalvar: RecarregarRecursos);
+            aoSalvar: Recarregar);
     }
 
     /// <summary>Registra o julgamento. Indeferido abre a fase seguinte sozinho.</summary>
@@ -374,7 +394,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new AndamentoFormularioViewModel(
             AcaoAndamento.Resultado, recurso, fase,
             aoCancelar: () => Formulario = null,
-            aoSalvar: RecarregarRecursos);
+            aoSalvar: Recarregar);
     }
 
     /// <summary>Pergunta antes de encerrar o recurso, e explica o que fica e o que para.</summary>
@@ -402,7 +422,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await new InstanciaDAO().CancelarRecursoAsync(itemId);
             Confirmacao = null;
-            RecarregarRecursos();
+            Recarregar();
         }
         catch (Exception excecao)
         {
@@ -411,15 +431,21 @@ public partial class FichaClienteViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Fecha o formulário e recarrega: o cabeçalho e o resumo também mudaram.</summary>
-    private async void RecarregarRecursos()
+    /// <summary>Fecha o formulário, recarrega a ficha e enche de novo a aba aberta.</summary>
+    /// <remarks>
+    /// Serve a toda gravação da ficha — veículo, multa, recurso, andamento. Tudo que se
+    /// grava aqui aparece em mais de um lugar: a multa muda a aba de veículos, o selo de
+    /// prazo do cabeçalho e o cartão do processo. Recarregar por inteiro é mais barato
+    /// que cada comando lembrar o que mais precisa mudar — e foi o esquecimento disso
+    /// que fez um recurso recém-criado não aparecer na aba Processos já aberta.
+    /// </remarks>
+    private async void Recarregar()
     {
         Formulario = null;
-        _recursosCarregados = false;
-        _veiculosCarregados = false;
 
+        // Carregar() já faz as abas esquecerem o que buscaram.
         await Carregar();
-        await CarregarRecursos();
+        await CarregarAbaAtual();
     }
 
     /// <summary>Abre outro cliente sem sair da ficha.</summary>
@@ -608,14 +634,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new NovoRecursoViewModel(
             ClienteId,
             aoCancelar: () => Formulario = null,
-            aoSalvar: AposRecurso);
-
-    /// <summary>Recarrega a ficha inteira: o recurso mexeu no financeiro e nos processos.</summary>
-    private async void AposRecurso()
-    {
-        Formulario = null;
-        await Carregar();
-    }
+            aoSalvar: Recarregar);
 
     /// <summary>Cadastra um veículo e já o liga a este cliente.</summary>
     [RelayCommand]
@@ -623,7 +642,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new VeiculoFormularioViewModel(
             ClienteId,
             aoCancelar: () => Formulario = null,
-            aoSalvar: _ => RecarregarVeiculos());
+            aoSalvar: _ => Recarregar());
 
     [RelayCommand]
     private void EditarVeiculo(VeiculoComMultasViewModel? cartao)
@@ -636,7 +655,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new VeiculoFormularioViewModel(
             ClienteId,
             aoCancelar: () => Formulario = null,
-            aoSalvar: _ => RecarregarVeiculos(),
+            aoSalvar: _ => Recarregar(),
             paraEditar: cartao.Dados);
     }
 
@@ -653,7 +672,7 @@ public partial class FichaClienteViewModel : ViewModelBase
             cartao.Id,
             cartao.Placa,
             aoCancelar: () => Formulario = null,
-            aoSalvar: _ => RecarregarVeiculos());
+            aoSalvar: _ => Recarregar());
     }
 
     [RelayCommand]
@@ -668,7 +687,7 @@ public partial class FichaClienteViewModel : ViewModelBase
             cartao.Id,
             cartao.Placa,
             aoCancelar: () => Formulario = null,
-            aoSalvar: _ => RecarregarVeiculos(),
+            aoSalvar: _ => Recarregar(),
             paraEditar: multa.Dados);
     }
 
@@ -697,7 +716,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await new VeiculoDAO().DesvincularDoClienteAsync(ClienteId, veiculoId);
             Confirmacao = null;
-            RecarregarVeiculos();
+            Recarregar();
         }
         catch (Exception excecao)
         {
@@ -768,7 +787,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await new MultaDAO().ExcluirAsync(multaId);
             Confirmacao = null;
-            RecarregarVeiculos();
+            Recarregar();
         }
         catch (Exception excecao)
         {
@@ -792,14 +811,6 @@ public partial class FichaClienteViewModel : ViewModelBase
         }
 
         return null;
-    }
-
-    /// <summary>Fecha o formulário e busca de novo, para a aba mostrar o que foi gravado.</summary>
-    private async void RecarregarVeiculos()
-    {
-        Formulario = null;
-        _veiculosCarregados = false;
-        await CarregarVeiculosEMultas();
     }
 
     /// <summary>A lixeira do cabeçalho pergunta antes: arquivar tira o cliente das listas.</summary>

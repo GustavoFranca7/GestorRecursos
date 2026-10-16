@@ -92,7 +92,9 @@
     <!-- Flutuante por cima da ficha, como as outras janelas do sistema -->
     <Panel>
         <Border Background="#73102A2C">
-            <Border Width="780" Background="{StaticResource Cartao}"
+            <!-- A altura mínima segura o rodapé no lugar: sem ela a janela encolhia e
+                 crescia a cada passo, e o botão Avançar fugia de baixo do cursor. -->
+            <Border Width="780" MinHeight="430" Background="{StaticResource Cartao}"
                     BorderBrush="{StaticResource Borda}" BorderThickness="1"
                     CornerRadius="{StaticResource RaioCartao}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
