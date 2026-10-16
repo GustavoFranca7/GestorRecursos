@@ -90,6 +90,43 @@ public class ProcessoDaFicha
     public DateTime? DataProtocolo { get; set; }
 }
 
+/// <summary>Um recurso inteiro na aba Processos: o que foi contratado e as fases dele.</summary>
+/// <remarks>
+/// Diferente do <see cref="ProcessoDaFicha"/>, que mostra uma fase por linha no resumo:
+/// aqui vem o recurso completo, com autuação, JARI e CETRAN lado a lado, porque é assim
+/// que ela acompanha — o que já foi julgado explica o que está aberto agora.
+/// </remarks>
+public class RecursoDaFicha
+{
+    public int ItemId { get; set; }
+    public int ContratacaoId { get; set; }
+    public string Servico { get; set; } = string.Empty;
+
+    public string? Ait { get; set; }
+    public string? NumeroProcessoCnh { get; set; }
+    public string? Placa { get; set; }
+    public string? Enquadramento { get; set; }
+    public string? Gravidade { get; set; }
+    public string? OrgaoAutuador { get; set; }
+
+    public DateTime DataContratacao { get; set; }
+
+    /// <summary>ANDAMENTO, CONCLUIDO ou CANCELADO — do item, não da contratação.</summary>
+    public string Situacao { get; set; } = string.Empty;
+
+    /// <summary>O valor fechado da contratação e quantos recursos ela cobre.</summary>
+    /// <remarks>
+    /// O preço por item não é guardado: ela negocia pelo conjunto. Com um recurso só, o
+    /// valor da contratação é o dele; com vários, a tela diz que é um valor repartido,
+    /// em vez de inventar uma divisão que ninguém combinou.
+    /// </remarks>
+    public decimal ValorContratacao { get; set; }
+
+    public int ItensNaContratacao { get; set; }
+
+    public List<Instancia> Instancias { get; set; } = [];
+}
+
 /// <summary>O financeiro do cliente somado, para o resumo da ficha.</summary>
 public class ResumoFinanceiroCliente
 {

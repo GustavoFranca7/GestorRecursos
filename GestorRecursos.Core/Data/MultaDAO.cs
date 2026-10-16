@@ -182,6 +182,9 @@ public class MultaDAO
     public async Task<ResumoExclusaoMulta> ResumirExclusaoAsync(
         int id, CancellationToken cancelamento = default)
     {
+        // Conta o item cancelado também. Cancelar é desistir do serviço, não apagar o
+        // que houve: a multa que já entrou numa contratação fica, e o que o banco
+        // guarda continua explicando a cobrança.
         const string sql = """
             SELECT (SELECT COUNT(*) FROM ITENS_CONTRATACAO WHERE MULTA_ID = :id),
                    (SELECT COUNT(*) FROM PROCESSO_MULTA    WHERE MULTA_ID = :id)

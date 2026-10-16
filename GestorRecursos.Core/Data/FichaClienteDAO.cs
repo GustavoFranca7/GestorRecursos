@@ -39,6 +39,111 @@ public class FichaClienteDAO
     /// Fora da <see cref="BuscarAsync"/> de propósito: são duas consultas a mais que só
     /// interessam a quem abriu a aba, e a ficha abre em Dados.
     /// </remarks>
+    /// <summary>Os recursos do cliente com as três fases de cada um, para a aba Processos.</summary>
+    /// <remarks>
+    /// Duas consultas numa conexão só, e não uma por recurso: um cliente com vinte multas
+    /// faria vinte idas à nuvem para montar uma tela.
+    ///
+    /// Entra quem tem instância — é isso que faz do item um processo. Serviço direto
+    /// (reciclagem, renovação) anda por etapas e não aparece aqui.
+    /// </remarks>
+    public async Task<List<RecursoDaFicha>> ListarRecursosAsync(
+        int clienteId, CancellationToken cancelamento = default)
+    {
+        const string sqlRecursos = """
+            SELECT IT.ID, IT.CONTRATACAO_ID, IT.SITUACAO, TS.NOME,
+                   M.AIT, M.ENQUADRAMENTO, M.GRAVIDADE, M.ORGAO_AUTUADOR,
+                   V.PLACA, P.NUMERO_PROCESSO,
+                   CT.DATA_CONTRATACAO, CT.VALOR_FINAL,
+                   (SELECT COUNT(*) FROM ITENS_CONTRATACAO X WHERE X.CONTRATACAO_ID = CT.ID)
+              FROM ITENS_CONTRATACAO IT
+              JOIN CONTRATACOES CT  ON CT.ID = IT.CONTRATACAO_ID
+              JOIN TIPOS_SERVICO TS ON TS.ID = IT.TIPO_SERVICO_ID
+              LEFT JOIN MULTAS M         ON M.ID = IT.MULTA_ID
+              LEFT JOIN VEICULOS V       ON V.ID = M.VEICULO_ID
+              LEFT JOIN PROCESSOS_CNH P  ON P.ID = IT.PROCESSO_CNH_ID
+             WHERE CT.CLIENTE_ID = :id
+               AND EXISTS (SELECT 1 FROM INSTANCIAS N WHERE N.ITEM_ID = IT.ID)
+             ORDER BY CT.DATA_CONTRATACAO DESC, IT.ID DESC
+            """;
+
+        const string sqlFases = """
+            SELECT I.ID, I.ITEM_ID, I.FASE, I.SITUACAO, I.PRAZO_PROTOCOLO, I.DATA_PROTOCOLO,
+                   I.NUMERO_PROTOCOLO, I.ORGAO_DESTINATARIO, I.DATA_RESULTADO, I.RESULTADO,
+                   I.OBSERVACOES
+              FROM INSTANCIAS I
+              JOIN ITENS_CONTRATACAO IT ON IT.ID = I.ITEM_ID
+              JOIN CONTRATACOES CT      ON CT.ID = IT.CONTRATACAO_ID
+             WHERE CT.CLIENTE_ID = :id
+             ORDER BY I.ITEM_ID, I.ID
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+
+        var recursos = new List<RecursoDaFicha>();
+        await using (var cmd = conexao.Comando(sqlRecursos))
+        {
+            cmd.Param("id", clienteId);
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                recursos.Add(new RecursoDaFicha
+                {
+                    ItemId = reader.Inteiro(0),
+                    ContratacaoId = reader.Inteiro(1),
+                    Situacao = reader.Texto(2),
+                    Servico = reader.Texto(3),
+                    Ait = reader.TextoOuNulo(4),
+                    Enquadramento = reader.TextoOuNulo(5),
+                    Gravidade = reader.TextoOuNulo(6),
+                    OrgaoAutuador = reader.TextoOuNulo(7),
+                    Placa = reader.TextoOuNulo(8),
+                    NumeroProcessoCnh = reader.TextoOuNulo(9),
+                    DataContratacao = reader.Data(10),
+                    ValorContratacao = reader.Decimal(11),
+                    ItensNaContratacao = reader.Inteiro(12)
+                });
+            }
+        }
+
+        if (recursos.Count == 0)
+        {
+            return recursos;
+        }
+
+        var porItem = recursos.ToDictionary(r => r.ItemId);
+        await using (var cmd = conexao.Comando(sqlFases))
+        {
+            cmd.Param("id", clienteId);
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                var itemId = reader.Inteiro(1);
+                if (!porItem.TryGetValue(itemId, out var recurso))
+                {
+                    continue;
+                }
+
+                recurso.Instancias.Add(new Instancia
+                {
+                    Id = reader.Inteiro(0),
+                    ItemId = itemId,
+                    Fase = ValorBanco.De<FaseInstancia>(reader.Texto(2)),
+                    Situacao = ValorBanco.De<SituacaoInstancia>(reader.Texto(3)),
+                    PrazoProtocolo = reader.DataOuNulo(4),
+                    DataProtocolo = reader.DataOuNulo(5),
+                    NumeroProtocolo = reader.TextoOuNulo(6),
+                    OrgaoDestinatario = reader.TextoOuNulo(7),
+                    DataResultado = reader.DataOuNulo(8),
+                    Resultado = ValorBanco.DeOuNulo<ResultadoInstancia>(reader.TextoOuNulo(9)),
+                    Observacoes = reader.TextoOuNulo(10)
+                });
+            }
+        }
+
+        return recursos;
+    }
+
     /// <summary>Só os veículos do cliente, sem o resto da ficha.</summary>
     /// <remarks>Para quem já tem a ficha aberta e só precisa da lista de carros atualizada.</remarks>
     public async Task<List<VeiculoDaFicha>> ListarVeiculosAsync(

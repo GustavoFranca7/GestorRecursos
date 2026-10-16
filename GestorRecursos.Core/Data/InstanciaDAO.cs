@@ -67,17 +67,21 @@ public class InstanciaDAO
         return lista;
     }
 
-    /// <summary>Registra o protocolo de uma fase.</summary>
+    /// <summary>Registra o protocolo de uma fase. É o que desliga o alarme do prazo.</summary>
     public async Task<bool> RegistrarProtocoloAsync(
         int instanciaId,
         DateTime dataProtocolo,
         string numeroProtocolo,
+        string? orgaoDestinatario = null,
         CancellationToken cancelamento = default)
     {
+        // O destinatário só é escrito quando veio preenchido: regravar nulo em cima
+        // do que já estava lá apagaria informação em quem só corrige o número.
         const string sql = """
             UPDATE INSTANCIAS SET
                 DATA_PROTOCOLO = :dataProtocolo,
                 NUMERO_PROTOCOLO = :numeroProtocolo,
+                ORGAO_DESTINATARIO = NVL(:orgaoDestinatario, ORGAO_DESTINATARIO),
                 SITUACAO = 'AGUARDANDO_JULGAMENTO'
              WHERE ID = :id
             """;
@@ -86,9 +90,58 @@ public class InstanciaDAO
         await using var cmd = conexao.Comando(sql);
         cmd.Param("dataProtocolo", dataProtocolo.Date)
            .Param("numeroProtocolo", numeroProtocolo)
+           .Param("orgaoDestinatario", orgaoDestinatario)
            .Param("id", instanciaId);
 
         return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
+    }
+
+    /// <summary>Encerra o recurso: o item sai de andamento e as fases abertas param.</summary>
+    /// <remarks>
+    /// É a desistência, ou o conserto de um recurso lançado por engano. Não apaga nada —
+    /// a contratação continua lá, com o valor que foi cobrado, porque o dinheiro é
+    /// histórico. O que muda é que ninguém mais espera trabalho deste item.
+    ///
+    /// Fase já julgada fica como está: deferido no passado não vira cancelado.
+    /// </remarks>
+    public async Task<bool> CancelarRecursoAsync(int itemId, CancellationToken cancelamento = default)
+    {
+        const string sqlFases = """
+            UPDATE INSTANCIAS SET SITUACAO = 'CANCELADO'
+             WHERE ITEM_ID = :itemId
+               AND SITUACAO NOT IN ('DEFERIDO','INDEFERIDO','CANCELADO','DESISTENCIA')
+            """;
+
+        const string sqlItem = """
+            UPDATE ITENS_CONTRATACAO SET SITUACAO = 'CANCELADO' WHERE ID = :itemId
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
+
+        try
+        {
+            await using (var cmd = conexao.Comando(sqlFases, transacao))
+            {
+                cmd.Param("itemId", itemId);
+                await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            int afetadas;
+            await using (var cmd = conexao.Comando(sqlItem, transacao))
+            {
+                cmd.Param("itemId", itemId);
+                afetadas = await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            await transacao.CommitAsync(cancelamento);
+            return afetadas > 0;
+        }
+        catch
+        {
+            await transacao.RollbackAsync(cancelamento);
+            throw;
+        }
     }
 
     /// <summary>Registra o resultado e, quando indeferido, já abre a fase seguinte.</summary>
