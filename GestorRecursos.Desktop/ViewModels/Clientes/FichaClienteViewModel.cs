@@ -468,6 +468,25 @@ public partial class FichaClienteViewModel : ViewModelBase
     [RelayCommand]
     private void Editar(GrupoCadastro grupo) => _aoEditar?.Invoke(grupo);
 
+    /// <summary>O "+ Novo recurso" do cabeçalho: montar o recurso é o trabalho do dia.</summary>
+    /// <remarks>
+    /// Mora aqui, e não na aba Processos, porque o recurso nasce de uma contratação: é
+    /// ela que tem preço. Um cadastro de processo por fora criaria serviço sem cobrança.
+    /// </remarks>
+    [RelayCommand]
+    private void NovoRecurso() =>
+        Formulario = new NovoRecursoViewModel(
+            ClienteId,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: AposRecurso);
+
+    /// <summary>Recarrega a ficha inteira: o recurso mexeu no financeiro e nos processos.</summary>
+    private async void AposRecurso()
+    {
+        Formulario = null;
+        await Carregar();
+    }
+
     /// <summary>Cadastra um veículo e já o liga a este cliente.</summary>
     [RelayCommand]
     private void NovoVeiculo() =>

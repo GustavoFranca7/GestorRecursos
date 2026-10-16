@@ -62,6 +62,22 @@ public static class Formato
 
     public static string Dinheiro(decimal valor) => valor.ToString("C", Brasil);
 
+    /// <summary>O caminho de volta: "R$ 1.250,00", "1250,00" ou "1250" viram número.</summary>
+    /// <remarks>
+    /// Ela digita o valor fechado de qualquer jeito, com ou sem R$. Recusar por causa do
+    /// cifrão seria implicância da tela.
+    /// </remarks>
+    public static decimal? LerDinheiro(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return null;
+        }
+
+        var limpo = texto.Replace("R$", string.Empty).Trim();
+        return decimal.TryParse(limpo, NumberStyles.Currency, Brasil, out var valor) ? valor : null;
+    }
+
     public static string Data(System.DateTime? data) =>
         data?.ToString("dd/MM/yyyy", Brasil) ?? string.Empty;
 }

@@ -247,16 +247,24 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <!-- Editar e Nova contratação saíram daqui; ficou a lixeira, que manda
-                     este cliente para Arquivados. -->
-                <Button Grid.Column="1" Classes="acao perigosa" VerticalAlignment="Top"
-                        Command="{Binding PedirArquivamentoCommand}"
-                        ToolTip.Tip="Mover este cliente para Arquivados">
-                    <Viewbox Width="15" Height="15">
-                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
-                              Data="{StaticResource IconeExcluir}"/>
-                    </Viewbox>
-                </Button>
+                <!-- Editar e Nova contratação saíram daqui. Ficaram o "+ Novo recurso",
+                     que é a ação do dia a dia, e a lixeira, que manda o cliente
+                     para Arquivados. -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Top">
+                    <Button Classes="primario" Content="+ Novo recurso"
+                            Command="{Binding NovoRecursoCommand}"
+                            ToolTip.Tip="Montar um recurso para este cliente"/>
+
+                    <Button Classes="acao perigosa"
+                            Command="{Binding PedirArquivamentoCommand}"
+                            ToolTip.Tip="Mover este cliente para Arquivados">
+                        <Viewbox Width="15" Height="15">
+                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                  Data="{StaticResource IconeExcluir}"/>
+                        </Viewbox>
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <!-- Abas -->
