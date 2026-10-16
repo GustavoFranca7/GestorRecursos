@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.AndamentoFormularioView"
+             x:DataType="vm:AndamentoFormularioViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="ComboBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Flutuante por cima da ficha, como as outras janelas do sistema -->
+    <Border Background="#73102A2C">
+        <Border Width="560" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <StackPanel Grid.Row="0" Spacing="3" Margin="26,22,26,0">
+                    <TextBlock Text="{Binding Titulo}" FontSize="17" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock Text="{Binding Instrucao}" FontSize="11.5"
+                               Foreground="{StaticResource TextoFraco}"/>
+                    <TextBlock Text="{Binding Referencia}" FontSize="11" Margin="0,6,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextoApagado}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="26,18,26,0" Spacing="14">
+
+                    <!-- ============ PROTOCOLO ============ -->
+                    <StackPanel IsVisible="{Binding NoProtocolo}" Spacing="14">
+                        <Grid ColumnDefinitions="150,16,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="{Binding RotuloData}"/>
+                                <TextBox Classes="entrada" Text="{Binding Data}"
+                                         servicos:Mascara.Padrao="data"
+                                         Classes.erro="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Número do protocolo *"/>
+                                <TextBox Classes="entrada" Text="{Binding Protocolo}"
+                                         Classes.erro="{Binding ErroProtocolo, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         PlaceholderText="2026/88213"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Destinatário"/>
+                            <TextBox Classes="entrada" Text="{Binding Destinatario}"
+                                     PlaceholderText="Para quem o recurso foi enviado"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ============ RESULTADO ============ -->
+                    <StackPanel IsVisible="{Binding NoResultado}" Spacing="14">
+                        <Grid ColumnDefinitions="*,16,150">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Decisão *"/>
+                                <ComboBox Classes="entrada" ItemsSource="{Binding Resultados}"
+                                          SelectedItem="{Binding Resultado}"
+                                          PlaceholderText="Selecione"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="{Binding RotuloData}"/>
+                                <TextBox Classes="entrada" Text="{Binding Data}"
+                                         servicos:Mascara.Padrao="data"
+                                         Classes.erro="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Indeferido não é o fim: a próxima instância já abre aqui -->
+                        <Border IsVisible="{Binding AbreProximaFase}"
+                                Background="{StaticResource AvisoClaro}"
+                                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding TextoProximaFase}" FontSize="12"
+                                           TextWrapping="Wrap" LineHeight="18"
+                                           Foreground="{StaticResource Texto}"/>
+                                <StackPanel>
+                                    <TextBlock Classes="rotulo"
+                                               Text="Prazo para protocolar na próxima fase"/>
+                                    <TextBox Classes="entrada" Text="{Binding PrazoProximaFase}"
+                                             servicos:Mascara.Padrao="data"
+                                             PlaceholderText="dd/mm/aaaa"/>
+                                    <TextBlock Classes="erroCampo"
+                                               Foreground="{StaticResource TextoApagado}"
+                                               Text="Em branco, a fase nasce sem prazo — e sem alarme."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border IsVisible="{Binding FimDaLinha}"
+                                Background="{StaticResource AlertaClaro}"
+                                BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                                CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
+                            <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                                       Foreground="{StaticResource Texto}"
+                                       Text="O CETRAN é a última instância administrativa. Indeferido aqui, o recurso se encerra — o que resta é a via judicial."/>
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Classes="erroCampo" Text="{Binding ErroData}"
+                               IsVisible="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                    <TextBlock Classes="erroCampo" Text="{Binding ErroProtocolo}"
+                               IsVisible="{Binding ErroProtocolo, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                </StackPanel>
+
+                <!-- ============ RODAPÉ ============ -->
+                <Border Grid.Row="2" Background="{StaticResource CartaoSuave}"
+                        BorderBrush="{StaticResource BordaClara}" BorderThickness="0,1,0,0"
+                        Padding="26,14" Margin="0,22,0,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="12"
+                                   Margin="0,0,16,0" VerticalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource Alerta}"
+                                   IsVisible="{Binding TemErro}"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Classes="neutro" Content="Cancelar"
+                                    Command="{Binding CancelarCommand}"/>
+                            <Button Classes="primario" Content="{Binding TextoSalvar}"
+                                    IsEnabled="{Binding !Salvando}"
+                                    Command="{Binding SalvarCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

@@ -91,6 +91,39 @@
             <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
         </Style>
 
+        <!-- Coluna de uma fase do recurso: autuação, JARI ou CETRAN -->
+        <Style Selector="Border.fase">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="14,13"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <!-- A fase que está aberta é onde mora o trabalho: ela ganha a borda forte -->
+        <Style Selector="Border.fase.atual">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Border.fase.urgente">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        </Style>
+        <Style Selector="Border.fase.vazia">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+        </Style>
+        <Style Selector="TextBlock.nomefase">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="0.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+        <Style Selector="TextBlock.detalhefase">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
         <!-- Cabeçalho da tabela de multas -->
         <Style Selector="TextBlock.colunamulta">
             <Setter Property="FontSize" Value="10"/>
@@ -771,6 +804,208 @@
 
                 <TextBlock IsVisible="{Binding CarregandoVeiculos}"
                            Text="Carregando os veículos..."
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+                <!-- ============ ABA PROCESSOS ============
+                     Um cartão por recurso, com autuação, JARI e CETRAN lado a lado.
+                     As três aparecem sempre: o valor pago cobre as três, e ver o
+                     caminho inteiro é o que explica em que pé está o processo. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaProcessos}">
+                    <StackPanel Margin="24,18,24,24" Spacing="14">
+
+                        <ItemsControl ItemsSource="{Binding Recursos}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RecursoDaFichaViewModel">
+                                    <Border Classes="cartao" Margin="0,0,0,14">
+                                        <StackPanel Spacing="12">
+
+                                            <!-- Cabeçalho do recurso -->
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Classes="titulocartao"
+                                                           Text="{Binding Titulo}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center"/>
+
+                                                <Button Grid.Column="1" Classes="acao perigosa"
+                                                        IsVisible="{Binding PodeCancelar}"
+                                                        ToolTip.Tip="Encerrar este recurso"
+                                                        Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).PedirCancelamentoCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Viewbox Width="13" Height="13">
+                                                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                              Data="{StaticResource IconeFechar}"/>
+                                                    </Viewbox>
+                                                </Button>
+                                            </Grid>
+
+                                            <!-- Placa, data, valor e órgão -->
+                                            <WrapPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            Margin="0,0,20,0"
+                                                            IsVisible="{Binding TemPlaca}">
+                                                    <TextBlock Text="Placa" FontSize="11.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <Button Classes="copiavel placa"
+                                                            Content="{Binding Placa}"
+                                                            ToolTip.Tip="Copiar placa"
+                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Placa}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            Margin="0,0,20,0">
+                                                    <TextBlock Text="Contratado em" FontSize="11.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <TextBlock Text="{Binding ContratadoEm}" FontSize="11.5"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            Margin="0,0,20,0">
+                                                    <TextBlock Text="Valor" FontSize="11.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <TextBlock Text="{Binding Valor}" FontSize="11.5"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            IsVisible="{Binding TemOrgao}">
+                                                    <TextBlock Text="Órgão" FontSize="11.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <TextBlock Text="{Binding Orgao}" FontSize="11.5"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                </StackPanel>
+                                            </WrapPanel>
+
+                                            <!-- As três fases -->
+                                            <ItemsControl ItemsSource="{Binding Fases}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="3"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:FaseViewModel">
+                                                        <Border Classes="fase"
+                                                                Classes.atual="{Binding Atual}"
+                                                                Classes.urgente="{Binding Urgente}"
+                                                                Classes.vazia="{Binding !Existe}">
+                                                            <StackPanel Spacing="7">
+                                                                <Grid ColumnDefinitions="*,Auto">
+                                                                    <StackPanel Grid.Column="0"
+                                                                                Orientation="Horizontal" Spacing="5">
+                                                                        <TextBlock Classes="nomefase"
+                                                                                   Text="{Binding Numero}"/>
+                                                                        <TextBlock Classes="nomefase" Text="·"/>
+                                                                        <TextBlock Classes="nomefase"
+                                                                                   Text="{Binding Nome}"/>
+                                                                    </StackPanel>
+
+                                                                    <Border Grid.Column="1"
+                                                                            CornerRadius="{StaticResource RaioSelo}"
+                                                                            Padding="7,2" VerticalAlignment="Center"
+                                                                            Background="{Binding FundoSituacao, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                        <TextBlock Text="{Binding Situacao}" FontSize="10"
+                                                                                   Foreground="{Binding CorSituacao, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                    </Border>
+                                                                </Grid>
+
+                                                                <TextBlock Classes="detalhefase"
+                                                                           IsVisible="{Binding TemExplicacao}"
+                                                                           Text="{Binding Explicacao}"/>
+
+                                                                <StackPanel Spacing="3" IsVisible="{Binding Existe}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                IsVisible="{Binding TemProtocolo}">
+                                                                        <TextBlock Classes="detalhefase" Text="Protocolo"/>
+                                                                        <TextBlock Classes="detalhefase"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource Texto}"
+                                                                                   Text="{Binding Protocolo}"/>
+                                                                    </StackPanel>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                IsVisible="{Binding TemEnvio}">
+                                                                        <TextBlock Classes="detalhefase" Text="Enviado em"/>
+                                                                        <TextBlock Classes="detalhefase"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource Texto}"
+                                                                                   Text="{Binding EnviadoEm}"/>
+                                                                    </StackPanel>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                IsVisible="{Binding TemResultado}">
+                                                                        <TextBlock Classes="detalhefase" Text="Resultado em"/>
+                                                                        <TextBlock Classes="detalhefase"
+                                                                                   FontWeight="SemiBold"
+                                                                                   Foreground="{StaticResource Texto}"
+                                                                                   Text="{Binding ResultadoEm}"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Classes="detalhefase"
+                                                                               IsVisible="{Binding TemDestinatario}"
+                                                                               Text="{Binding Destinatario}"/>
+                                                                </StackPanel>
+
+                                                                <Border IsVisible="{Binding TemPrazo}"
+                                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                                        Padding="8,3" HorizontalAlignment="Left"
+                                                                        Background="{Binding FundoPrazo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                    <TextBlock Text="{Binding Prazo}" FontSize="10.5"
+                                                                               Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                </Border>
+
+                                                                <StackPanel Orientation="Horizontal" Spacing="7"
+                                                                            Margin="0,3,0,0"
+                                                                            IsVisible="{Binding TemBotao}">
+                                                                    <Button Classes="primario" FontSize="11.5"
+                                                                            Padding="11,6"
+                                                                            Content="Registrar protocolo"
+                                                                            IsVisible="{Binding PodeProtocolar}"
+                                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).RegistrarProtocoloCommand}"
+                                                                            CommandParameter="{Binding}"/>
+                                                                    <Button Classes="neutro" FontSize="11.5"
+                                                                            Padding="11,6"
+                                                                            Content="Registrar resultado"
+                                                                            IsVisible="{Binding PodeJulgar}"
+                                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).RegistrarResultadoCommand}"
+                                                                            CommandParameter="{Binding}"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Classes="cartao" IsVisible="{Binding TemEncerrados}">
+                            <TextBlock Text="{Binding ResumoEncerrados}" FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}"/>
+                        </Border>
+
+                        <Border Classes="cartao" IsVisible="{Binding SemRecursos}" Padding="24,28">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="Nenhum recurso para este cliente." FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock FontSize="11.5" HorizontalAlignment="Center"
+                                           TextWrapping="Wrap" MaxWidth="420"
+                                           TextAlignment="Center"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="O processo nasce da contratação: use o + Novo recurso, lá em cima, para montar o primeiro."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <TextBlock IsVisible="{Binding CarregandoRecursos}"
+                           Text="Carregando os processos..."
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            FontSize="13" Foreground="{StaticResource TextoFraco}"/>
 

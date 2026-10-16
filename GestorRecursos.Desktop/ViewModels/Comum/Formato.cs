@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 
 namespace GestorRecursos.Desktop.ViewModels;
 
@@ -80,4 +81,25 @@ public static class Formato
 
     public static string Data(System.DateTime? data) =>
         data?.ToString("dd/MM/yyyy", Brasil) ?? string.Empty;
+
+    /// <summary>"10/10/2026" ou "10102026" viram data. Nulo quando não é data nenhuma.</summary>
+    /// <remarks>
+    /// Lê pelos dígitos porque é isso que a máscara de digitação entrega, com ou sem as
+    /// barras. A regra mora aqui para as telas não divergirem no que aceitam.
+    /// </remarks>
+    public static System.DateTime? LerData(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return null;
+        }
+
+        var digitos = new string(texto.Where(char.IsDigit).ToArray());
+
+        return digitos.Length == 8
+            && System.DateTime.TryParseExact(
+                digitos, "ddMMyyyy", Brasil, DateTimeStyles.None, out var data)
+                ? data
+                : null;
+    }
 }

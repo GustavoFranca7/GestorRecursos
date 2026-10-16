@@ -90,7 +90,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     [
         new("Dados", AbaFicha.Dados, pronta: true),
         new("Veículos e multas", AbaFicha.Veiculos, pronta: true),
-        new("Processos", AbaFicha.Processos, pronta: false),
+        new("Processos", AbaFicha.Processos, pronta: true),
         new("Financeiro", AbaFicha.Financeiro, pronta: false),
         new("Documentos", AbaFicha.Documentos, pronta: false),
         new("Histórico", AbaFicha.Historico, pronta: false)
@@ -157,10 +157,16 @@ public partial class FichaClienteViewModel : ViewModelBase
     public bool TemProcessos => Processos.Count > 0;
     public bool AbaDados => AbaAtual == AbaFicha.Dados;
     public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
-    public bool AbaEmConstrucao => AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos);
+    public bool AbaProcessos => AbaAtual == AbaFicha.Processos;
+
+    public bool AbaEmConstrucao =>
+        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Processos);
 
     /// <summary>Os cartões da aba Veículos e multas.</summary>
     public ObservableCollection<VeiculoComMultasViewModel> VeiculosEMultas { get; } = [];
+
+    /// <summary>Os cartões da aba Processos: um recurso por cartão, com as três fases.</summary>
+    public ObservableCollection<RecursoDaFichaViewModel> Recursos { get; } = [];
 
     /// <summary>Formulário aberto por cima da ficha. Nulo quando não há nenhum.</summary>
     /// <remarks>
@@ -173,10 +179,23 @@ public partial class FichaClienteViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool CarregandoVeiculos { get; set; }
 
+    [ObservableProperty]
+    public partial bool CarregandoRecursos { get; set; }
+
     /// <summary>Evita ir ao banco de novo a cada vez que a aba é reaberta.</summary>
     private bool _veiculosCarregados;
+    private bool _recursosCarregados;
 
     public bool SemVeiculos => !CarregandoVeiculos && _veiculosCarregados && VeiculosEMultas.Count == 0;
+    public bool SemRecursos => !CarregandoRecursos && _recursosCarregados && Recursos.Count == 0;
+
+    /// <summary>Quantos recursos já não esperam nada: entram na contagem do rodapé.</summary>
+    public int RecursosEncerrados => Recursos.Count(r => r.Encerrado);
+    public bool TemEncerrados => RecursosEncerrados > 0;
+
+    public string ResumoEncerrados => RecursosEncerrados == 1
+        ? "1 recurso encerrado"
+        : $"{RecursosEncerrados} recursos encerrados";
 
     public FichaClienteViewModel()
     {
@@ -246,6 +265,11 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await CarregarVeiculosEMultas();
         }
+
+        if (aba == AbaFicha.Processos && !_recursosCarregados)
+        {
+            await CarregarRecursos();
+        }
     }
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
@@ -290,6 +314,112 @@ public partial class FichaClienteViewModel : ViewModelBase
             CarregandoVeiculos = false;
             OnPropertyChanged(nameof(SemVeiculos));
         }
+    }
+
+    /// <summary>Busca os recursos com as três fases, na primeira vez que a aba é aberta.</summary>
+    private async Task CarregarRecursos()
+    {
+        CarregandoRecursos = true;
+
+        try
+        {
+            var recursos = await _fichas.ListarRecursosAsync(ClienteId);
+
+            Recursos.Clear();
+            foreach (var recurso in recursos)
+            {
+                Recursos.Add(new RecursoDaFichaViewModel(recurso));
+            }
+
+            _recursosCarregados = true;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível carregar os processos: {excecao.Message}";
+        }
+        finally
+        {
+            CarregandoRecursos = false;
+            OnPropertyChanged(nameof(SemRecursos));
+            OnPropertyChanged(nameof(RecursosEncerrados));
+            OnPropertyChanged(nameof(TemEncerrados));
+            OnPropertyChanged(nameof(ResumoEncerrados));
+        }
+    }
+
+    /// <summary>Registra o protocolo de uma fase: é o que desliga o alarme do prazo.</summary>
+    [RelayCommand]
+    private void RegistrarProtocolo(FaseViewModel? fase)
+    {
+        if (fase?.Recurso is not { } recurso)
+        {
+            return;
+        }
+
+        Formulario = new AndamentoFormularioViewModel(
+            AcaoAndamento.Protocolo, recurso, fase,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: RecarregarRecursos);
+    }
+
+    /// <summary>Registra o julgamento. Indeferido abre a fase seguinte sozinho.</summary>
+    [RelayCommand]
+    private void RegistrarResultado(FaseViewModel? fase)
+    {
+        if (fase?.Recurso is not { } recurso)
+        {
+            return;
+        }
+
+        Formulario = new AndamentoFormularioViewModel(
+            AcaoAndamento.Resultado, recurso, fase,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: RecarregarRecursos);
+    }
+
+    /// <summary>Pergunta antes de encerrar o recurso, e explica o que fica e o que para.</summary>
+    [RelayCommand]
+    private void PedirCancelamento(RecursoDaFichaViewModel? recurso)
+    {
+        if (recurso is null)
+        {
+            return;
+        }
+
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: "Encerrar este recurso?",
+            texto: "As fases que ainda não foram julgadas param, e o recurso deixa de "
+                 + "esperar trabalho. A contratação continua lá, com o valor que foi "
+                 + "cobrado, e o que já foi julgado fica registrado.",
+            botao: "Encerrar recurso",
+            aoConfirmar: () => Cancelar(recurso.ItemId),
+            aoCancelar: () => Confirmacao = null);
+    }
+
+    private async void Cancelar(int itemId)
+    {
+        try
+        {
+            await new InstanciaDAO().CancelarRecursoAsync(itemId);
+            Confirmacao = null;
+            RecarregarRecursos();
+        }
+        catch (Exception excecao)
+        {
+            Confirmacao = null;
+            Erro = $"Não foi possível encerrar o recurso: {excecao.Message}";
+        }
+    }
+
+    /// <summary>Fecha o formulário e recarrega: o cabeçalho e o resumo também mudaram.</summary>
+    private async void RecarregarRecursos()
+    {
+        Formulario = null;
+        _recursosCarregados = false;
+        _veiculosCarregados = false;
+
+        await Carregar();
+        await CarregarRecursos();
     }
 
     /// <summary>Abre outro cliente sem sair da ficha.</summary>
@@ -625,9 +755,11 @@ public partial class FichaClienteViewModel : ViewModelBase
                 : $"ela conta na pontuação de {resumo.ProcessosCnh} processos de CNH");
         }
 
+        // Não oferece "cancele e tente de novo": cancelar encerra o serviço, não apaga
+        // o que houve, e a multa que já foi cobrada fica para explicar a cobrança.
         return $"Não dá para apagar porque {string.Join(" e ", partes)}. Apagar aqui "
-             + "deixaria uma cobrança sem objeto. Cancele o recurso primeiro, e então "
-             + "a multa pode sair.";
+             + "deixaria uma cobrança sem objeto. Se o recurso foi um engano, cancele-o "
+             + "na aba Processos — a multa continua na ficha, com o histórico do que houve.";
     }
 
     private async void ExcluirMulta(int multaId)
@@ -704,10 +836,12 @@ public partial class FichaClienteViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(AbaDados));
         OnPropertyChanged(nameof(AbaVeiculos));
+        OnPropertyChanged(nameof(AbaProcessos));
         OnPropertyChanged(nameof(AbaEmConstrucao));
     }
 
     partial void OnCarregandoVeiculosChanged(bool valor) => OnPropertyChanged(nameof(SemVeiculos));
+    partial void OnCarregandoRecursosChanged(bool valor) => OnPropertyChanged(nameof(SemRecursos));
 
     private static string MontarIdentificacao(Cliente cliente)
     {
