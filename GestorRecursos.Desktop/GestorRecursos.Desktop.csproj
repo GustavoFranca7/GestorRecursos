@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <!-- O Avalonia ja inclui todo .axaml do projeto; repetir aqui duplicaria o recurso. -->
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.axaml" />
   </ItemGroup>
 
   <ItemGroup>
