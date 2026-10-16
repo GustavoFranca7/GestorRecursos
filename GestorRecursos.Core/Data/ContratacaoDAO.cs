@@ -6,13 +6,19 @@ namespace GestorRecursos.Core.Data;
 // Camada Core / Data: a contratação, seus itens e as instâncias que nascem com eles.
 public class ContratacaoDAO
 {
-    /// <summary>Grava a contratação inteira: cabeçalho, itens e instâncias.</summary>
+    /// <summary>Grava a contratação inteira: cabeçalho, itens, instâncias e, se houver, o pagamento.</summary>
     /// <remarks>
     /// Tudo numa transação só. Uma contratação com metade dos itens gravados é
     /// pior do que nenhuma: o valor fechado não bate com o que está lá dentro, e
     /// ninguém percebe até a hora de cobrar.
+    ///
+    /// O pagamento entra aqui, e não numa chamada depois, porque boa parte das
+    /// contratações nasce paga no balcão: cobrar e registrar são o mesmo ato.
     /// </remarks>
-    public async Task<int> CadastrarAsync(Contratacao contratacao, CancellationToken cancelamento = default)
+    public async Task<int> CadastrarAsync(
+        Contratacao contratacao,
+        Pagamento? pagamento = null,
+        CancellationToken cancelamento = default)
     {
         const string sqlCabecalho = """
             INSERT INTO CONTRATACOES
@@ -85,6 +91,12 @@ public class ContratacaoDAO
                     instancia.ItemId = idItem;
                     await InstanciaDAO.InserirAsync(conexao, transacao, instancia, cancelamento);
                 }
+            }
+
+            if (pagamento is not null)
+            {
+                pagamento.ContratacaoId = idContratacao;
+                await PagamentoDAO.InserirAsync(conexao, transacao, pagamento, cancelamento);
             }
 
             await transacao.CommitAsync(cancelamento);

@@ -8,14 +8,28 @@ public class PagamentoDAO
 {
     public async Task<int> RegistrarAsync(Pagamento pagamento, CancellationToken cancelamento = default)
     {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        return await InserirAsync(conexao, null, pagamento, cancelamento);
+    }
+
+    /// <summary>Insere o pagamento numa conexão que já está aberta, dentro da transação de quem chamou.</summary>
+    /// <remarks>
+    /// Existe para a contratação poder nascer paga de uma vez só: a entrada do dinheiro e
+    /// o contrato que ela quita precisam cair juntos ou não cair.
+    /// </remarks>
+    internal static async Task<int> InserirAsync(
+        OracleConnection conexao,
+        OracleTransaction? transacao,
+        Pagamento pagamento,
+        CancellationToken cancelamento = default)
+    {
         const string sql = """
             INSERT INTO PAGAMENTOS (CONTRATACAO_ID, DATA_PAGAMENTO, VALOR, FORMA, PARCELAS, OBSERVACAO)
             VALUES (:contratacaoId, :dataPagamento, :valor, :forma, :parcelas, :observacao)
             RETURNING ID INTO :novoId
             """;
 
-        await using var conexao = await Database.AbrirAsync(cancelamento);
-        await using var cmd = conexao.Comando(sql);
+        await using var cmd = conexao.Comando(sql, transacao);
         cmd.Param("contratacaoId", pagamento.ContratacaoId)
            .Param("dataPagamento", pagamento.DataPagamento == default ? DateTime.Today : pagamento.DataPagamento)
            .Param("valor", pagamento.Valor)

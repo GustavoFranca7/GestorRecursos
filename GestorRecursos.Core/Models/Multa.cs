@@ -48,3 +48,22 @@ public class ResumoExclusaoMulta
 
     public bool PodeApagar => Recursos == 0 && ProcessosCnh == 0;
 }
+
+/// <summary>Uma multa do veículo na hora de montar um recurso.</summary>
+/// <remarks>
+/// Traz só o que a escolha precisa, mais o aviso de que a multa já foi contratada: dois
+/// recursos para o mesmo auto é cobrar duas vezes pelo mesmo trabalho.
+/// </remarks>
+public class MultaParaRecurso
+{
+    public int Id { get; set; }
+    public string Ait { get; set; } = string.Empty;
+    public string? Enquadramento { get; set; }
+    public string? Descricao { get; set; }
+    public GravidadeMulta? Gravidade { get; set; }
+    public decimal? Valor { get; set; }
+    public DateTime? DataHoraInfracao { get; set; }
+    public DateTime? PrazoDefesa { get; set; }
+
+    public bool JaTemRecurso { get; set; }
+}

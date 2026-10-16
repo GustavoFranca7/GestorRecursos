@@ -39,6 +39,15 @@ public class FichaClienteDAO
     /// Fora da <see cref="BuscarAsync"/> de propósito: são duas consultas a mais que só
     /// interessam a quem abriu a aba, e a ficha abre em Dados.
     /// </remarks>
+    /// <summary>Só os veículos do cliente, sem o resto da ficha.</summary>
+    /// <remarks>Para quem já tem a ficha aberta e só precisa da lista de carros atualizada.</remarks>
+    public async Task<List<VeiculoDaFicha>> ListarVeiculosAsync(
+        int clienteId, CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        return await LerVeiculosAsync(conexao, clienteId, cancelamento);
+    }
+
     public async Task<List<VeiculoComMultas>> ListarVeiculosComMultasAsync(
         int clienteId, CancellationToken cancelamento = default)
     {

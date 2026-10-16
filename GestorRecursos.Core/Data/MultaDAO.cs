@@ -85,6 +85,50 @@ public class MultaDAO
         return lista;
     }
 
+    /// <summary>Multas do veículo para escolher quais entram no recurso.</summary>
+    /// <remarks>
+    /// Marca as que já são item de alguma contratação viva. Elas continuam na lista, e não
+    /// escondidas: quem monta o recurso precisa saber que o auto existe e por que ele não
+    /// pode entrar de novo.
+    /// </remarks>
+    public async Task<List<MultaParaRecurso>> ListarParaRecursoAsync(
+        int veiculoId, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT M.ID, M.AIT, M.ENQUADRAMENTO, M.DESCRICAO, M.GRAVIDADE, M.VALOR,
+                   M.DATA_HORA_INFRACAO, M.PRAZO_DEFESA,
+                   (SELECT COUNT(*) FROM ITENS_CONTRATACAO I
+                     WHERE I.MULTA_ID = M.ID AND I.SITUACAO <> 'CANCELADO')
+              FROM MULTAS M
+             WHERE M.VEICULO_ID = :veiculoId
+             ORDER BY M.DATA_HORA_INFRACAO DESC NULLS LAST, M.ID DESC
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("veiculoId", veiculoId);
+
+        var lista = new List<MultaParaRecurso>();
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new MultaParaRecurso
+            {
+                Id = reader.Inteiro(0),
+                Ait = reader.Texto(1),
+                Enquadramento = reader.TextoOuNulo(2),
+                Descricao = reader.TextoOuNulo(3),
+                Gravidade = ValorBanco.DeOuNulo<GravidadeMulta>(reader.TextoOuNulo(4)),
+                Valor = reader.IsDBNull(5) ? null : reader.Decimal(5),
+                DataHoraInfracao = reader.DataOuNulo(6),
+                PrazoDefesa = reader.DataOuNulo(7),
+                JaTemRecurso = reader.Inteiro(8) > 0
+            });
+        }
+
+        return lista;
+    }
+
     public async Task<int> CadastrarAsync(Multa multa, CancellationToken cancelamento = default)
     {
         const string sql = """
