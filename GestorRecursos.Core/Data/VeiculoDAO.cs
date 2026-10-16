@@ -121,6 +121,59 @@ public class VeiculoDAO
         await VincularAsync(conexao, null, clienteId, veiculoId, vinculo, cancelamento);
     }
 
+    /// <summary>Veículos do sistema para escolher qual ligar a este cliente.</summary>
+    /// <remarks>
+    /// Busca por placa ou RENAVAM, que é como o carro é procurado na prática. Sem termo,
+    /// traz os primeiros em ordem de placa — a lista existe para evitar que o mesmo carro
+    /// seja cadastrado duas vezes.
+    /// </remarks>
+    public async Task<List<VeiculoParaVincular>> ListarParaVincularAsync(
+        int clienteId, string? termo = null, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT V.ID, V.PLACA, V.RENAVAM, V.MARCA_MODELO, V.COR, V.ANO,
+                   (SELECT COUNT(*) FROM CLIENTE_VEICULO CV
+                     WHERE CV.VEICULO_ID = V.ID AND CV.CLIENTE_ID = :clienteId),
+                   (SELECT COUNT(DISTINCT CV.CLIENTE_ID) FROM CLIENTE_VEICULO CV
+                     WHERE CV.VEICULO_ID = V.ID),
+                   (SELECT COUNT(*) FROM MULTAS M WHERE M.VEICULO_ID = V.ID)
+              FROM VEICULOS V
+             WHERE :termo IS NULL
+                OR UPPER(V.PLACA) LIKE :procura
+                OR V.RENAVAM LIKE :procura
+             ORDER BY V.PLACA
+             FETCH FIRST 60 ROWS ONLY
+            """;
+
+        var limpo = string.IsNullOrWhiteSpace(termo) ? null : termo.Trim().ToUpperInvariant();
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("clienteId", clienteId)
+           .Param("termo", limpo)
+           .Param("procura", limpo is null ? null : $"%{limpo}%");
+
+        var lista = new List<VeiculoParaVincular>();
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new VeiculoParaVincular
+            {
+                Id = reader.Inteiro(0),
+                Placa = reader.Texto(1),
+                Renavam = reader.TextoOuNulo(2),
+                MarcaModelo = reader.TextoOuNulo(3),
+                Cor = reader.TextoOuNulo(4),
+                Ano = reader.TextoOuNulo(5),
+                JaLigadoAoCliente = reader.Inteiro(6) > 0,
+                Clientes = reader.Inteiro(7),
+                Multas = reader.Inteiro(8)
+            });
+        }
+
+        return lista;
+    }
+
     /// <summary>Tira o veículo da ficha do cliente. O veículo e as multas dele ficam.</summary>
     /// <remarks>
     /// É o desfazer do engano mais comum: ligar o carro ao cliente errado. Não apaga

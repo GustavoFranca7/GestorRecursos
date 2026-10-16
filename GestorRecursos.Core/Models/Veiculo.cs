@@ -36,3 +36,23 @@ public class VeiculoDoCliente
     public Veiculo Veiculo { get; set; } = new();
     public VinculoVeiculo Vinculo { get; set; }
 }
+
+/// <summary>Um veículo do sistema na hora de escolher qual ligar ao cliente.</summary>
+/// <remarks>
+/// Traz o que ajuda a reconhecer o carro certo na lista: quantos clientes já o têm e
+/// quantas multas ele acumula. E diz se este cliente já está ligado a ele, para não
+/// oferecer um vínculo que já existe.
+/// </remarks>
+public class VeiculoParaVincular
+{
+    public int Id { get; set; }
+    public string Placa { get; set; } = string.Empty;
+    public string? Renavam { get; set; }
+    public string? MarcaModelo { get; set; }
+    public string? Cor { get; set; }
+    public string? Ano { get; set; }
+
+    public bool JaLigadoAoCliente { get; set; }
+    public int Clientes { get; set; }
+    public int Multas { get; set; }
+}

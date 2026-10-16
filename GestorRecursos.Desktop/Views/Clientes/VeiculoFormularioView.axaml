@@ -44,101 +44,315 @@
             <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
+
+        <!-- Bolinha da trilha de passos -->
+        <Style Selector="Border.bolha">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{StaticResource BordaClara}"/>
+        </Style>
+        <Style Selector="Border.bolha.atual">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Border.bolha.concluido">
+            <Setter Property="Background" Value="{StaticResource Sucesso}"/>
+        </Style>
+
+        <!-- Cartão de escolha do passo 1 -->
+        <Style Selector="Button.caminho">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.caminho /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        </Style>
+        <Style Selector="Button.caminho:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+        <!-- Linha da lista de veículos -->
+        <Style Selector="Button.veiculo">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.veiculo /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+        </Style>
+        <Style Selector="Button.veiculo:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.veiculo.escolhido /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Button.veiculo:disabled">
+            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
     </UserControl.Styles>
 
-    <!-- Sombra por cima da ficha, no mesmo molde do cadastro de cliente -->
+    <!-- Flutuante por cima da ficha, como as outras janelas do sistema -->
     <Border Background="#73102A2C">
-        <Border Width="660" Background="{StaticResource Cartao}"
+        <Border Width="700" Background="{StaticResource Cartao}"
                 BorderBrush="{StaticResource Borda}" BorderThickness="1"
                 CornerRadius="{StaticResource RaioCartao}"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
-            <Grid RowDefinitions="Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
 
                 <StackPanel Grid.Row="0" Spacing="3" Margin="26,22,26,0">
                     <TextBlock Text="{Binding Titulo}" FontSize="17" FontWeight="Bold"
                                Foreground="{StaticResource Texto}"/>
-                    <TextBlock Text="A multa pertence ao veículo, então é por ele que se começa."
-                               FontSize="11.5" Foreground="{StaticResource TextoFraco}"/>
+                    <TextBlock Text="{Binding Instrucao}" FontSize="11.5"
+                               Foreground="{StaticResource TextoFraco}"/>
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Margin="26,20,26,0">
+                <!-- ============ TRILHA DE PASSOS ============ -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Passos}"
+                              IsVisible="{Binding MostrarPassos}"
+                              Margin="26,18,26,0" HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PassoViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,0,14,0">
+                                <Border Classes="bolha"
+                                        Classes.atual="{Binding Atual}"
+                                        Classes.concluido="{Binding Concluido}">
+                                    <Panel>
+                                        <TextBlock Text="{Binding Numero}" FontSize="11.5"
+                                                   FontWeight="Bold" Foreground="White"
+                                                   IsVisible="{Binding !Concluido}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="✓" FontSize="11.5" FontWeight="Bold"
+                                                   Foreground="White"
+                                                   IsVisible="{Binding Concluido}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Panel>
+                                </Border>
+                                <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <Border Width="40" Height="1" VerticalAlignment="Center"
+                                        Margin="6,0,0,0"
+                                        Background="{StaticResource BordaClara}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                    <Grid ColumnDefinitions="150,16,*">
-                        <StackPanel Grid.Column="0" Margin="0,0,0,16">
-                            <TextBlock Classes="rotulo" Text="Placa *"/>
-                            <TextBox Classes="entrada" Text="{Binding Placa}"
-                                     servicos:Mascara.Padrao="placa"
-                                     Classes.erro="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"
-                                     FontFamily="Consolas,monospace"
-                                     Watermark="ABC1D23"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Margin="0,0,0,16">
-                            <TextBlock Classes="rotulo" Text="Marca e modelo"/>
-                            <TextBox Classes="entrada" Text="{Binding MarcaModelo}"
-                                     Watermark="Nissan Versa"/>
+                <Panel Grid.Row="2" Margin="26,20,26,0">
+
+                    <!-- ============ PASSO 1: ORIGEM ============ -->
+                    <StackPanel IsVisible="{Binding NaOrigem}" Spacing="10">
+                        <Button Classes="caminho" Command="{Binding EscolherExistenteCommand}">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Vincular um veículo que já existe" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12"
+                                           Foreground="{StaticResource TextoFraco}"
+                                           Text="O carro já foi cadastrado para outro cliente, ou para este em outro papel. Procure pela placa ou pelo RENAVAM."/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="caminho" Command="{Binding CadastrarNovoCommand}">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Cadastrar um veículo novo" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12"
+                                           Foreground="{StaticResource TextoFraco}"
+                                           Text="É a primeira vez que este carro entra no sistema."/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- ============ PASSO 2A: ESCOLHER ============ -->
+                    <Grid IsVisible="{Binding NaEscolha}" RowDefinitions="Auto,*,Auto">
+                        <Panel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBox Classes="busca" Text="{Binding Busca}"
+                                     PlaceholderText="Buscar por placa ou RENAVAM...">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding Gesture="Enter" Command="{Binding ProcurarCommand}"/>
+                                </TextBox.KeyBindings>
+                            </TextBox>
+                            <Button Command="{Binding ProcurarCommand}" Background="Transparent"
+                                    BorderThickness="0" Padding="8,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Cursor="Hand" ToolTip.Tip="Buscar">
+                                <Viewbox Width="15" Height="15">
+                                    <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                          Data="{StaticResource IconeBusca}"/>
+                                </Viewbox>
+                            </Button>
+                        </Panel>
+
+                        <ScrollViewer Grid.Row="1" MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Encontrados}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:VeiculoParaVincularViewModel">
+                                        <Button Classes="veiculo"
+                                                IsEnabled="{Binding PodeLigar}"
+                                                Classes.escolhido="{Binding Escolhido}"
+                                                Command="{Binding $parent[ItemsControl].((vm:VeiculoFormularioViewModel)DataContext).SelecionarCommand}"
+                                                CommandParameter="{Binding}">
+                                            <Grid ColumnDefinitions="100,*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding Placa}"
+                                                           FontFamily="Consolas,monospace"
+                                                           FontSize="13" FontWeight="Bold"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{StaticResource Texto}"/>
+                                                <StackPanel Grid.Column="1" Spacing="1">
+                                                    <TextBlock Text="{Binding Descricao}" FontSize="12"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource TextoFraco}"/>
+                                                    <TextBlock Text="{Binding Renavam}" FontSize="10.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right" Spacing="2">
+                                                    <TextBlock Text="{Binding Resumo}" FontSize="10.5"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <TextBlock Text="já nesta ficha" FontSize="10.5"
+                                                               IsVisible="{Binding JaLigado}"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{StaticResource Sucesso}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <TextBlock Grid.Row="1" IsVisible="{Binding SemResultado}"
+                                   Text="Nenhum veículo encontrado com esse termo."
+                                   FontSize="12" Margin="0,20,0,0"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextoApagado}"/>
+
+                        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                            <TextBlock Classes="rotulo" Text="Vínculo com o cliente"/>
+                            <ComboBox Classes="entrada" ItemsSource="{Binding Vinculos}"
+                                      SelectedItem="{Binding Vinculo}"/>
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Classes="erroCampo" Text="{Binding ErroPlaca}" Margin="0,-12,0,10"
-                               IsVisible="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                    <!-- ============ PASSO 2B: DADOS ============ -->
+                    <StackPanel IsVisible="{Binding NosDados}">
+                        <Grid ColumnDefinitions="150,16,*">
+                            <StackPanel Grid.Column="0" Margin="0,0,0,16">
+                                <TextBlock Classes="rotulo" Text="Placa *"/>
+                                <TextBox Classes="entrada" Text="{Binding Placa}"
+                                         servicos:Mascara.Padrao="placa"
+                                         Classes.erro="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         FontFamily="Consolas,monospace"
+                                         Watermark="ABC1D23"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,0,16">
+                                <TextBlock Classes="rotulo" Text="Marca e modelo"/>
+                                <TextBox Classes="entrada" Text="{Binding MarcaModelo}"
+                                         Watermark="Nissan Versa"/>
+                            </StackPanel>
+                        </Grid>
 
-                    <Grid ColumnDefinitions="*,16,120,16,150">
-                        <StackPanel Grid.Column="0" Margin="0,0,0,16">
-                            <TextBlock Classes="rotulo" Text="RENAVAM"/>
-                            <TextBox Classes="entrada" Text="{Binding Renavam}"
-                                     servicos:Mascara.Padrao="numero:11"
-                                     Watermark="00000000000"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Margin="0,0,0,16">
-                            <TextBlock Classes="rotulo" Text="Ano"/>
-                            <TextBox Classes="entrada" Text="{Binding Ano}" Watermark="2019/2020"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="4" Margin="0,0,0,16">
-                            <TextBlock Classes="rotulo" Text="Cor"/>
-                            <TextBox Classes="entrada" Text="{Binding Cor}" Watermark="Preta"/>
-                        </StackPanel>
-                    </Grid>
+                        <TextBlock Classes="erroCampo" Text="{Binding ErroPlaca}" Margin="0,-12,0,10"
+                                   IsVisible="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
 
-                    <StackPanel Margin="0,0,0,16">
-                        <TextBlock Classes="rotulo" Text="Vínculo com o cliente"/>
-                        <ComboBox Classes="entrada" ItemsSource="{Binding Vinculos}"
-                                  SelectedItem="{Binding Vinculo}"/>
+                        <Grid ColumnDefinitions="*,16,120,16,150">
+                            <StackPanel Grid.Column="0" Margin="0,0,0,16">
+                                <TextBlock Classes="rotulo" Text="RENAVAM"/>
+                                <TextBox Classes="entrada" Text="{Binding Renavam}"
+                                         servicos:Mascara.Padrao="numero:11"
+                                         Watermark="00000000000"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,0,16">
+                                <TextBlock Classes="rotulo" Text="Ano"/>
+                                <TextBox Classes="entrada" Text="{Binding Ano}" Watermark="2019/2020"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4" Margin="0,0,0,16">
+                                <TextBlock Classes="rotulo" Text="Cor"/>
+                                <TextBox Classes="entrada" Text="{Binding Cor}" Watermark="Preta"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Classes="rotulo" Text="Vínculo com o cliente"/>
+                            <ComboBox Classes="entrada" ItemsSource="{Binding Vinculos}"
+                                      SelectedItem="{Binding Vinculo}"/>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Observação"/>
+                            <TextBox Classes="entrada" Text="{Binding Observacao}"
+                                     Watermark="Carro da empresa, alugado..."/>
+                        </StackPanel>
+
+                        <!-- Placa que já existe: não cadastra outra, liga esta -->
+                        <Border IsVisible="{Binding TemAchado}" Margin="0,16,0,0"
+                                Background="{StaticResource AvisoClaro}"
+                                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding Achado}" FontSize="12" TextWrapping="Wrap"
+                                           LineHeight="18" Foreground="{StaticResource Texto}"/>
+                                <Button Classes="primario" Content="Ligar este veículo ao cliente"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding UsarEncontradoCommand}"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
+                </Panel>
 
-                    <StackPanel>
-                        <TextBlock Classes="rotulo" Text="Observação"/>
-                        <TextBox Classes="entrada" Text="{Binding Observacao}"
-                                 Watermark="Carro da empresa, alugado..."/>
-                    </StackPanel>
-
-                    <!-- Placa que já existe: ligar ao cliente em vez de duplicar -->
-                    <Border IsVisible="{Binding TemAchado}" Margin="0,16,0,0"
-                            Background="{StaticResource AvisoClaro}"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
-                            CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="{Binding Achado}" FontSize="12" TextWrapping="Wrap"
-                                       LineHeight="18" Foreground="{StaticResource Texto}"/>
-                            <Button Classes="primario" Content="Ligar este veículo ao cliente"
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding UsarEncontradoCommand}"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <Border Grid.Row="2" Background="{StaticResource CartaoSuave}"
+                <!-- ============ RODAPÉ ============ -->
+                <Border Grid.Row="3" Background="{StaticResource CartaoSuave}"
                         BorderBrush="{StaticResource BordaClara}" BorderThickness="0,1,0,0"
                         Padding="26,14" Margin="0,22,0,0">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="12"
-                                   VerticalAlignment="Center" TextWrapping="Wrap"
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Contador}" FontSize="11.5"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding MostrarPassos}"
+                                   Foreground="{StaticResource TextoApagado}"/>
+
+                        <TextBlock Grid.Column="1" Text="{Binding Erro}" FontSize="12"
+                                   Margin="16,0" VerticalAlignment="Center" TextWrapping="Wrap"
                                    Foreground="{StaticResource Alerta}"
                                    IsVisible="{Binding TemErro}"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
                             <Button Classes="neutro" Content="Cancelar"
                                     Command="{Binding CancelarCommand}"/>
+                            <Button Classes="neutro" Content="← Voltar"
+                                    IsVisible="{Binding PodeVoltar}"
+                                    Command="{Binding VoltarCommand}"/>
                             <Button Classes="primario" Content="{Binding TextoSalvar}"
+                                    IsVisible="{Binding MostrarSalvar}"
                                     IsEnabled="{Binding !Salvando}"
                                     Command="{Binding SalvarCommand}"/>
                         </StackPanel>
