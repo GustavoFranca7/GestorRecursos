@@ -33,6 +33,33 @@ public enum TipoProcessoCnh
     [ValorBanco("CASSACAO")] Cassacao
 }
 
+/// <summary>O que o serviço pede no cadastro — e, por isso, por onde a tela passa.</summary>
+/// <remarks>
+/// Não confundir com <c>TEM_INSTANCIAS</c>, que diz como o serviço é <em>acompanhado</em>
+/// depois de contratado. Licenciamento pede veículo e não tem instâncias; indicação de
+/// condutor pede multa e também não tem.
+/// </remarks>
+public enum FluxoServico
+{
+    /// <summary>Veículo e multas. Qual recurso é o certo sai da gravidade de cada auto.</summary>
+    [ValorBanco("RECURSO_MULTA")] RecursoDeMulta,
+
+    /// <summary>Veículo e uma multa, para passar a autuação a quem dirigia.</summary>
+    [ValorBanco("INDICACAO")] Indicacao,
+
+    /// <summary>O processo que o DETRAN abriu, e as multas que contaram na pontuação.</summary>
+    [ValorBanco("DEFESA_CNH")] DefesaCnh,
+
+    /// <summary>Só o cliente, mas é assunto de CNH: fica junto na lista.</summary>
+    [ValorBanco("SERVICO_CNH")] ServicoCnh,
+
+    /// <summary>Só o veículo.</summary>
+    [ValorBanco("VEICULO")] SobreVeiculo,
+
+    /// <summary>Só o cliente.</summary>
+    [ValorBanco("OUTRO")] Outro
+}
+
 public enum SituacaoRegistro
 {
     [ValorBanco("ANDAMENTO")] Andamento,

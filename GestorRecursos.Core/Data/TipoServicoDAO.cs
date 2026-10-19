@@ -6,13 +6,20 @@ namespace GestorRecursos.Core.Data;
 // Camada Core / Data: a tabela de preços.
 public class TipoServicoDAO
 {
+    // A contagem de etapas vem junto: é ela que diz, já na lista de escolha, que o
+    // serviço tem um roteiro a cumprir depois de contratado.
+    private const string Colunas = """
+        T.ID, T.NOME, T.TEM_INSTANCIAS, T.VALOR_TABELA, T.ATIVO, T.FLUXO,
+        (SELECT COUNT(*) FROM ETAPAS_MODELO E WHERE E.TIPO_SERVICO_ID = T.ID)
+        """;
+
     public async Task<List<TipoServico>> ListarAsync(bool apenasAtivos = true, CancellationToken cancelamento = default)
     {
-        var filtro = apenasAtivos ? "WHERE ATIVO = 'S'" : string.Empty;
+        var filtro = apenasAtivos ? "WHERE T.ATIVO = 'S'" : string.Empty;
         var sql = $"""
-            SELECT ID, NOME, TEM_INSTANCIAS, VALOR_TABELA, ATIVO
-              FROM TIPOS_SERVICO {filtro}
-             ORDER BY NOME
+            SELECT {Colunas}
+              FROM TIPOS_SERVICO T {filtro}
+             ORDER BY T.NOME
             """;
 
         await using var conexao = await Database.AbrirAsync(cancelamento);
@@ -30,10 +37,7 @@ public class TipoServicoDAO
 
     public async Task<TipoServico?> BuscarPorIdAsync(int id, CancellationToken cancelamento = default)
     {
-        const string sql = """
-            SELECT ID, NOME, TEM_INSTANCIAS, VALOR_TABELA, ATIVO
-              FROM TIPOS_SERVICO WHERE ID = :id
-            """;
+        var sql = $"SELECT {Colunas} FROM TIPOS_SERVICO T WHERE T.ID = :id";
 
         await using var conexao = await Database.AbrirAsync(cancelamento);
         await using var cmd = conexao.Comando(sql);
@@ -65,6 +69,8 @@ public class TipoServicoDAO
         Nome = reader.Texto(1),
         TemInstancias = reader.Booleano(2),
         ValorTabela = reader.Decimal(3),
-        Ativo = reader.Booleano(4)
+        Ativo = reader.Booleano(4),
+        Fluxo = ValorBanco.De<FluxoServico>(reader.Texto(5)),
+        QuantidadeEtapas = reader.Inteiro(6)
     };
 }
