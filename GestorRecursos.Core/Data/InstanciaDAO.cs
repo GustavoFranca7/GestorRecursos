@@ -96,6 +96,90 @@ public class InstanciaDAO
         return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
     }
 
+    /// <summary>Grava as três fases de uma vez, como elas vieram da tela de edição.</summary>
+    /// <remarks>
+    /// O caminho de sempre — protocolar, esperar, registrar o resultado, repetir — serve
+    /// ao recurso que nasce aqui e vai andando. Não serve ao recurso que chega pronto:
+    /// um processo que já passou pela autuação e pela JARI exigia seis janelas seguidas
+    /// para ser lançado. Esta porta existe para esse caso.
+    ///
+    /// Tudo numa transação: um recurso com a autuação indeferida e a JARI não criada é
+    /// pior que nenhum, porque some do radar sem ninguém perceber.
+    ///
+    /// A fase seguinte nasce quando a anterior indefere, com ou sem dados — é o que a
+    /// mantém visível na tela, esperando protocolo.
+    /// </remarks>
+    public async Task<bool> SalvarAndamentoAsync(
+        int itemId,
+        IReadOnlyList<Instancia> fases,
+        CancellationToken cancelamento = default)
+    {
+        const string sqlAtualizar = """
+            UPDATE INSTANCIAS SET
+                SITUACAO = :situacao,
+                PRAZO_PROTOCOLO = :prazoProtocolo,
+                DATA_PROTOCOLO = :dataProtocolo,
+                NUMERO_PROTOCOLO = :numeroProtocolo,
+                ORGAO_DESTINATARIO = :orgaoDestinatario,
+                DATA_RESULTADO = :dataResultado,
+                RESULTADO = :resultado,
+                OBSERVACOES = :observacoes
+             WHERE ID = :id
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
+
+        try
+        {
+            var indeferiuAnterior = false;
+
+            foreach (var fase in fases.OrderBy(f => f.Fase))
+            {
+                // A fase entra se já existe, se tem algo preenchido, ou se a anterior
+                // indeferiu — nesse caso ela precisa existir mesmo vazia.
+                var precisa = fase.Id > 0 || fase.TemConteudo || indeferiuAnterior;
+                if (!precisa)
+                {
+                    continue;
+                }
+
+                fase.ItemId = itemId;
+                fase.Situacao = fase.SituacaoPeloPreenchido();
+
+                if (fase.Id > 0)
+                {
+                    await using var cmd = conexao.Comando(sqlAtualizar, transacao);
+                    cmd.Param("situacao", fase.Situacao.Texto())
+                       .Param("prazoProtocolo", fase.PrazoProtocolo)
+                       .Param("dataProtocolo", fase.DataProtocolo)
+                       .Param("numeroProtocolo", fase.NumeroProtocolo)
+                       .Param("orgaoDestinatario", fase.OrgaoDestinatario)
+                       .Param("dataResultado", fase.DataResultado)
+                       .Param("resultado", fase.Resultado?.Texto())
+                       .Param("observacoes", fase.Observacoes)
+                       .Param("id", fase.Id);
+
+                    await cmd.ExecuteNonQueryAsync(cancelamento);
+                }
+                else
+                {
+                    await InserirAsync(conexao, transacao, fase, cancelamento);
+                }
+
+                indeferiuAnterior = fase.Resultado == ResultadoInstancia.Indeferido;
+            }
+
+            await transacao.CommitAsync(cancelamento);
+            return true;
+        }
+        catch
+        {
+            await transacao.RollbackAsync(cancelamento);
+            throw;
+        }
+    }
+
     /// <summary>Encerra o recurso: o item sai de andamento e as fases abertas param.</summary>
     /// <remarks>
     /// É a desistência, ou o conserto de um recurso lançado por engano. Não apaga nada —

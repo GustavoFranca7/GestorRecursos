@@ -30,4 +30,32 @@ public class Instancia
 
     /// <summary>Vence hoje ou já venceu, e ainda não foi protocolado.</summary>
     public bool Urgente => !Protocolado && DiasParaPrazo is <= 0;
+
+    /// <summary>Em que pé a fase está, deduzido do que foi preenchido.</summary>
+    /// <remarks>
+    /// A situação não é escolhida por ninguém: ela é consequência. Houve resultado, está
+    /// julgada; houve protocolo, está aguardando julgamento; não houve nada, está
+    /// esperando o protocolo. Deixar alguém escolher abriria a porta para o estado
+    /// impossível — "aguardando protocolo" com número de protocolo preenchido.
+    /// </remarks>
+    public SituacaoInstancia SituacaoPeloPreenchido() => Resultado switch
+    {
+        ResultadoInstancia.Deferido => SituacaoInstancia.Deferido,
+        ResultadoInstancia.Indeferido => SituacaoInstancia.Indeferido,
+        _ when DataProtocolo.HasValue => SituacaoInstancia.AguardandoJulgamento,
+        _ => Fase switch
+        {
+            FaseInstancia.Jari => SituacaoInstancia.AguardandoProtocoloJari,
+            FaseInstancia.Cetran => SituacaoInstancia.AguardandoProtocoloCetran,
+            _ => SituacaoInstancia.Contratado
+        }
+    };
+
+    /// <summary>Tem alguma coisa preenchida além da fase em si.</summary>
+    public bool TemConteudo =>
+        PrazoProtocolo.HasValue || DataProtocolo.HasValue || DataResultado.HasValue
+        || Resultado is not null
+        || !string.IsNullOrWhiteSpace(NumeroProtocolo)
+        || !string.IsNullOrWhiteSpace(OrgaoDestinatario)
+        || !string.IsNullOrWhiteSpace(Observacoes);
 }

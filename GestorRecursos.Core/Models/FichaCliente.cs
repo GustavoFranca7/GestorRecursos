@@ -90,20 +90,26 @@ public class ProcessoDaFicha
     public DateTime? DataProtocolo { get; set; }
 }
 
-/// <summary>Um recurso inteiro na aba Processos: o que foi contratado e as fases dele.</summary>
+/// <summary>Um serviço contratado, na aba Serviços: o que foi fechado e como ele anda.</summary>
 /// <remarks>
 /// Diferente do <see cref="ProcessoDaFicha"/>, que mostra uma fase por linha no resumo:
-/// aqui vem o recurso completo, com autuação, JARI e CETRAN lado a lado, porque é assim
-/// que ela acompanha — o que já foi julgado explica o que está aberto agora.
+/// aqui vem o serviço completo. Recurso traz autuação, JARI e CETRAN lado a lado, porque
+/// o que já foi julgado explica o que está aberto agora; serviço direto traz o roteiro
+/// de etapas, que é como uma renovação de CNH é acompanhada.
 /// </remarks>
-public class RecursoDaFicha
+public class ServicoDaFicha
 {
     public int ItemId { get; set; }
     public int ContratacaoId { get; set; }
     public string Servico { get; set; } = string.Empty;
 
+    /// <summary>De onde o serviço trata. Um dos dois, nunca os dois.</summary>
+    public int? MultaId { get; set; }
+    public int? ProcessoCnhId { get; set; }
+
     public string? Ait { get; set; }
     public string? NumeroProcessoCnh { get; set; }
+    public string? TipoProcessoCnh { get; set; }
     public string? Placa { get; set; }
     public string? Enquadramento { get; set; }
     public string? Gravidade { get; set; }
@@ -124,7 +130,29 @@ public class RecursoDaFicha
 
     public int ItensNaContratacao { get; set; }
 
+    /// <summary>As fases percorridas. Vazia no serviço direto.</summary>
     public List<Instancia> Instancias { get; set; } = [];
+
+    /// <summary>O roteiro a cumprir. Vazio no recurso, que anda por instâncias.</summary>
+    public List<EtapaDoServico> Etapas { get; set; } = [];
+
+    /// <summary>Recurso anda por fases; serviço direto, por etapas. O cartão muda por isso.</summary>
+    public bool PorInstancias => Instancias.Count > 0;
+}
+
+/// <summary>Um passo do roteiro de um serviço direto.</summary>
+public class EtapaDoServico
+{
+    public int Id { get; set; }
+    public int ItemId { get; set; }
+    public int Ordem { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public bool Concluida { get; set; }
+
+    /// <summary>Até quando a etapa precisa estar cumprida. É daqui que sai o alarme.</summary>
+    public DateTime? Prazo { get; set; }
+
+    public DateTime? DataConclusao { get; set; }
 }
 
 /// <summary>O financeiro do cliente somado, para o resumo da ficha.</summary>

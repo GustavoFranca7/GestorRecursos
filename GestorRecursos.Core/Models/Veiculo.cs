@@ -55,4 +55,13 @@ public class VeiculoParaVincular
     public bool JaLigadoAoCliente { get; set; }
     public int Clientes { get; set; }
     public int Multas { get; set; }
+
+    /// <summary>Nome de quem já é dono deste carro, quando for outra pessoa.</summary>
+    /// <remarks>
+    /// Um veículo tem um proprietário só — condutor indicado pode ter vários. Saber o
+    /// nome deixa a recusa útil: em vez de "não pode", a tela diz de quem o carro é.
+    /// </remarks>
+    public string? ProprietarioAtual { get; set; }
+
+    public bool TemOutroProprietario => !string.IsNullOrWhiteSpace(ProprietarioAtual);
 }

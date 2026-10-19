@@ -18,6 +18,7 @@ public class ContratacaoDAO
     public async Task<int> CadastrarAsync(
         Contratacao contratacao,
         Pagamento? pagamento = null,
+        ProcessoCnh? processoCnh = null,
         CancellationToken cancelamento = default)
     {
         const string sqlCabecalho = """
@@ -41,6 +42,19 @@ public class ContratacaoDAO
 
         try
         {
+            // O processo do DETRAN entra antes dos itens: são eles que o apontam.
+            if (processoCnh is not null)
+            {
+                processoCnh.ClienteId = contratacao.ClienteId;
+                var idProcesso = await ProcessoCnhDAO.InserirAsync(
+                    conexao, transacao, processoCnh, cancelamento);
+
+                foreach (var item in contratacao.Itens)
+                {
+                    item.ProcessoCnhId = idProcesso;
+                }
+            }
+
             int idContratacao;
             await using (var cmd = conexao.Comando(sqlCabecalho, transacao))
             {
@@ -91,6 +105,11 @@ public class ContratacaoDAO
                     instancia.ItemId = idItem;
                     await InstanciaDAO.InserirAsync(conexao, transacao, instancia, cancelamento);
                 }
+
+                // Serviço direto nasce com o roteiro dele. Quem não tem modelo de etapa
+                // não ganha nada: o INSERT ... SELECT simplesmente não acha linhas.
+                await EtapaDAO.CriarDoModeloAsync(
+                    conexao, transacao, idItem, item.TipoServicoId, cancelamento);
             }
 
             if (pagamento is not null)
@@ -197,6 +216,68 @@ public class ContratacaoDAO
         }
 
         return lista;
+    }
+
+    /// <summary>Corrige um serviço já contratado: a variante e as observações.</summary>
+    /// <remarks>
+    /// Existe porque dado digitado errado é a regra, não a exceção: escolheu "recurso de
+    /// multa grave" e era média. Sem conserto, a saída seria cancelar e refazer, o que
+    /// sujaria o histórico por causa de um engano de digitação.
+    ///
+    /// O valor cobrado não se mexe aqui, de propósito: dinheiro é assunto do Financeiro.
+    /// O que acompanha a troca é só o valor de tabela — o "antes do desconto" —, porque
+    /// senão a contratação ficaria dizendo que a soma dos serviços é outra.
+    /// </remarks>
+    public async Task<bool> CorrigirItemAsync(
+        int itemId,
+        int tipoServicoId,
+        string? observacoes,
+        CancellationToken cancelamento = default)
+    {
+        const string sqlItem = """
+            UPDATE ITENS_CONTRATACAO SET TIPO_SERVICO_ID = :tipoServicoId WHERE ID = :itemId
+            """;
+
+        const string sqlContratacao = """
+            UPDATE CONTRATACOES CT SET
+                OBSERVACOES  = :observacoes,
+                VALOR_TABELA = (SELECT NVL(SUM(T.VALOR_TABELA), 0)
+                                  FROM ITENS_CONTRATACAO I
+                                  JOIN TIPOS_SERVICO T ON T.ID = I.TIPO_SERVICO_ID
+                                 WHERE I.CONTRATACAO_ID = CT.ID),
+                DESCONTO     = GREATEST(0, (SELECT NVL(SUM(T.VALOR_TABELA), 0)
+                                              FROM ITENS_CONTRATACAO I
+                                              JOIN TIPOS_SERVICO T ON T.ID = I.TIPO_SERVICO_ID
+                                             WHERE I.CONTRATACAO_ID = CT.ID) - CT.VALOR_FINAL)
+             WHERE CT.ID = (SELECT CONTRATACAO_ID FROM ITENS_CONTRATACAO WHERE ID = :itemId)
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
+
+        try
+        {
+            int afetadas;
+            await using (var cmd = conexao.Comando(sqlItem, transacao))
+            {
+                cmd.Param("tipoServicoId", tipoServicoId).Param("itemId", itemId);
+                afetadas = await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            await using (var cmd = conexao.Comando(sqlContratacao, transacao))
+            {
+                cmd.Param("observacoes", observacoes).Param("itemId", itemId);
+                await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            await transacao.CommitAsync(cancelamento);
+            return afetadas > 0;
+        }
+        catch
+        {
+            await transacao.RollbackAsync(cancelamento);
+            throw;
+        }
     }
 
     public async Task<bool> AtualizarValoresAsync(Contratacao contratacao, CancellationToken cancelamento = default)

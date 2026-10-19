@@ -111,14 +111,50 @@ public class VeiculoDAO
     }
 
     /// <summary>Liga um veículo já existente a um cliente.</summary>
+    /// <remarks>
+    /// Recusa um segundo proprietário: o carro é de uma pessoa só. Condutor indicado
+    /// pode ser vários, e é esse o caso que o vínculo duplo existe para cobrir.
+    ///
+    /// A checagem fica aqui, e não só na tela, porque é regra do domínio — a tela avisa
+    /// antes para ser gentil, mas quem garante é a camada que grava.
+    /// </remarks>
     public async Task VincularAsync(
         int clienteId,
         int veiculoId,
         VinculoVeiculo vinculo,
         CancellationToken cancelamento = default)
     {
+        if (vinculo == VinculoVeiculo.Proprietario
+            && await ProprietarioDeAsync(veiculoId, clienteId, cancelamento) is { } dono)
+        {
+            throw new InvalidOperationException(
+                $"Este veículo já é de {dono}. Um carro tem um proprietário só — "
+                + "ligue o cliente como condutor indicado.");
+        }
+
         await using var conexao = await Database.AbrirAsync(cancelamento);
         await VincularAsync(conexao, null, clienteId, veiculoId, vinculo, cancelamento);
+    }
+
+    /// <summary>Quem é o dono do carro, se não for o próprio cliente. Nulo quando não há.</summary>
+    public async Task<string?> ProprietarioDeAsync(
+        int veiculoId, int exceto, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT MIN(C.NOME)
+              FROM CLIENTE_VEICULO CV
+              JOIN CLIENTES C ON C.ID = CV.CLIENTE_ID
+             WHERE CV.VEICULO_ID = :veiculoId
+               AND CV.VINCULO = 'PROPRIETARIO'
+               AND CV.CLIENTE_ID <> :exceto
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("veiculoId", veiculoId).Param("exceto", exceto);
+
+        var achado = await cmd.ExecuteScalarAsync(cancelamento);
+        return achado is null or DBNull ? null : achado.ToString();
     }
 
     /// <summary>Veículos do sistema para escolher qual ligar a este cliente.</summary>
@@ -130,13 +166,20 @@ public class VeiculoDAO
     public async Task<List<VeiculoParaVincular>> ListarParaVincularAsync(
         int clienteId, string? termo = null, CancellationToken cancelamento = default)
     {
+        // O nome do dono atual vem junto: é o que permite recusar o vínculo de
+        // proprietário explicando de quem o carro já é.
         const string sql = """
             SELECT V.ID, V.PLACA, V.RENAVAM, V.MARCA_MODELO, V.COR, V.ANO,
                    (SELECT COUNT(*) FROM CLIENTE_VEICULO CV
                      WHERE CV.VEICULO_ID = V.ID AND CV.CLIENTE_ID = :clienteId),
                    (SELECT COUNT(DISTINCT CV.CLIENTE_ID) FROM CLIENTE_VEICULO CV
                      WHERE CV.VEICULO_ID = V.ID),
-                   (SELECT COUNT(*) FROM MULTAS M WHERE M.VEICULO_ID = V.ID)
+                   (SELECT COUNT(*) FROM MULTAS M WHERE M.VEICULO_ID = V.ID),
+                   (SELECT MIN(C.NOME) FROM CLIENTE_VEICULO CV
+                      JOIN CLIENTES C ON C.ID = CV.CLIENTE_ID
+                     WHERE CV.VEICULO_ID = V.ID
+                       AND CV.VINCULO = 'PROPRIETARIO'
+                       AND CV.CLIENTE_ID <> :clienteId)
               FROM VEICULOS V
              WHERE :termo IS NULL
                 OR UPPER(V.PLACA) LIKE :procura
@@ -167,7 +210,8 @@ public class VeiculoDAO
                 Ano = reader.TextoOuNulo(5),
                 JaLigadoAoCliente = reader.Inteiro(6) > 0,
                 Clientes = reader.Inteiro(7),
-                Multas = reader.Inteiro(8)
+                Multas = reader.Inteiro(8),
+                ProprietarioAtual = reader.TextoOuNulo(9)
             });
         }
 
