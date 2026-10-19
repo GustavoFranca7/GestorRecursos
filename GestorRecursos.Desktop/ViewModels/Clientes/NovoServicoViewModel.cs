@@ -12,156 +12,104 @@ using GestorRecursos.Core.Models;
 
 namespace GestorRecursos.Desktop.ViewModels;
 
-/// <summary>Em que etapa o recurso está sendo montado.</summary>
-public enum PassoRecurso
+/// <summary>As telas por onde a contratação pode passar.</summary>
+/// <remarks>
+/// Não é uma sequência fixa: o serviço escolhido no primeiro passo decide quais destes
+/// entram no caminho. Renovação de CNH não tem o que perguntar sobre carro nem multa.
+/// </remarks>
+public enum PassoServico
 {
+    Servico,
     Veiculo,
     Multas,
-    Servico,
+    Processo,
+    Preco,
     Pagamento
 }
 
-/// <summary>Um veículo do cliente, na escolha do passo 1.</summary>
-public partial class VeiculoDoRecursoViewModel(VeiculoDaFicha dados) : ObservableObject
-{
-    /// <summary>Linha marcada. Mora no item porque é ele que muda de cor.</summary>
-    [ObservableProperty] public partial bool Escolhido { get; set; }
-
-    public int Id { get; } = dados.Id;
-    public string Placa { get; } = dados.Placa;
-
-    public string Descricao { get; } = string.Join(" · ",
-        new[] { dados.MarcaModelo, dados.Ano, dados.Cor }
-            .Where(p => !string.IsNullOrWhiteSpace(p)));
-
-    public string Vinculo { get; } = Rotulos.Vinculo(dados.Vinculo);
-
-    public string Multas { get; } = dados.QuantidadeMultas == 1
-        ? "1 multa"
-        : $"{dados.QuantidadeMultas} multas";
-}
-
-/// <summary>Uma multa do veículo, na seleção do passo 2.</summary>
-public partial class MultaDoRecursoViewModel : ObservableObject
+/// <summary>Uma multa do cliente na seleção da pontuação, no passo do processo de CNH.</summary>
+public partial class MultaDaPontuacaoViewModel : ObservableObject
 {
     private readonly Action _aoMarcar;
 
-    public MultaDoRecursoViewModel(MultaParaRecurso dados, Action aoMarcar)
+    public MultaDaPontuacaoViewModel(Multa dados, Action aoMarcar)
     {
         Dados = dados;
         _aoMarcar = aoMarcar;
 
         var gravidade = dados.Gravidade?.Texto();
         var (fundo, texto) = Rotulos.CoresDaGravidade(gravidade);
-        Gravidade = Rotulos.Gravidade(gravidade, null);
+        Gravidade = Rotulos.Gravidade(gravidade, dados.Pontos);
         FundoGravidade = fundo;
         CorGravidade = texto;
 
+        Placa = dados.Veiculo?.Placa ?? string.Empty;
         Descricao = string.IsNullOrWhiteSpace(dados.Descricao)
             ? dados.Enquadramento ?? "sem descrição"
             : dados.Descricao;
-
         Quando = dados.DataHoraInfracao is { } momento ? Formato.Data(momento) : "sem data";
-        Valor = dados.Valor is { } valor ? Formato.Dinheiro(valor) : "—";
-
-        // O prazo de defesa é o que decide a urgência do recurso; sem ele, não há alarme.
-        if (dados.PrazoDefesa is { } prazo)
-        {
-            var dias = (prazo.Date - DateTime.Today).Days;
-            Prazo = Prazos.Texto(dias);
-            var (fundoPrazo, corPrazo) = Prazos.Cores(dias);
-            FundoPrazo = fundoPrazo;
-            CorPrazo = corPrazo;
-        }
-        else
-        {
-            Prazo = "sem prazo";
-            FundoPrazo = "Fundo";
-            CorPrazo = "TextoFraco";
-        }
     }
 
-    public MultaParaRecurso Dados { get; }
+    public Multa Dados { get; }
 
-    /// <summary>Entra neste recurso. Duas vias: o clique na linha e o quadradinho.</summary>
     [ObservableProperty] public partial bool Marcada { get; set; }
 
     public int Id => Dados.Id;
+    public int Pontos => Dados.Pontos ?? 0;
     public string Ait => Dados.Ait;
+    public string Placa { get; }
     public string Descricao { get; }
     public string Quando { get; }
     public string Gravidade { get; }
     public string FundoGravidade { get; }
     public string CorGravidade { get; }
-    public string Valor { get; }
-    public string Prazo { get; }
-    public string FundoPrazo { get; }
-    public string CorPrazo { get; }
-
-    public bool JaTemRecurso => Dados.JaTemRecurso;
-    public bool PodeMarcar => !Dados.JaTemRecurso;
     public bool TemGravidade => Gravidade.Length > 0;
 
     partial void OnMarcadaChanged(bool valor) => _aoMarcar();
 }
 
-/// <summary>Uma multa escolhida, com o serviço e o preço dela, no passo 3.</summary>
+/// <summary>Um item da contratação no passo do preço, com o serviço e o valor dele.</summary>
 /// <remarks>
-/// O serviço vem sugerido pela gravidade, que é como a tabela do escritório é organizada.
-/// Continua trocável: o mesmo auto pode virar indicação de condutor em vez de recurso.
+/// Serve aos quatro caminhos. Num recurso, cada multa marcada vira um item e o serviço
+/// vem sugerido pela gravidade; nos outros, o item é um só e representa o próprio serviço.
+/// O seletor fica em todos porque é onde a variante é escolhida — gravíssima 3x, defesa
+/// com indicação, reciclagem completa.
 /// </remarks>
-public partial class ItemDoRecursoViewModel : ObservableObject
+public partial class ItemDoServicoViewModel : ObservableObject
 {
     private readonly Action _aoTrocar;
 
-    public ItemDoRecursoViewModel(
-        MultaDoRecursoViewModel multa,
+    public ItemDoServicoViewModel(
+        string rotulo,
+        string resumo,
         IReadOnlyList<TipoServico> servicos,
+        TipoServico? sugerido,
+        int? multaId,
+        DateTime? prazo,
         Action aoTrocar)
     {
         _aoTrocar = aoTrocar;
-        MultaId = multa.Id;
-        Ait = multa.Ait;
-        PrazoDefesa = multa.Dados.PrazoDefesa;
+        Rotulo = rotulo;
+        Resumo = resumo;
         Servicos = servicos;
-
-        Resumo = string.Join(" · ",
-            new[] { multa.Gravidade, multa.Dados.Enquadramento }
-                .Where(p => !string.IsNullOrWhiteSpace(p)));
-
-        Servico = Sugerir(multa.Dados.Gravidade, servicos);
+        MultaId = multaId;
+        Prazo = prazo;
+        Servico = sugerido ?? (servicos.Count == 1 ? servicos[0] : null);
     }
 
-    public int MultaId { get; }
-    public string Ait { get; }
+    public string Rotulo { get; }
     public string Resumo { get; }
-    public DateTime? PrazoDefesa { get; }
+    public int? MultaId { get; }
+
+    /// <summary>Prazo que a primeira instância vai vigiar, quando o serviço tiver fases.</summary>
+    public DateTime? Prazo { get; }
+
     public IReadOnlyList<TipoServico> Servicos { get; }
 
     [ObservableProperty] public partial TipoServico? Servico { get; set; }
 
     public decimal Valor => Servico?.ValorTabela ?? 0m;
     public string ValorTexto => Servico is null ? "—" : Formato.Dinheiro(Valor);
-
-    /// <summary>O serviço da tabela que combina com a gravidade do auto.</summary>
-    private static TipoServico? Sugerir(GravidadeMulta? gravidade, IReadOnlyList<TipoServico> servicos)
-    {
-        var procurado = gravidade switch
-        {
-            GravidadeMulta.Leve => "recurso de multa leve",
-            GravidadeMulta.Media => "recurso de multa media",
-            GravidadeMulta.Grave => "recurso de multa grave",
-            GravidadeMulta.Gravissima => "recurso de multa gravissima",
-            _ => null
-        };
-
-        if (procurado is null)
-        {
-            return null;
-        }
-
-        return servicos.FirstOrDefault(s => s.Nome.Equals(procurado, StringComparison.OrdinalIgnoreCase));
-    }
 
     partial void OnServicoChanged(TipoServico? valor)
     {
@@ -170,17 +118,18 @@ public partial class ItemDoRecursoViewModel : ObservableObject
     }
 }
 
-/// <summary>Monta um recurso do começo ao fim: veículo, multas, preço e pagamento.</summary>
+/// <summary>Contrata um serviço do começo ao fim, pelo caminho que ele exigir.</summary>
 /// <remarks>
-/// É a ação do dia a dia do escritório. Ninguém abre o sistema para cadastrar uma multa:
-/// abre para fechar um recurso, e a multa é um passo do caminho. Por isso a janela cria o
-/// que faltar sem obrigar a trocar de aba.
+/// A janela antiga só sabia fazer recurso de multa: pedia carro e auto mesmo para uma
+/// renovação de CNH, e sem multa para marcar não deixava contratar nada. Agora o primeiro
+/// passo é o serviço, e é ele que decide se vai existir passo de veículo, de multa ou de
+/// processo do DETRAN.
 ///
-/// Veículo e multa criados aqui são gravados na hora, pelos formulários de sempre: eles
-/// existem no mundo real mesmo que o negócio não feche. Só o que é dinheiro — contratação,
-/// itens, instâncias e pagamento — espera o fim e vai numa transação só.
+/// Veículo, multa e processo que nascem aqui são gravados pelos formulários de sempre, na
+/// hora: existem no mundo real mesmo que o negócio não feche. Só o que é dinheiro —
+/// contratação, itens, instâncias, etapas e pagamento — espera o fim e vai numa transação.
 /// </remarks>
-public partial class NovoRecursoViewModel : ViewModelBase
+public partial class NovoServicoViewModel : ViewModelBase
 {
     private static readonly CultureInfo Brasil = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -188,24 +137,24 @@ public partial class NovoRecursoViewModel : ViewModelBase
     private readonly MultaDAO _multas = new();
     private readonly TipoServicoDAO _tiposServico = new();
     private readonly ContratacaoDAO _contratacoes = new();
+    private readonly ProcessoCnhDAO _processos = new();
 
     private readonly int _clienteId;
     private readonly Action? _aoCancelar;
     private readonly Action? _aoSalvar;
 
     private IReadOnlyList<TipoServico> _tabela = [];
+    private List<PassoServico> _caminho = [PassoServico.Servico];
 
     /// <summary>Evita que o recálculo do preço apague o valor que ela acabou de digitar.</summary>
     private bool _escrevendoValor;
     private bool _valorNegociado;
 
-    public NovoRecursoViewModel(int clienteId, Action? aoCancelar = null, Action? aoSalvar = null)
+    public NovoServicoViewModel(int clienteId, Action? aoCancelar = null, Action? aoSalvar = null)
     {
         _clienteId = clienteId;
         _aoCancelar = aoCancelar;
         _aoSalvar = aoSalvar;
-
-        IrPara(PassoRecurso.Veiculo);
 
         if (!Design.IsDesignMode)
         {
@@ -213,69 +162,92 @@ public partial class NovoRecursoViewModel : ViewModelBase
         }
     }
 
-    public ObservableCollection<PassoViewModel> Passos { get; } =
-    [
-        new("1", "Veículo"),
-        new("2", "Multas"),
-        new("3", "Serviço"),
-        new("4", "Pagamento")
-    ];
-
-    public ObservableCollection<VeiculoDoRecursoViewModel> Veiculos { get; } = [];
-    public ObservableCollection<MultaDoRecursoViewModel> Multas { get; } = [];
-    public ObservableCollection<ItemDoRecursoViewModel> Itens { get; } = [];
+    public ObservableCollection<PassoViewModel> Passos { get; } = [];
+    public ObservableCollection<OpcaoServicoViewModel> Opcoes { get; } = [];
+    public ObservableCollection<VeiculoDoServicoViewModel> Veiculos { get; } = [];
+    public ObservableCollection<MultaDoServicoViewModel> Multas { get; } = [];
+    public ObservableCollection<MultaDaPontuacaoViewModel> MultasDoCliente { get; } = [];
+    public ObservableCollection<ItemDoServicoViewModel> Itens { get; } = [];
 
     public IReadOnlyList<string> Formas { get; } =
         ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito"];
 
+    public IReadOnlyList<string> TiposDeProcesso { get; } = ["Suspensão", "Cassação"];
+
     // ---------- estado da janela ----------
-    [ObservableProperty] public partial PassoRecurso Passo { get; set; } = PassoRecurso.Veiculo;
+    [ObservableProperty] public partial PassoServico Passo { get; set; } = PassoServico.Servico;
     [ObservableProperty] public partial bool Carregando { get; set; }
     [ObservableProperty] public partial bool Salvando { get; set; }
     [ObservableProperty] public partial string? Erro { get; set; }
-
-    /// <summary>Cadastro de veículo ou de multa aberto por cima desta janela.</summary>
     [ObservableProperty] public partial ViewModelBase? SubFormulario { get; set; }
 
-    // ---------- passo 1 ----------
-    [ObservableProperty] public partial VeiculoDoRecursoViewModel? Veiculo { get; set; }
+    // ---------- passo 1: serviço ----------
+    [ObservableProperty] public partial string BuscaServico { get; set; } = string.Empty;
+    [ObservableProperty] public partial OpcaoServicoViewModel? Escolha { get; set; }
 
-    // ---------- passo 3 ----------
+    // ---------- veículo ----------
+    [ObservableProperty] public partial VeiculoDoServicoViewModel? Veiculo { get; set; }
+
+    // ---------- processo de CNH ----------
+    [ObservableProperty] public partial string NumeroProcesso { get; set; } = string.Empty;
+    [ObservableProperty] public partial string? TipoDeProcesso { get; set; } = "Suspensão";
+    [ObservableProperty] public partial string DataNotificacao { get; set; } = string.Empty;
+    [ObservableProperty] public partial string PrazoDoProcesso { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OrgaoInstaurador { get; set; } = "DETRAN/SC";
+    [ObservableProperty] public partial string Portaria { get; set; } = string.Empty;
+    [ObservableProperty] public partial string? ErroNumero { get; set; }
+    [ObservableProperty] public partial string? ErroPrazo { get; set; }
+
+    // ---------- preço ----------
     [ObservableProperty] public partial string ValorFinalTexto { get; set; } = string.Empty;
     [ObservableProperty] public partial string Observacoes { get; set; } = string.Empty;
 
-    // ---------- passo 4 ----------
+    // ---------- pagamento ----------
     [ObservableProperty] public partial bool PagarAgora { get; set; } = true;
     [ObservableProperty] public partial string? Forma { get; set; } = "PIX";
     [ObservableProperty] public partial string ValorPagoTexto { get; set; } = string.Empty;
     [ObservableProperty] public partial string Parcelas { get; set; } = "1";
     [ObservableProperty] public partial string ObservacaoPagamento { get; set; } = string.Empty;
 
-    public bool NoVeiculo => Passo == PassoRecurso.Veiculo;
-    public bool NasMultas => Passo == PassoRecurso.Multas;
-    public bool NoServico => Passo == PassoRecurso.Servico;
-    public bool NoPagamento => Passo == PassoRecurso.Pagamento;
+    public bool NoServico => Passo == PassoServico.Servico;
+    public bool NoVeiculo => Passo == PassoServico.Veiculo;
+    public bool NasMultas => Passo == PassoServico.Multas;
+    public bool NoProcesso => Passo == PassoServico.Processo;
+    public bool NoPreco => Passo == PassoServico.Preco;
+    public bool NoPagamento => Passo == PassoServico.Pagamento;
 
     public bool TemErro => Erro is not null;
     public bool SemVeiculos => !Carregando && Veiculos.Count == 0;
     public bool SemMultas => !Carregando && Multas.Count == 0;
+    public bool SemMultasDoCliente => !Carregando && MultasDoCliente.Count == 0;
 
-    public string Titulo => "Novo recurso";
+    public string Titulo => "Novo serviço";
 
     public string Instrucao => Passo switch
     {
-        PassoRecurso.Veiculo => "De qual carro é o auto de infração?",
-        PassoRecurso.Multas => "Marque as multas que entram neste recurso.",
-        PassoRecurso.Servico => "Confira o serviço de cada multa e feche o valor.",
-        _ => "Como o cliente vai pagar?"
+        PassoServico.Servico => "Selecione o serviço a ser contratado.",
+        PassoServico.Veiculo => "Selecione o veículo do auto de infração.",
+        PassoServico.Multas => "Marque as multas que compõem este serviço.",
+        PassoServico.Processo => "Dados do processo instaurado pelo DETRAN e multas que compõem a pontuação.",
+        PassoServico.Preco => "Confira o serviço e defina o valor combinado.",
+        _ => "Forma de pagamento da contratação."
     };
 
-    public string Contador => $"Passo {(int)Passo + 1} de 4";
-    public bool PodeVoltar => Passo != PassoRecurso.Veiculo;
+    /// <summary>No primeiro passo ainda não se sabe quantos passos são: a trilha só nasce depois.</summary>
+    public bool MostrarTrilha => Passo != PassoServico.Servico;
 
-    public string TextoAvancar => Passo == PassoRecurso.Pagamento ? "Criar recurso" : "Avançar →";
+    public string Contador => Passo == PassoServico.Servico
+        ? "Passo 1"
+        : $"Passo {_caminho.IndexOf(Passo) + 1} de {_caminho.Count}";
 
-    /// <summary>A placa escolhida, repetida no topo dos passos seguintes.</summary>
+    public bool PodeVoltar => Passo != PassoServico.Servico;
+
+    public string TextoAvancar => Passo == PassoServico.Pagamento ? "Contratar" : "Avançar →";
+
+    /// <summary>O serviço escolhido, repetido no topo dos passos seguintes.</summary>
+    public string NomeDoServico => Escolha?.Titulo ?? string.Empty;
+    public bool TemEscolha => Escolha is not null;
+
     public string PlacaEscolhida => Veiculo?.Placa ?? string.Empty;
     public bool TemVeiculo => Veiculo is not null;
 
@@ -288,6 +260,19 @@ public partial class NovoRecursoViewModel : ViewModelBase
         _ => $"{Marcadas} multas marcadas"
     };
 
+    public int PontosMarcados => MultasDoCliente.Where(m => m.Marcada).Sum(m => m.Pontos);
+
+    public string ResumoPontuacao
+    {
+        get
+        {
+            var quantas = MultasDoCliente.Count(m => m.Marcada);
+            return quantas == 0
+                ? "nenhuma multa marcada"
+                : $"{(quantas == 1 ? "1 multa marcada" : $"{quantas} multas marcadas")} · {PontosMarcados} pontos";
+        }
+    }
+
     public decimal TotalTabela => Itens.Sum(i => i.Valor);
     public string TotalTabelaTexto => Formato.Dinheiro(TotalTabela);
 
@@ -298,11 +283,9 @@ public partial class NovoRecursoViewModel : ViewModelBase
     public string DescontoTexto => Formato.Dinheiro(Desconto);
     public bool TemDesconto => Desconto > 0;
 
-    /// <summary>Parcelas só fazem sentido onde o cliente parcela.</summary>
     public bool Parcelavel => Forma is "Crédito" or "PIX parcelado";
 
-    public string ResumoFinal =>
-        $"{ResumoMarcadas} · {Formato.Dinheiro(ValorFinal)}";
+    public string ResumoFinal => $"{NomeDoServico} · {Formato.Dinheiro(ValorFinal)}";
 
     [RelayCommand]
     private void Cancelar() => _aoCancelar?.Invoke();
@@ -315,26 +298,126 @@ public partial class NovoRecursoViewModel : ViewModelBase
 
         try
         {
-            // A tabela de preços vem junto na abertura: ela é pequena e o passo 3
-            // precisaria dela de qualquer forma, sem ter o que mostrar enquanto espera.
             _tabela = await _tiposServico.ListarAsync();
-            await CarregarVeiculos();
+            MontarOpcoes();
         }
         catch (Exception excecao)
         {
-            Erro = $"Não foi possível abrir o recurso: {excecao.Message}";
+            Erro = $"Não foi possível abrir a lista de serviços: {excecao.Message}";
         }
         finally
         {
             Carregando = false;
-            OnPropertyChanged(nameof(SemVeiculos));
         }
     }
 
-    // ===================== passo 1: veículo =====================
+    // ===================== passo 1: serviço =====================
+
+    /// <summary>Monta a lista: um item por fluxo que agrupa, um por serviço nos demais.</summary>
+    private void MontarOpcoes()
+    {
+        var termo = BuscaServico.Trim();
+        var escolhido = Escolha?.Titulo;
+
+        Opcoes.Clear();
+
+        foreach (var fluxo in Ordem)
+        {
+            var doFluxo = _tabela.Where(s => s.Fluxo == fluxo).OrderBy(s => s.ValorTabela).ToList();
+            if (doFluxo.Count == 0)
+            {
+                continue;
+            }
+
+            if (fluxo.AgrupaVariantes())
+            {
+                Acolher(new OpcaoServicoViewModel(fluxo, doFluxo), termo, escolhido);
+                continue;
+            }
+
+            foreach (var servico in doFluxo.OrderBy(s => s.Nome))
+            {
+                Acolher(new OpcaoServicoViewModel(servico), termo, escolhido);
+            }
+        }
+
+        OnPropertyChanged(nameof(Opcoes));
+    }
+
+    private void Acolher(OpcaoServicoViewModel opcao, string termo, string? escolhido)
+    {
+        if (!opcao.Combina(termo))
+        {
+            return;
+        }
+
+        opcao.Escolhido = opcao.Titulo == escolhido;
+        Opcoes.Add(opcao);
+    }
+
+    /// <summary>A ordem dos grupos na tela: multas primeiro, que é o grosso do trabalho.</summary>
+    private static readonly FluxoServico[] Ordem =
+    [
+        FluxoServico.RecursoDeMulta,
+        FluxoServico.Indicacao,
+        FluxoServico.DefesaCnh,
+        FluxoServico.ServicoCnh,
+        FluxoServico.SobreVeiculo,
+        FluxoServico.Outro
+    ];
 
     [RelayCommand]
-    private void SelecionarVeiculo(VeiculoDoRecursoViewModel? veiculo)
+    private void EscolherServico(OpcaoServicoViewModel? opcao)
+    {
+        if (opcao is null)
+        {
+            return;
+        }
+
+        foreach (var item in Opcoes)
+        {
+            item.Escolhido = ReferenceEquals(item, opcao);
+        }
+
+        Escolha = opcao;
+        Erro = null;
+    }
+
+    /// <summary>Define por onde a janela vai passar, conforme o que o serviço exige.</summary>
+    private void MontarCaminho(FluxoServico fluxo)
+    {
+        _caminho = [PassoServico.Servico];
+
+        if (fluxo.PedeVeiculo()) _caminho.Add(PassoServico.Veiculo);
+        if (fluxo.PedeMulta()) _caminho.Add(PassoServico.Multas);
+        if (fluxo.PedeProcessoCnh()) _caminho.Add(PassoServico.Processo);
+
+        _caminho.Add(PassoServico.Preco);
+        _caminho.Add(PassoServico.Pagamento);
+
+        Passos.Clear();
+        for (var i = 1; i < _caminho.Count; i++)
+        {
+            Passos.Add(new PassoViewModel((i + 1).ToString(), NomeDoPasso(_caminho[i])));
+        }
+
+        // O primeiro passo já está cumprido quando a trilha aparece.
+        Passos.Insert(0, new PassoViewModel("1", "Serviço") { Concluido = true });
+    }
+
+    private static string NomeDoPasso(PassoServico passo) => passo switch
+    {
+        PassoServico.Veiculo => "Veículo",
+        PassoServico.Multas => "Multas",
+        PassoServico.Processo => "Processo",
+        PassoServico.Preco => "Preço",
+        _ => "Pagamento"
+    };
+
+    // ===================== veículo =====================
+
+    [RelayCommand]
+    private void SelecionarVeiculo(VeiculoDoServicoViewModel? veiculo)
     {
         if (veiculo is null)
         {
@@ -350,7 +433,6 @@ public partial class NovoRecursoViewModel : ViewModelBase
         Erro = null;
     }
 
-    /// <summary>Abre o assistente de veículo de sempre, por cima deste.</summary>
     [RelayCommand]
     private void NovoVeiculo() =>
         SubFormulario = new VeiculoFormularioViewModel(
@@ -363,7 +445,6 @@ public partial class NovoRecursoViewModel : ViewModelBase
         SubFormulario = null;
         await CarregarVeiculos();
 
-        // Quem acabou de cadastrar o carro quer seguir com ele: já vem escolhido.
         SelecionarVeiculo(Veiculos.FirstOrDefault(v => v.Id == veiculoId));
     }
 
@@ -375,7 +456,7 @@ public partial class NovoRecursoViewModel : ViewModelBase
         Veiculos.Clear();
         foreach (var veiculo in doCliente)
         {
-            Veiculos.Add(new VeiculoDoRecursoViewModel(veiculo));
+            Veiculos.Add(new VeiculoDoServicoViewModel(veiculo));
         }
 
         Veiculo = null;
@@ -387,9 +468,9 @@ public partial class NovoRecursoViewModel : ViewModelBase
         OnPropertyChanged(nameof(SemVeiculos));
     }
 
-    // ===================== passo 2: multas =====================
+    // ===================== multas =====================
 
-    /// <summary>Abre o formulário de multa de sempre, já no veículo escolhido.</summary>
+    /// <summary>Registra a multa sem sair do passo em que ela está escolhendo os autos.</summary>
     [RelayCommand]
     private void NovaMulta()
     {
@@ -410,7 +491,6 @@ public partial class NovoRecursoViewModel : ViewModelBase
         SubFormulario = null;
         await CarregarMultas();
 
-        // A multa foi registrada para entrar neste recurso: já vem marcada.
         if (Multas.FirstOrDefault(m => m.Id == multaId) is { } nova)
         {
             nova.Marcada = true;
@@ -418,11 +498,47 @@ public partial class NovoRecursoViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Alternar(MultaDoRecursoViewModel? multa)
+    private void Alternar(MultaDoServicoViewModel? multa)
     {
         if (multa?.PodeMarcar == true)
         {
             multa.Marcada = !multa.Marcada;
+        }
+    }
+
+    [RelayCommand]
+    private void AlternarPontuacao(MultaDaPontuacaoViewModel? multa)
+    {
+        if (multa is not null)
+        {
+            multa.Marcada = !multa.Marcada;
+        }
+    }
+
+    /// <summary>Registra uma multa da pontuação que ainda não estava no sistema.</summary>
+    /// <remarks>
+    /// Aqui não há carro escolhido — a pontuação soma autos de qualquer veículo —, então
+    /// o formulário é o que pergunta de qual deles é o auto.
+    /// </remarks>
+    [RelayCommand]
+    private void NovaMultaDaPontuacao() =>
+        SubFormulario = new MultaFormularioViewModel(
+            _clienteId,
+            aoCancelar: () => SubFormulario = null,
+            aoSalvar: AposMultaDaPontuacao);
+
+    private async void AposMultaDaPontuacao(int multaId)
+    {
+        SubFormulario = null;
+
+        // Recarrega do zero: a multa nova pode ser de qualquer carro do cliente.
+        var marcadas = MultasDoCliente.Where(m => m.Marcada).Select(m => m.Id).ToHashSet();
+        MultasDoCliente.Clear();
+        await CarregarMultasDoCliente();
+
+        foreach (var multa in MultasDoCliente)
+        {
+            multa.Marcada = multa.Id == multaId || marcadas.Contains(multa.Id);
         }
     }
 
@@ -434,7 +550,6 @@ public partial class NovoRecursoViewModel : ViewModelBase
         }
 
         var marcadas = Multas.Where(m => m.Marcada).Select(m => m.Id).ToHashSet();
-
         Carregando = true;
 
         try
@@ -444,12 +559,10 @@ public partial class NovoRecursoViewModel : ViewModelBase
             Multas.Clear();
             foreach (var multa in doVeiculo)
             {
-                var linha = new MultaDoRecursoViewModel(multa, Contar)
+                Multas.Add(new MultaDoServicoViewModel(multa, Contar)
                 {
                     Marcada = marcadas.Contains(multa.Id) && !multa.JaTemRecurso
-                };
-
-                Multas.Add(linha);
+                });
             }
         }
         catch (Exception excecao)
@@ -464,24 +577,129 @@ public partial class NovoRecursoViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Todas as multas do cliente, de qualquer carro: a pontuação não olha placa.</summary>
+    private async Task CarregarMultasDoCliente()
+    {
+        if (MultasDoCliente.Count > 0)
+        {
+            return;
+        }
+
+        Carregando = true;
+
+        try
+        {
+            var todas = await _multas.ListarPorClienteAsync(_clienteId);
+
+            MultasDoCliente.Clear();
+            foreach (var multa in todas)
+            {
+                MultasDoCliente.Add(new MultaDaPontuacaoViewModel(multa, ContarPontos));
+            }
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível buscar as multas do cliente: {excecao.Message}";
+        }
+        finally
+        {
+            Carregando = false;
+            ContarPontos();
+            OnPropertyChanged(nameof(SemMultasDoCliente));
+        }
+    }
+
     private void Contar()
     {
         OnPropertyChanged(nameof(Marcadas));
         OnPropertyChanged(nameof(ResumoMarcadas));
     }
 
-    // ===================== passo 3: serviço e preço =====================
+    private void ContarPontos()
+    {
+        OnPropertyChanged(nameof(PontosMarcados));
+        OnPropertyChanged(nameof(ResumoPontuacao));
+    }
+
+    // ===================== preço =====================
 
     private void MontarItens()
     {
+        var fluxo = Escolha!.Fluxo;
+        var variantes = Escolha.Variantes;
+
         Itens.Clear();
-        foreach (var multa in Multas.Where(m => m.Marcada))
+
+        if (fluxo.PedeMulta())
         {
-            Itens.Add(new ItemDoRecursoViewModel(multa, _tabela, Recalcular));
+            foreach (var multa in Multas.Where(m => m.Marcada))
+            {
+                Itens.Add(new ItemDoServicoViewModel(
+                    multa.Ait,
+                    string.Join(" · ", new[] { multa.Gravidade, multa.Dados.Enquadramento }
+                        .Where(p => !string.IsNullOrWhiteSpace(p))),
+                    variantes,
+                    SugerirPelaGravidade(multa.Dados.Gravidade, variantes),
+                    multa.Id,
+                    multa.Dados.PrazoDefesa,
+                    Recalcular));
+            }
+        }
+        else if (fluxo.PedeProcessoCnh())
+        {
+            Itens.Add(new ItemDoServicoViewModel(
+                NumeroProcesso.Trim().ToUpperInvariant(),
+                $"{TipoDeProcesso?.ToLowerInvariant()} · {PontosMarcados} pontos",
+                variantes,
+                SugerirPeloTipo(variantes),
+                null,
+                Formato.LerData(PrazoDoProcesso),
+                Recalcular));
+        }
+        else
+        {
+            Itens.Add(new ItemDoServicoViewModel(
+                "Serviço",
+                Veiculo is null ? "da tabela de preços" : $"placa {Veiculo.Placa}",
+                variantes,
+                variantes.Count == 1 ? variantes[0] : null,
+                null,
+                null,
+                Recalcular));
         }
 
         _valorNegociado = false;
         Recalcular();
+    }
+
+    /// <summary>O recurso que combina com a gravidade do auto.</summary>
+    private static TipoServico? SugerirPelaGravidade(
+        GravidadeMulta? gravidade, IReadOnlyList<TipoServico> variantes)
+    {
+        var procurado = gravidade switch
+        {
+            GravidadeMulta.Leve => "recurso de multa leve",
+            GravidadeMulta.Media => "recurso de multa media",
+            GravidadeMulta.Grave => "recurso de multa grave",
+            GravidadeMulta.Gravissima => "recurso de multa gravissima",
+            _ => null
+        };
+
+        return procurado is null
+            ? variantes.Count == 1 ? variantes[0] : null
+            : variantes.FirstOrDefault(s => s.Nome.Equals(procurado, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>A defesa que combina com o tipo do processo. Sem indicação é o caso comum.</summary>
+    private TipoServico? SugerirPeloTipo(IReadOnlyList<TipoServico> variantes)
+    {
+        var palavra = TipoDeProcesso == "Cassação" ? "cassacao" : "suspensao";
+
+        return variantes.FirstOrDefault(s =>
+                   s.Nome.Contains(palavra, StringComparison.OrdinalIgnoreCase)
+                   && s.Nome.Contains("sem indicacao", StringComparison.OrdinalIgnoreCase))
+               ?? variantes.FirstOrDefault(s =>
+                   s.Nome.Contains(palavra, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Refaz a soma e, enquanto ela não negociou, mantém o final igual à tabela.</summary>
@@ -515,7 +733,12 @@ public partial class NovoRecursoViewModel : ViewModelBase
     private void Voltar()
     {
         Erro = null;
-        IrPara(Passo - 1);
+
+        var atual = _caminho.IndexOf(Passo);
+        if (atual > 0)
+        {
+            IrPara(_caminho[atual - 1]);
+        }
     }
 
     [RelayCommand]
@@ -523,52 +746,94 @@ public partial class NovoRecursoViewModel : ViewModelBase
     {
         Erro = null;
 
+        if (!await Conferir())
+        {
+            return;
+        }
+
+        if (Passo == PassoServico.Pagamento)
+        {
+            await Salvar();
+            return;
+        }
+
+        if (Passo == PassoServico.Servico)
+        {
+            MontarCaminho(Escolha!.Fluxo);
+        }
+
+        var proximo = _caminho[_caminho.IndexOf(Passo) + 1];
+
+        if (proximo == PassoServico.Preco) MontarItens();
+        if (proximo == PassoServico.Pagamento) ValorPagoTexto = ValorFinal.ToString("N2", Brasil);
+
+        IrPara(proximo);
+
+        if (proximo == PassoServico.Veiculo) await CarregarVeiculos();
+        if (proximo == PassoServico.Multas) await CarregarMultas();
+        if (proximo == PassoServico.Processo) await CarregarMultasDoCliente();
+    }
+
+    /// <summary>O que falta no passo atual para poder seguir.</summary>
+    private async Task<bool> Conferir()
+    {
         switch (Passo)
         {
-            case PassoRecurso.Veiculo:
-                if (Veiculo is null)
-                {
-                    Erro = "Escolha o veículo do auto de infração.";
-                    return;
-                }
+            case PassoServico.Servico when Escolha is null:
+                Erro = "Escolha o serviço.";
+                return false;
 
-                IrPara(PassoRecurso.Multas);
-                await CarregarMultas();
-                return;
+            case PassoServico.Veiculo when Veiculo is null:
+                Erro = "Escolha o veículo.";
+                return false;
 
-            case PassoRecurso.Multas:
-                if (Marcadas == 0)
-                {
-                    Erro = "Marque pelo menos uma multa.";
-                    return;
-                }
+            case PassoServico.Multas when Marcadas == 0:
+                Erro = "Marque pelo menos uma multa.";
+                return false;
 
-                MontarItens();
-                IrPara(PassoRecurso.Servico);
-                return;
+            case PassoServico.Processo:
+                return await ConferirProcesso();
 
-            case PassoRecurso.Servico:
-                if (Itens.Any(i => i.Servico is null))
-                {
-                    Erro = "Escolha o serviço de cada multa.";
-                    return;
-                }
+            case PassoServico.Preco when Itens.Any(i => i.Servico is null):
+                Erro = "Escolha o serviço de cada item.";
+                return false;
 
-                if (Formato.LerDinheiro(ValorFinalTexto) is not { } fechado || fechado < 0)
-                {
-                    Erro = "Valor combinado inválido.";
-                    return;
-                }
-
-                // O que o cliente deve nasce quitado por padrão: é o caso comum do balcão.
-                ValorPagoTexto = fechado.ToString("N2", Brasil);
-                IrPara(PassoRecurso.Pagamento);
-                return;
+            case PassoServico.Preco when Formato.LerDinheiro(ValorFinalTexto) is not { } v || v < 0:
+                Erro = "Valor combinado inválido.";
+                return false;
 
             default:
-                await Salvar();
-                return;
+                return true;
         }
+    }
+
+    private async Task<bool> ConferirProcesso()
+    {
+        ErroNumero = ErroPrazo = null;
+
+        var numero = NumeroProcesso.Trim();
+
+        if (numero.Length == 0)
+        {
+            ErroNumero = "O número do processo é obrigatório.";
+        }
+        else if (await _processos.NumeroJaCadastradoAsync(numero))
+        {
+            ErroNumero = "Já existe um processo com este número.";
+        }
+
+        if (Formato.LerData(PrazoDoProcesso) is null)
+        {
+            ErroPrazo = "Informe o prazo de defesa. Use dd/mm/aaaa.";
+        }
+
+        if (ErroNumero is not null || ErroPrazo is not null)
+        {
+            Erro = "Confira os campos marcados.";
+            return false;
+        }
+
+        return true;
     }
 
     private async Task Salvar()
@@ -578,20 +843,20 @@ public partial class NovoRecursoViewModel : ViewModelBase
             return;
         }
 
-        var valorFinal = Formato.LerDinheiro(ValorFinalTexto) ?? 0m;
+        var valorFinal = ValorFinal;
         decimal pago = 0m;
 
         if (PagarAgora)
         {
             if (Formato.LerDinheiro(ValorPagoTexto) is not { } valor || valor <= 0)
             {
-                Erro = "Informe quanto o cliente pagou, ou deixe em aberto.";
+                Erro = "Informe o valor pago ou selecione \"Deixar em aberto\".";
                 return;
             }
 
             if (valor > valorFinal)
             {
-                Erro = "O pago não pode ser maior que o valor combinado.";
+                Erro = "O valor pago não pode exceder o valor combinado.";
                 return;
             }
 
@@ -602,12 +867,16 @@ public partial class NovoRecursoViewModel : ViewModelBase
 
         try
         {
-            await _contratacoes.CadastrarAsync(Montar(valorFinal), PagarAgora ? Pagar(pago) : null);
+            await _contratacoes.CadastrarAsync(
+                Montar(valorFinal),
+                PagarAgora ? Pagar(pago) : null,
+                Escolha!.Fluxo.PedeProcessoCnh() ? MontarProcesso() : null);
+
             _aoSalvar?.Invoke();
         }
         catch (Exception excecao)
         {
-            Erro = $"Não foi possível criar o recurso: {excecao.Message}";
+            Erro = $"Não foi possível contratar: {excecao.Message}";
         }
         finally
         {
@@ -630,8 +899,9 @@ public partial class NovoRecursoViewModel : ViewModelBase
             MultaId = item.MultaId,
             Situacao = SituacaoRegistro.Andamento,
 
-            // Recurso começa na autuação, com o prazo de defesa do próprio auto.
-            // Serviço sem instâncias (indicação de condutor, por exemplo) não tem fase.
+            // Serviço com fases começa na autuação, com o prazo que veio do auto ou da
+            // notificação. Serviço direto não tem fase: ele anda pelo roteiro de etapas,
+            // que o DAO cria a partir do modelo.
             Instancias = item.Servico.TemInstancias
                 ?
                 [
@@ -639,11 +909,24 @@ public partial class NovoRecursoViewModel : ViewModelBase
                     {
                         Fase = FaseInstancia.Autuacao,
                         Situacao = SituacaoInstancia.Contratado,
-                        PrazoProtocolo = item.PrazoDefesa
+                        PrazoProtocolo = item.Prazo
                     }
                 ]
                 : []
         }).ToList()
+    };
+
+    private ProcessoCnh MontarProcesso() => new()
+    {
+        ClienteId = _clienteId,
+        NumeroProcesso = NumeroProcesso.Trim().ToUpperInvariant(),
+        Tipo = TipoDeProcesso == "Cassação" ? TipoProcessoCnh.Cassacao : TipoProcessoCnh.Suspensao,
+        Motivo = PontosMarcados > 0 ? $"Pontuação: {PontosMarcados} pontos" : null,
+        DataNotificacao = Formato.LerData(DataNotificacao),
+        PrazoDefesa = Formato.LerData(PrazoDoProcesso),
+        Portaria = Limpar(Portaria),
+        OrgaoInstaurador = Limpar(OrgaoInstaurador),
+        MultasRelacionadas = MultasDoCliente.Where(m => m.Marcada).Select(m => m.Dados).ToList()
     };
 
     private Pagamento Pagar(decimal valor) => new()
@@ -667,34 +950,46 @@ public partial class NovoRecursoViewModel : ViewModelBase
     private static string? Limpar(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
 
-    private void IrPara(PassoRecurso passo)
+    private void IrPara(PassoServico passo)
     {
         Passo = passo;
 
+        var posicao = _caminho.IndexOf(passo);
         for (var i = 0; i < Passos.Count; i++)
         {
-            Passos[i].Atual = i == (int)passo;
-            Passos[i].Concluido = i < (int)passo;
+            Passos[i].Atual = i == posicao;
+            Passos[i].Concluido = i < posicao;
         }
     }
 
-    partial void OnPassoChanged(PassoRecurso valor)
+    partial void OnPassoChanged(PassoServico valor)
     {
+        OnPropertyChanged(nameof(NoServico));
         OnPropertyChanged(nameof(NoVeiculo));
         OnPropertyChanged(nameof(NasMultas));
-        OnPropertyChanged(nameof(NoServico));
+        OnPropertyChanged(nameof(NoProcesso));
+        OnPropertyChanged(nameof(NoPreco));
         OnPropertyChanged(nameof(NoPagamento));
         OnPropertyChanged(nameof(Instrucao));
         OnPropertyChanged(nameof(Contador));
         OnPropertyChanged(nameof(PodeVoltar));
         OnPropertyChanged(nameof(TextoAvancar));
+        OnPropertyChanged(nameof(MostrarTrilha));
     }
 
-    partial void OnVeiculoChanged(VeiculoDoRecursoViewModel? valor)
+    partial void OnEscolhaChanged(OpcaoServicoViewModel? valor)
+    {
+        OnPropertyChanged(nameof(NomeDoServico));
+        OnPropertyChanged(nameof(TemEscolha));
+    }
+
+    partial void OnVeiculoChanged(VeiculoDoServicoViewModel? valor)
     {
         OnPropertyChanged(nameof(PlacaEscolhida));
         OnPropertyChanged(nameof(TemVeiculo));
     }
+
+    partial void OnBuscaServicoChanged(string valor) => MontarOpcoes();
 
     // Mexer no valor final é negociar: a partir daí a soma da tabela não manda mais nele.
     partial void OnValorFinalTextoChanged(string valor)
@@ -708,10 +1003,12 @@ public partial class NovoRecursoViewModel : ViewModelBase
     }
 
     partial void OnErroChanged(string? valor) => OnPropertyChanged(nameof(TemErro));
+
     partial void OnCarregandoChanged(bool valor)
     {
         OnPropertyChanged(nameof(SemVeiculos));
         OnPropertyChanged(nameof(SemMultas));
+        OnPropertyChanged(nameof(SemMultasDoCliente));
     }
 
     partial void OnFormaChanged(string? valor) => OnPropertyChanged(nameof(Parcelavel));

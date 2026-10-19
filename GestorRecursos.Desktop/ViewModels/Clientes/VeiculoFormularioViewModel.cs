@@ -53,6 +53,13 @@ public partial class VeiculoParaVincularViewModel(VeiculoParaVincular dados) : O
     public bool JaLigado { get; } = dados.JaLigadoAoCliente;
     public bool PodeLigar => !JaLigado;
 
+    /// <summary>Quem já é dono do carro. Vazio quando ninguém é.</summary>
+    public string? Proprietario { get; } = dados.ProprietarioAtual;
+    public bool TemProprietario { get; } = dados.TemOutroProprietario;
+
+    public string AvisoProprietario { get; } =
+        dados.TemOutroProprietario ? $"de {dados.ProprietarioAtual}" : string.Empty;
+
     private static string Plural(int quantos, string um, string varios) =>
         quantos == 1 ? $"1 {um}" : $"{quantos} {varios}";
 }
@@ -150,11 +157,11 @@ public partial class VeiculoFormularioViewModel : ViewModelBase
 
     public string Instrucao => Passo switch
     {
-        PassoVeiculo.Origem => "O carro já está no sistema ou é a primeira vez?",
-        PassoVeiculo.Escolher => "Procure pela placa ou pelo RENAVAM.",
+        PassoVeiculo.Origem => "Informe se o veículo já consta no sistema.",
+        PassoVeiculo.Escolher => "Busque o veículo por placa ou RENAVAM.",
         _ => Editando
-            ? "A multa pertence ao veículo, então é por ele que se começa."
-            : "A placa é única no sistema: se já existir, a tela avisa."
+            ? "Dados do veículo vinculado ao cliente."
+            : "A placa é única no sistema. Placas já cadastradas são identificadas ao salvar."
     };
 
     public string Contador => Passo == PassoVeiculo.Origem ? "Passo 1 de 2" : "Passo 2 de 2";
@@ -236,7 +243,27 @@ public partial class VeiculoFormularioViewModel : ViewModelBase
 
         Escolhido = veiculo;
         Erro = null;
+
+        // Carro com dono já definido só aceita condutor: a tela troca sozinha, em vez
+        // de deixar ela escolher proprietário e levar uma recusa depois.
+        if (veiculo.TemProprietario && EhProprietario)
+        {
+            Vinculo = Vinculos[1];
+        }
+
+        OnPropertyChanged(nameof(ProprietarioTravado));
+        OnPropertyChanged(nameof(AvisoDoProprietario));
     }
+
+    /// <summary>O veículo escolhido já tem dono: proprietário sai de cena.</summary>
+    public bool ProprietarioTravado => Escolhido?.TemProprietario == true;
+
+    public string AvisoDoProprietario => ProprietarioTravado
+        ? $"Veículo registrado como propriedade de {Escolhido!.Proprietario}. Cada veículo "
+          + "admite um único proprietário; este cliente será vinculado como condutor indicado."
+        : string.Empty;
+
+    private bool EhProprietario => Vinculo != "Condutor indicado";
 
     /// <summary>Liga a este cliente o veículo que já estava no sistema.</summary>
     [RelayCommand]
@@ -312,6 +339,16 @@ public partial class VeiculoFormularioViewModel : ViewModelBase
 
         try
         {
+            // Segunda guarda, para o caminho que vem do aviso de placa repetida: ali não
+            // houve seleção na lista, então ninguém conferiu o dono ainda.
+            if (EhProprietario
+                && await _veiculos.ProprietarioDeAsync(veiculoId, _clienteId) is { } dono)
+            {
+                Erro = $"Veículo registrado como propriedade de {dono}. Cada veículo admite um "
+                     + "único proprietário. Selecione \"Condutor indicado\".";
+                return;
+            }
+
             await _veiculos.VincularAsync(_clienteId, veiculoId, VinculoEscolhido());
             _aoSalvar?.Invoke(veiculoId);
         }
@@ -353,8 +390,8 @@ public partial class VeiculoFormularioViewModel : ViewModelBase
                        + (string.IsNullOrWhiteSpace(existente.MarcaModelo)
                             ? ". "
                             : $" ({existente.MarcaModelo}). ")
-                       + "Não dá para cadastrar outra com a mesma placa — ligue este "
-                       + "veículo ao cliente.";
+                       + "Não é possível cadastrar outro veículo com a mesma placa. Vincule "
+                       + "o veículo existente a este cliente.";
             }
         }
 

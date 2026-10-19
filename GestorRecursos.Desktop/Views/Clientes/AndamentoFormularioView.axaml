@@ -88,7 +88,7 @@
                         <StackPanel>
                             <TextBlock Classes="rotulo" Text="Destinatário"/>
                             <TextBox Classes="entrada" Text="{Binding Destinatario}"
-                                     PlaceholderText="Para quem o recurso foi enviado"/>
+                                     PlaceholderText="Destinatário do recurso"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -127,7 +127,7 @@
                                              PlaceholderText="dd/mm/aaaa"/>
                                     <TextBlock Classes="erroCampo"
                                                Foreground="{StaticResource TextoApagado}"
-                                               Text="Em branco, a fase nasce sem prazo — e sem alarme."/>
+                                               Text="Sem prazo informado, a fase não gera alerta de vencimento."/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -138,7 +138,7 @@
                                 CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
                             <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
                                        Foreground="{StaticResource Texto}"
-                                       Text="O CETRAN é a última instância administrativa. Indeferido aqui, o recurso se encerra — o que resta é a via judicial."/>
+                                       Text="O CETRAN é a última instância administrativa. Indeferido aqui, o recurso se encerra na esfera administrativa."/>
                         </Border>
                     </StackPanel>
 

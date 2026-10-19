@@ -17,7 +17,7 @@ public enum AbaFicha
 {
     Dados,
     Veiculos,
-    Processos,
+    Servicos,
     Financeiro,
     Documentos,
     Historico
@@ -90,7 +90,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     [
         new("Dados", AbaFicha.Dados, pronta: true),
         new("Veículos e multas", AbaFicha.Veiculos, pronta: true),
-        new("Processos", AbaFicha.Processos, pronta: true),
+        new("Serviços", AbaFicha.Servicos, pronta: true),
         new("Financeiro", AbaFicha.Financeiro, pronta: false),
         new("Documentos", AbaFicha.Documentos, pronta: false),
         new("Histórico", AbaFicha.Historico, pronta: false)
@@ -157,16 +157,16 @@ public partial class FichaClienteViewModel : ViewModelBase
     public bool TemProcessos => Processos.Count > 0;
     public bool AbaDados => AbaAtual == AbaFicha.Dados;
     public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
-    public bool AbaProcessos => AbaAtual == AbaFicha.Processos;
+    public bool AbaServicos => AbaAtual == AbaFicha.Servicos;
 
     public bool AbaEmConstrucao =>
-        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Processos);
+        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Servicos);
 
     /// <summary>Os cartões da aba Veículos e multas.</summary>
     public ObservableCollection<VeiculoComMultasViewModel> VeiculosEMultas { get; } = [];
 
-    /// <summary>Os cartões da aba Processos: um recurso por cartão, com as três fases.</summary>
-    public ObservableCollection<RecursoDaFichaViewModel> Recursos { get; } = [];
+    /// <summary>Os cartões da aba Serviços: recurso com as três fases, serviço direto com o roteiro.</summary>
+    public ObservableCollection<ServicoDaFichaViewModel> Servicos { get; } = [];
 
     /// <summary>Formulário aberto por cima da ficha. Nulo quando não há nenhum.</summary>
     /// <remarks>
@@ -180,22 +180,22 @@ public partial class FichaClienteViewModel : ViewModelBase
     public partial bool CarregandoVeiculos { get; set; }
 
     [ObservableProperty]
-    public partial bool CarregandoRecursos { get; set; }
+    public partial bool CarregandoServicos { get; set; }
 
     /// <summary>Evita ir ao banco de novo a cada vez que a aba é reaberta.</summary>
     private bool _veiculosCarregados;
-    private bool _recursosCarregados;
+    private bool _servicosCarregados;
 
     public bool SemVeiculos => !CarregandoVeiculos && _veiculosCarregados && VeiculosEMultas.Count == 0;
-    public bool SemRecursos => !CarregandoRecursos && _recursosCarregados && Recursos.Count == 0;
+    public bool SemServicos => !CarregandoServicos && _servicosCarregados && Servicos.Count == 0;
 
     /// <summary>Quantos recursos já não esperam nada: entram na contagem do rodapé.</summary>
-    public int RecursosEncerrados => Recursos.Count(r => r.Encerrado);
-    public bool TemEncerrados => RecursosEncerrados > 0;
+    public int ServicosEncerrados => Servicos.Count(r => r.Encerrado);
+    public bool TemEncerrados => ServicosEncerrados > 0;
 
-    public string ResumoEncerrados => RecursosEncerrados == 1
-        ? "1 recurso encerrado"
-        : $"{RecursosEncerrados} recursos encerrados";
+    public string ResumoEncerrados => ServicosEncerrados == 1
+        ? "1 serviço encerrado"
+        : $"{ServicosEncerrados} serviços encerrados";
 
     public FichaClienteViewModel()
     {
@@ -235,7 +235,7 @@ public partial class FichaClienteViewModel : ViewModelBase
             var ficha = await _fichas.BuscarAsync(ClienteId);
             if (ficha is null)
             {
-                Erro = "Cliente não encontrado. Ele pode ter sido apagado em outra tela.";
+                Erro = "Cliente não encontrado. O registro pode ter sido excluído em outra tela.";
                 return;
             }
 
@@ -276,9 +276,9 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await CarregarVeiculosEMultas();
         }
-        else if (AbaAtual == AbaFicha.Processos && !_recursosCarregados)
+        else if (AbaAtual == AbaFicha.Servicos && !_servicosCarregados)
         {
-            await CarregarRecursos();
+            await CarregarServicos();
         }
     }
 
@@ -288,8 +288,8 @@ public partial class FichaClienteViewModel : ViewModelBase
         _veiculosCarregados = false;
         VeiculosEMultas.Clear();
 
-        _recursosCarregados = false;
-        Recursos.Clear();
+        _servicosCarregados = false;
+        Servicos.Clear();
     }
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
@@ -337,21 +337,21 @@ public partial class FichaClienteViewModel : ViewModelBase
     }
 
     /// <summary>Busca os recursos com as três fases, na primeira vez que a aba é aberta.</summary>
-    private async Task CarregarRecursos()
+    private async Task CarregarServicos()
     {
-        CarregandoRecursos = true;
+        CarregandoServicos = true;
 
         try
         {
-            var recursos = await _fichas.ListarRecursosAsync(ClienteId);
+            var servicos = await _fichas.ListarServicosAsync(ClienteId);
 
-            Recursos.Clear();
-            foreach (var recurso in recursos)
+            Servicos.Clear();
+            foreach (var servico in servicos)
             {
-                Recursos.Add(new RecursoDaFichaViewModel(recurso));
+                Servicos.Add(new ServicoDaFichaViewModel(servico));
             }
 
-            _recursosCarregados = true;
+            _servicosCarregados = true;
         }
         catch (Exception excecao)
         {
@@ -359,9 +359,9 @@ public partial class FichaClienteViewModel : ViewModelBase
         }
         finally
         {
-            CarregandoRecursos = false;
-            OnPropertyChanged(nameof(SemRecursos));
-            OnPropertyChanged(nameof(RecursosEncerrados));
+            CarregandoServicos = false;
+            OnPropertyChanged(nameof(SemServicos));
+            OnPropertyChanged(nameof(ServicosEncerrados));
             OnPropertyChanged(nameof(TemEncerrados));
             OnPropertyChanged(nameof(ResumoEncerrados));
         }
@@ -371,13 +371,13 @@ public partial class FichaClienteViewModel : ViewModelBase
     [RelayCommand]
     private void RegistrarProtocolo(FaseViewModel? fase)
     {
-        if (fase?.Recurso is not { } recurso)
+        if (fase?.Servico is not { } servico)
         {
             return;
         }
 
         Formulario = new AndamentoFormularioViewModel(
-            AcaoAndamento.Protocolo, recurso, fase,
+            AcaoAndamento.Protocolo, servico, fase,
             aoCancelar: () => Formulario = null,
             aoSalvar: Recarregar);
     }
@@ -386,33 +386,94 @@ public partial class FichaClienteViewModel : ViewModelBase
     [RelayCommand]
     private void RegistrarResultado(FaseViewModel? fase)
     {
-        if (fase?.Recurso is not { } recurso)
+        if (fase?.Servico is not { } servico)
         {
             return;
         }
 
         Formulario = new AndamentoFormularioViewModel(
-            AcaoAndamento.Resultado, recurso, fase,
+            AcaoAndamento.Resultado, servico, fase,
             aoCancelar: () => Formulario = null,
             aoSalvar: Recarregar);
     }
 
-    /// <summary>Pergunta antes de encerrar o recurso, e explica o que fica e o que para.</summary>
+    /// <summary>Marca ou desmarca uma etapa do roteiro de um serviço direto.</summary>
+    /// <remarks>
+    /// Grava na hora e não recarrega a ficha: marcar etapa é um gesto solto, repetido,
+    /// que não mexe em dinheiro nem em prazo. Recarregar a cada clique faria a lista
+    /// piscar e tiraria o lugar de onde ela estava lendo.
+    /// </remarks>
     [RelayCommand]
-    private void PedirCancelamento(RecursoDaFichaViewModel? recurso)
+    private async Task MarcarEtapa(EtapaViewModel? etapa)
     {
-        if (recurso is null)
+        if (etapa?.PodeMarcar != true)
+        {
+            return;
+        }
+
+        var alvo = !etapa.Concluida;
+
+        try
+        {
+            await new EtapaDAO().MarcarAsync(etapa.Id, alvo);
+
+            // Marcar grava hoje no banco; a linha e o contador do cartão acompanham sem
+            // recarregar a ficha inteira, que faria a lista piscar a cada clique.
+            etapa.AplicarMarca(alvo, alvo ? DateTime.Today : null);
+            etapa.Servico?.Recontar();
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível marcar a etapa: {excecao.Message}";
+        }
+    }
+
+    /// <summary>Abre as datas da etapa: o prazo dela e quando foi cumprida.</summary>
+    [RelayCommand]
+    private void EditarEtapa(EtapaViewModel? etapa)
+    {
+        if (etapa is null)
+        {
+            return;
+        }
+
+        Formulario = new EtapaFormularioViewModel(
+            etapa,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: Recarregar);
+    }
+
+    /// <summary>Corrige o serviço contratado: a variante e o valor.</summary>
+    [RelayCommand]
+    private void EditarServico(ServicoDaFichaViewModel? servico)
+    {
+        if (servico is null)
+        {
+            return;
+        }
+
+        Formulario = new ServicoFormularioViewModel(
+            servico,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: Recarregar);
+    }
+
+    /// <summary>Pergunta antes de encerrar o serviço, e explica o que fica e o que para.</summary>
+    [RelayCommand]
+    private void PedirCancelamento(ServicoDaFichaViewModel? servico)
+    {
+        if (servico is null)
         {
             return;
         }
 
         Confirmacao = new ConfirmacaoViewModel(
-            titulo: "Encerrar este recurso?",
-            texto: "As fases que ainda não foram julgadas param, e o recurso deixa de "
-                 + "esperar trabalho. A contratação continua lá, com o valor que foi "
-                 + "cobrado, e o que já foi julgado fica registrado.",
-            botao: "Encerrar recurso",
-            aoConfirmar: () => Cancelar(recurso.ItemId),
+            titulo: "Encerrar este serviço?",
+            texto: "As fases e etapas pendentes são encerradas e o serviço sai de "
+                 + "andamento. A contratação é mantida, com o valor cobrado, e o que já "
+                 + "foi concluído permanece registrado.",
+            botao: "Encerrar serviço",
+            aoConfirmar: () => Cancelar(servico.ItemId),
             aoCancelar: () => Confirmacao = null);
     }
 
@@ -510,7 +571,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         PreencherSelos(ficha);
 
         AchaAba(AbaFicha.Veiculos).Contador = ficha.Veiculos.Count;
-        AchaAba(AbaFicha.Processos).Contador = ficha.Processos.Count;
+        AchaAba(AbaFicha.Servicos).Contador = ficha.Processos.Count;
         MarcarAba(AbaAtual);
 
         OnPropertyChanged(nameof(TemVeiculos));
@@ -624,14 +685,14 @@ public partial class FichaClienteViewModel : ViewModelBase
     [RelayCommand]
     private void Editar(GrupoCadastro grupo) => _aoEditar?.Invoke(grupo);
 
-    /// <summary>O "+ Novo recurso" do cabeçalho: montar o recurso é o trabalho do dia.</summary>
+    /// <summary>O "+ Novo serviço" do cabeçalho: contratar é o trabalho do dia.</summary>
     /// <remarks>
-    /// Mora aqui, e não na aba Processos, porque o recurso nasce de uma contratação: é
-    /// ela que tem preço. Um cadastro de processo por fora criaria serviço sem cobrança.
+    /// Mora aqui, e não na aba Serviços, porque todo serviço nasce de uma contratação: é
+    /// ela que tem preço. Um cadastro por fora criaria trabalho sem cobrança.
     /// </remarks>
     [RelayCommand]
-    private void NovoRecurso() =>
-        Formulario = new NovoRecursoViewModel(
+    private void NovoServico() =>
+        Formulario = new NovoServicoViewModel(
             ClienteId,
             aoCancelar: () => Formulario = null,
             aoSalvar: Recarregar);
@@ -702,9 +763,9 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         Confirmacao = new ConfirmacaoViewModel(
             titulo: $"Tirar o veículo {cartao.Placa} desta ficha?",
-            texto: "O veículo continua cadastrado no sistema, com as multas dele. Ele só "
-                 + "deixa de aparecer na ficha deste cliente. Para ligá-lo de novo, é só "
-                 + "cadastrar a mesma placa.",
+            texto: "O veículo permanece cadastrado no sistema, com as multas vinculadas "
+                 + "a ele. Deixa apenas de constar na ficha deste cliente, e pode ser "
+                 + "vinculado novamente a qualquer momento.",
             botao: "Desvincular",
             aoConfirmar: () => Desvincular(cartao.Id),
             aoCancelar: () => Confirmacao = null);
@@ -749,8 +810,8 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         Confirmacao = new ConfirmacaoViewModel(
             titulo: $"Apagar a multa {multa.Ait}?",
-            texto: "Ninguém depende dela: não há recurso contratado nem processo de CNH "
-                 + "usando esta multa. Isto apaga o registro de vez, e não há como desfazer.",
+            texto: "Não há serviço contratado nem processo de CNH vinculado a esta multa. "
+                 + "A exclusão é definitiva e não pode ser desfeita.",
             botao: "Apagar multa",
             aoConfirmar: () => ExcluirMulta(multa.Id),
             aoCancelar: () => Confirmacao = null);
@@ -763,22 +824,23 @@ public partial class FichaClienteViewModel : ViewModelBase
         if (resumo.Recursos > 0)
         {
             partes.Add(resumo.Recursos == 1
-                ? "há um recurso contratado sobre ela"
-                : $"há {resumo.Recursos} recursos contratados sobre ela");
+                ? "há um serviço contratado sobre ela"
+                : $"há {resumo.Recursos} serviços contratados sobre ela");
         }
 
         if (resumo.ProcessosCnh > 0)
         {
             partes.Add(resumo.ProcessosCnh == 1
-                ? "ela conta na pontuação de um processo de CNH"
-                : $"ela conta na pontuação de {resumo.ProcessosCnh} processos de CNH");
+                ? "ela integra a pontuação de um processo de CNH"
+                : $"ela integra a pontuação de {resumo.ProcessosCnh} processos de CNH");
         }
 
-        // Não oferece "cancele e tente de novo": cancelar encerra o serviço, não apaga
-        // o que houve, e a multa que já foi cobrada fica para explicar a cobrança.
-        return $"Não dá para apagar porque {string.Join(" e ", partes)}. Apagar aqui "
-             + "deixaria uma cobrança sem objeto. Se o recurso foi um engano, cancele-o "
-             + "na aba Processos — a multa continua na ficha, com o histórico do que houve.";
+        // Não oferece "encerre e tente de novo": encerrar o serviço não apaga o que
+        // houve, e a multa já cobrada permanece como justificativa da cobrança.
+        return $"A exclusão não é permitida porque {string.Join(" e ", partes)}. "
+             + "Removê-la deixaria a cobrança sem objeto. Caso o serviço tenha sido "
+             + "registrado por engano, encerre-o na aba Serviços: a multa permanece na "
+             + "ficha, com o histórico preservado.";
     }
 
     private async void ExcluirMulta(int multaId)
@@ -818,8 +880,8 @@ public partial class FichaClienteViewModel : ViewModelBase
     private void PedirArquivamento() =>
         Confirmacao = new ConfirmacaoViewModel(
             titulo: "Arquivar este cliente?",
-            texto: "Ele sai das listas, o histórico fica guardado e dá para encontrá-lo em "
-                 + "Arquivados, de onde também se restaura.",
+            texto: "O cliente deixa de constar nas listas. O histórico é preservado e o "
+                 + "registro fica disponível em Arquivados, de onde pode ser restaurado.",
             botao: "Arquivar",
             aoConfirmar: Arquivar,
             aoCancelar: () => Confirmacao = null);
@@ -847,12 +909,12 @@ public partial class FichaClienteViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(AbaDados));
         OnPropertyChanged(nameof(AbaVeiculos));
-        OnPropertyChanged(nameof(AbaProcessos));
+        OnPropertyChanged(nameof(AbaServicos));
         OnPropertyChanged(nameof(AbaEmConstrucao));
     }
 
     partial void OnCarregandoVeiculosChanged(bool valor) => OnPropertyChanged(nameof(SemVeiculos));
-    partial void OnCarregandoRecursosChanged(bool valor) => OnPropertyChanged(nameof(SemRecursos));
+    partial void OnCarregandoServicosChanged(bool valor) => OnPropertyChanged(nameof(SemServicos));
 
     private static string MontarIdentificacao(Cliente cliente)
     {

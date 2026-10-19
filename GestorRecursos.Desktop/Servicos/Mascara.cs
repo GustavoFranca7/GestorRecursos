@@ -11,7 +11,8 @@ namespace GestorRecursos.Desktop.Servicos;
 /// <summary>Formata o campo enquanto a pessoa digita e recusa o que não cabe nele.</summary>
 /// <remarks>
 /// Uso: <c>servicos:Mascara.Padrao="cpf"</c> num TextBox. Padrões disponíveis:
-/// cpf, cep, data, telefone, rg, numero e letras (os dois últimos aceitam um limite: "numero:11").
+/// cpf, cep, data, hora, telefone, rg, numero e letras (os dois últimos aceitam um
+/// limite: "numero:11").
 ///
 /// Formatar só na saída deixaria o campo cru durante a digitação, que é justamente quando
 /// a pontuação ajuda a conferir. Aqui o texto já aparece pronto: 900.000.000-99.
@@ -109,6 +110,7 @@ public static class Mascara
             "cpf" => Montar(util, [3, 3, 3, 2], [".", ".", "-"]),
             "cep" => Montar(util, [5, 3], ["-"]),
             "data" => Montar(util, [2, 2, 4], ["/", "/"]),
+            "hora" => Montar(util, [2, 2], [":"]),
             "rg" => Montar(util, [1, 3, 3], [".", "."]),
             "telefone" => Telefone(util),
             _ => util
@@ -136,6 +138,7 @@ public static class Mascara
             "cpf" => 11,
             "cep" => 8,
             "data" => 8,
+            "hora" => 4,
             "telefone" => 11,
             "rg" => 7,
             "placa" => 7,

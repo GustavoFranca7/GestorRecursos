@@ -33,7 +33,7 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
 
     public AndamentoFormularioViewModel(
         AcaoAndamento acao,
-        RecursoDaFichaViewModel recurso,
+        ServicoDaFichaViewModel servico,
         FaseViewModel fase,
         Action? aoCancelar = null,
         Action? aoSalvar = null)
@@ -44,10 +44,10 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
         _aoCancelar = aoCancelar;
         _aoSalvar = aoSalvar;
 
-        Referencia = $"{fase.Nome} · {recurso.Titulo}";
+        Referencia = $"{fase.Nome} · {servico.Titulo}";
         Data = Formato.Data(DateTime.Today);
         Protocolo = fase.Protocolo ?? string.Empty;
-        Destinatario = fase.Destinatario ?? Sugerir(fase.Fase, recurso.Dados.OrgaoAutuador);
+        Destinatario = fase.Destinatario ?? Sugerir(fase.Fase, servico.Dados.OrgaoAutuador);
 
         // O prazo da próxima fase conta da notificação do resultado. 30 dias é o mais
         // comum; fica como sugestão, porque quem manda é o papel que chegou.
@@ -160,7 +160,7 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
 
         if (NoResultado && Resultado is null)
         {
-            Erro = "Escolha se foi deferido ou indeferido.";
+            Erro = "Selecione o resultado do julgamento.";
             return false;
         }
 

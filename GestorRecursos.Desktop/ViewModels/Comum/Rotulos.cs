@@ -29,7 +29,11 @@ public static class Rotulos
         "AGUARDANDO_JULGAMENTO" => "aguardando julgamento",
         "DEFERIDO" => "deferido",
         "INDEFERIDO" => "indeferido",
-        "CANCELADO" => "cancelado",
+
+        // O banco guarda CANCELADO, mas a ação na tela chama-se "Encerrar serviço".
+        // Dois nomes para o mesmo estado confundem quem lê o selo depois.
+        "CANCELADO" => "encerrado",
+
         "DESISTENCIA" => "desistência",
         "PRAZO_PERDIDO" => "prazo perdido",
         _ => (situacao ?? string.Empty).ToLowerInvariant().Replace('_', ' ')

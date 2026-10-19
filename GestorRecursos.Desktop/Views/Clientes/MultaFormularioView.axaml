@@ -58,12 +58,14 @@
                     <StackPanel Grid.Column="0" Spacing="3">
                         <TextBlock Text="{Binding Titulo}" FontSize="17" FontWeight="Bold"
                                    Foreground="{StaticResource Texto}"/>
-                        <TextBlock Text="Só o AIT é obrigatório. O resto entra conforme o auto."
+                        <TextBlock Text="Apenas o AIT é obrigatório. Os demais campos seguem o auto de infração."
                                    FontSize="11.5" Foreground="{StaticResource TextoFraco}"/>
                     </StackPanel>
 
-                    <!-- A multa é sempre de um carro, e o carro já está decidido aqui -->
+                    <!-- A multa é sempre de um carro. Quase sempre ele já está decidido;
+                         na defesa de CNH, não — e aí a janela pergunta. -->
                     <Border Grid.Column="1" VerticalAlignment="Center"
+                            IsVisible="{Binding !EscolheVeiculo}"
                             Background="{StaticResource PrimariaClara}"
                             BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
                             CornerRadius="{StaticResource RaioBotao}" Padding="11,6">
@@ -74,6 +76,27 @@
                 </Grid>
 
                 <StackPanel Grid.Row="1" Margin="26,20,26,0">
+
+                    <StackPanel IsVisible="{Binding EscolheVeiculo}" Margin="0,0,0,16">
+                        <TextBlock Classes="rotulo" Text="Veículo *"/>
+                        <ComboBox Classes="entrada" ItemsSource="{Binding Veiculos}"
+                                  SelectedItem="{Binding Veiculo}"
+                                  PlaceholderText="De qual carro é este auto?">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VeiculoDoServicoViewModel">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <TextBlock Text="{Binding Placa}"
+                                                   FontFamily="Consolas,monospace"
+                                                   FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Descricao}"
+                                                   Foreground="{StaticResource TextoFraco}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Classes="erroCampo" Text="{Binding ErroVeiculo}"
+                                   IsVisible="{Binding ErroVeiculo, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                    </StackPanel>
 
                     <Grid ColumnDefinitions="*,16,160">
                         <StackPanel Grid.Column="0">
@@ -114,8 +137,8 @@
                         <StackPanel Grid.Column="4">
                             <TextBlock Classes="rotulo" Text="Hora"/>
                             <TextBox Classes="entrada" Text="{Binding Hora}"
-                                     servicos:Mascara.Padrao="numero:4"
-                                     Watermark="0922"/>
+                                     servicos:Mascara.Padrao="hora"
+                                     Watermark="09:22"/>
                         </StackPanel>
                     </Grid>
 
@@ -151,7 +174,7 @@
                             CornerRadius="{StaticResource RaioCartao}" Padding="13,11" Margin="0,18,0,0">
                         <TextBlock FontSize="12" TextWrapping="Wrap"
                                    Foreground="{StaticResource PrimariaEscura}"
-                                   Text="Escolher a gravidade preenche pontos e valor pela tabela do CTB. Se o auto trouxer outro número, é só corrigir."/>
+                                   Text="A gravidade preenche pontos e valor pela tabela do artigo 258 do CTB. Os campos permanecem editáveis."/>
                     </Border>
                 </StackPanel>
 

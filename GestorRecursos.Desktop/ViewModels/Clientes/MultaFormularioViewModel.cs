@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -26,6 +27,24 @@ public partial class MultaFormularioViewModel : ViewModelBase
     /// <summary>Verdadeiro enquanto o construtor enche os campos com o que veio do banco.</summary>
     private readonly bool _carregando;
 
+    /// <summary>Registra uma multa sem saber de qual carro ainda: a tela pergunta.</summary>
+    /// <remarks>
+    /// É o caso da defesa de CNH, onde as multas da pontuação vêm de qualquer veículo do
+    /// cliente — não há um carro escolhido antes, como no recurso.
+    /// </remarks>
+    public MultaFormularioViewModel(
+        int clienteId,
+        Action? aoCancelar = null,
+        Action<int>? aoSalvar = null)
+    {
+        _aoCancelar = aoCancelar;
+        _aoSalvar = aoSalvar;
+        Placa = string.Empty;
+        EscolheVeiculo = true;
+
+        CarregarVeiculosCommand.Execute(clienteId);
+    }
+
     public MultaFormularioViewModel(
         int veiculoId,
         string placa,
@@ -50,8 +69,9 @@ public partial class MultaFormularioViewModel : ViewModelBase
         Descricao = paraEditar.Descricao ?? string.Empty;
         Local = paraEditar.LocalInfracao ?? string.Empty;
         Data = paraEditar.DataHoraInfracao is { } quando ? Formato.Data(quando) : string.Empty;
+        // Com os dois-pontos, como a máscara mostra: o campo abre já no formato lido.
         Hora = paraEditar.DataHoraInfracao is { } h && h.TimeOfDay != TimeSpan.Zero
-            ? h.ToString("HHmm")
+            ? h.ToString("HH\\:mm")
             : string.Empty;
         Gravidade = TextoDaGravidade(paraEditar.Gravidade);
         Pontos = paraEditar.Pontos?.ToString() ?? string.Empty;
@@ -66,6 +86,33 @@ public partial class MultaFormularioViewModel : ViewModelBase
 
     /// <summary>A placa do veículo dono da multa. Só leitura: a multa nasce no carro.</summary>
     public string Placa { get; }
+
+    /// <summary>Verdadeiro quando o carro ainda precisa ser escolhido na própria janela.</summary>
+    public bool EscolheVeiculo { get; }
+
+    public ObservableCollection<VeiculoDoServicoViewModel> Veiculos { get; } = [];
+
+    [ObservableProperty] public partial VeiculoDoServicoViewModel? Veiculo { get; set; }
+    [ObservableProperty] public partial string? ErroVeiculo { get; set; }
+
+    [RelayCommand]
+    private async Task CarregarVeiculos(int clienteId)
+    {
+        try
+        {
+            foreach (var veiculo in await new FichaClienteDAO().ListarVeiculosAsync(clienteId))
+            {
+                Veiculos.Add(new VeiculoDoServicoViewModel(veiculo));
+            }
+
+            // Com um carro só não há o que perguntar: já vem escolhido.
+            Veiculo = Veiculos.Count == 1 ? Veiculos[0] : null;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível buscar os veículos: {excecao.Message}";
+        }
+    }
 
     [ObservableProperty] public partial string Ait { get; set; } = string.Empty;
     [ObservableProperty] public partial string Enquadramento { get; set; } = string.Empty;
@@ -129,7 +176,13 @@ public partial class MultaFormularioViewModel : ViewModelBase
 
     private async Task<bool> Conferir()
     {
-        ErroAit = ErroData = Erro = null;
+        ErroAit = ErroData = ErroVeiculo = Erro = null;
+
+        // A multa pende do carro: sem ele não há onde pendurar.
+        if (EscolheVeiculo && Veiculo is null)
+        {
+            ErroVeiculo = "Selecione o veículo do auto de infração.";
+        }
 
         var ait = Ait.Trim();
         if (ait.Length == 0)
@@ -146,7 +199,7 @@ public partial class MultaFormularioViewModel : ViewModelBase
             ErroData = "Data inválida. Use dd/mm/aaaa.";
         }
 
-        var certo = ErroAit is null && ErroData is null;
+        var certo = ErroAit is null && ErroData is null && ErroVeiculo is null;
         if (!certo)
         {
             Erro = "Confira os campos marcados.";
@@ -158,7 +211,7 @@ public partial class MultaFormularioViewModel : ViewModelBase
     private Multa Montar() => new()
     {
         Id = _idEditando,
-        VeiculoId = _veiculoId,
+        VeiculoId = Veiculo?.Id ?? _veiculoId,
         Ait = Ait.Trim().ToUpperInvariant(),
         Enquadramento = Limpar(Enquadramento),
         Descricao = Limpar(Descricao),

@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
              xmlns:modelos="using:GestorRecursos.Core.Models"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
              mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
-             x:Class="GestorRecursos.Desktop.Views.NovoRecursoView"
-             x:DataType="vm:NovoRecursoViewModel">
+             x:Class="GestorRecursos.Desktop.Views.NovoServicoView"
+             x:DataType="vm:NovoServicoViewModel">
 
     <UserControl.Styles>
         <Style Selector="TextBox.entrada">
@@ -20,6 +21,9 @@
         </Style>
         <Style Selector="TextBox.entrada:focus">
             <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
         </Style>
         <Style Selector="ComboBox.entrada">
             <Setter Property="Background" Value="{StaticResource Cartao}"/>
@@ -36,8 +40,13 @@
             <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
             <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
 
-        <!-- Bolinha da trilha de passos, igual à do assistente de veículo -->
+        <!-- Bolinha da trilha de passos -->
         <Style Selector="Border.bolha">
             <Setter Property="Width" Value="24"/>
             <Setter Property="Height" Value="24"/>
@@ -51,7 +60,7 @@
             <Setter Property="Background" Value="{StaticResource Sucesso}"/>
         </Style>
 
-        <!-- Linha escolhível: serve para veículo e para multa -->
+        <!-- Linha escolhível: serve para serviço, veículo e multa -->
         <Style Selector="Button.linha">
             <Setter Property="Background" Value="{StaticResource Cartao}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
@@ -87,21 +96,29 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="{StaticResource Texto}"/>
         </Style>
+
+        <!-- Nome do grupo na lista de serviços -->
+        <Style Selector="TextBlock.grupo">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="1.2"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+            <Setter Property="Margin" Value="0,10,0,6"/>
+        </Style>
     </UserControl.Styles>
 
     <!-- Flutuante por cima da ficha, como as outras janelas do sistema -->
     <Panel>
         <Border Background="#73102A2C">
-            <!-- A altura mínima segura o rodapé no lugar: sem ela a janela encolhia e
-                 crescia a cada passo, e o botão Avançar fugia de baixo do cursor. -->
-            <Border Width="780" MinHeight="430" Background="{StaticResource Cartao}"
+            <!-- A altura mínima segura o rodapé no lugar entre um passo e outro -->
+            <Border Width="820" MinHeight="470" MaxHeight="780" Background="{StaticResource Cartao}"
                     BorderBrush="{StaticResource Borda}" BorderThickness="1"
                     CornerRadius="{StaticResource RaioCartao}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
                 <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="26,22,26,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="26,22,26,0">
                         <StackPanel Grid.Column="0" Spacing="3">
                             <TextBlock Text="{Binding Titulo}" FontSize="17" FontWeight="Bold"
                                        Foreground="{StaticResource Texto}"/>
@@ -109,19 +126,32 @@
                                        Foreground="{StaticResource TextoFraco}"/>
                         </StackPanel>
 
-                        <!-- A placa fica à vista nos passos seguintes: é o fio da meada -->
+                        <!-- O serviço e a placa ficam à vista: são o fio da meada -->
                         <Border Grid.Column="1" IsVisible="{Binding TemVeiculo}"
                                 Background="{StaticResource Fundo}"
                                 BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
                                 CornerRadius="{StaticResource RaioSelo}"
+                                Padding="10,5" Margin="0,0,7,0" VerticalAlignment="Top">
+                            <TextBlock Classes="placa" FontSize="12" Text="{Binding PlacaEscolhida}"/>
+                        </Border>
+
+                        <Border Grid.Column="2" IsVisible="{Binding MostrarTrilha}"
+                                Background="{StaticResource Fundo}"
+                                BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
+                                CornerRadius="{StaticResource RaioSelo}"
                                 Padding="10,5" VerticalAlignment="Top">
-                            <TextBlock Classes="placa" FontSize="12"
-                                       Text="{Binding PlacaEscolhida}"/>
+                            <TextBlock Text="{Binding NomeDoServico}" FontSize="12"
+                                       FontWeight="SemiBold" MaxWidth="240"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource Texto}"/>
                         </Border>
                     </Grid>
 
-                    <!-- ============ TRILHA DE PASSOS ============ -->
+                    <!-- ============ TRILHA DE PASSOS ============
+                         Só aparece a partir do passo 2: antes de escolher o serviço
+                         ainda não se sabe quantos passos o caminho tem. -->
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding Passos}"
+                                  IsVisible="{Binding MostrarTrilha}"
                                   Margin="26,18,26,0" HorizontalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -150,7 +180,7 @@
                                     <TextBlock Text="{Binding Titulo}" FontSize="12"
                                                VerticalAlignment="Center"
                                                Foreground="{StaticResource TextoFraco}"/>
-                                    <Border Width="26" Height="1" VerticalAlignment="Center"
+                                    <Border Width="22" Height="1" VerticalAlignment="Center"
                                             Margin="4,0,0,0"
                                             Background="{StaticResource BordaClara}"/>
                                 </StackPanel>
@@ -160,15 +190,61 @@
 
                     <Panel Grid.Row="2" Margin="26,20,26,0">
 
-                        <!-- ============ PASSO 1: VEÍCULO ============ -->
+                        <!-- ============ PASSO 1: SERVIÇO ============ -->
+                        <Grid IsVisible="{Binding NoServico}" RowDefinitions="Auto,*">
+                            <Panel Grid.Row="0" Margin="0,0,0,8">
+                                <TextBox Classes="busca" Text="{Binding BuscaServico}"
+                                         PlaceholderText="Buscar serviço..."/>
+                            </Panel>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Opcoes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:OpcaoServicoViewModel">
+                                            <StackPanel>
+                                                <Button Classes="linha"
+                                                        Classes.escolhido="{Binding Escolhido}"
+                                                        Command="{Binding $parent[UserControl].((vm:NovoServicoViewModel)DataContext).EscolherServicoCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <StackPanel Grid.Column="0" Spacing="2">
+                                                            <TextBlock Text="{Binding Titulo}" FontSize="13"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                            <TextBlock Text="{Binding Descricao}" FontSize="11"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="{StaticResource TextoFraco}"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" Spacing="1"
+                                                                    VerticalAlignment="Center"
+                                                                    HorizontalAlignment="Right">
+                                                            <TextBlock Text="{Binding Preco}" FontSize="12.5"
+                                                                       FontWeight="SemiBold"
+                                                                       HorizontalAlignment="Right"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                            <TextBlock Text="{Binding Detalhe}" FontSize="10.5"
+                                                                       IsVisible="{Binding TemDetalhe}"
+                                                                       HorizontalAlignment="Right"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <!-- ============ VEÍCULO ============ -->
                         <Grid IsVisible="{Binding NoVeiculo}" RowDefinitions="*,Auto">
-                            <ScrollViewer Grid.Row="0" MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Veiculos}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:VeiculoDoRecursoViewModel">
+                                        <DataTemplate x:DataType="vm:VeiculoDoServicoViewModel">
                                             <Button Classes="linha"
                                                     Classes.escolhido="{Binding Escolhido}"
-                                                    Command="{Binding $parent[UserControl].((vm:NovoRecursoViewModel)DataContext).SelecionarVeiculoCommand}"
+                                                    Command="{Binding $parent[UserControl].((vm:NovoServicoViewModel)DataContext).SelecionarVeiculoCommand}"
                                                     CommandParameter="{Binding}">
                                                 <Grid ColumnDefinitions="100,*,Auto">
                                                     <TextBlock Grid.Column="0" Classes="placa"
@@ -191,31 +267,35 @@
                             </ScrollViewer>
 
                             <TextBlock Grid.Row="0" IsVisible="{Binding SemVeiculos}"
-                                       Text="Este cliente ainda não tem veículo. Cadastre um para seguir."
+                                       Text="Nenhum veículo cadastrado para este cliente. Cadastre um para prosseguir."
                                        FontSize="12" Margin="0,20,0,0" TextWrapping="Wrap"
                                        HorizontalAlignment="Center"
                                        Foreground="{StaticResource TextoApagado}"/>
 
+                            <!-- Registrar multa fica só no passo seguinte, que é onde ela
+                                 escolhe os autos: aqui o botão era a mesma ação duas vezes. -->
                             <Button Grid.Row="1" Classes="neutro" Margin="0,12,0,0"
                                     HorizontalAlignment="Left"
                                     Content="+ Cadastrar ou vincular um veículo"
                                     Command="{Binding NovoVeiculoCommand}"/>
                         </Grid>
 
-                        <!-- ============ PASSO 2: MULTAS ============ -->
+                        <!-- ============ MULTAS ============ -->
                         <Grid IsVisible="{Binding NasMultas}" RowDefinitions="*,Auto">
-                            <ScrollViewer Grid.Row="0" MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Multas}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:MultaDoRecursoViewModel">
+                                        <DataTemplate x:DataType="vm:MultaDoServicoViewModel">
                                             <Button Classes="linha"
                                                     IsEnabled="{Binding PodeMarcar}"
                                                     Classes.escolhido="{Binding Marcada}"
-                                                    Command="{Binding $parent[UserControl].((vm:NovoRecursoViewModel)DataContext).AlternarCommand}"
+                                                    Command="{Binding $parent[UserControl].((vm:NovoServicoViewModel)DataContext).AlternarCommand}"
                                                     CommandParameter="{Binding}">
                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                    <!-- O quadrado indica o estado; o clique é tratado pela linha -->
                                                     <CheckBox Grid.Column="0" Margin="0,0,6,0"
-                                                              IsChecked="{Binding Marcada}"
+                                                              IsChecked="{Binding Marcada, Mode=OneWay}"
+                                                              IsHitTestVisible="False"
                                                               IsEnabled="{Binding PodeMarcar}"
                                                               VerticalAlignment="Center"/>
 
@@ -254,8 +334,8 @@
                                                             <TextBlock Text="{Binding Prazo}" FontSize="10"
                                                                        Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
                                                         </Border>
-                                                        <TextBlock Text="já tem recurso" FontSize="10"
-                                                                   IsVisible="{Binding JaTemRecurso}"
+                                                        <TextBlock Text="já contratada" FontSize="10"
+                                                                   IsVisible="{Binding JaContratada}"
                                                                    HorizontalAlignment="Right"
                                                                    Foreground="{StaticResource Sucesso}"/>
                                                     </StackPanel>
@@ -267,7 +347,7 @@
                             </ScrollViewer>
 
                             <TextBlock Grid.Row="0" IsVisible="{Binding SemMultas}"
-                                       Text="Nenhuma multa registrada neste veículo. Registre a primeira para seguir."
+                                       Text="Nenhuma multa registrada neste veículo. Registre a primeira para prosseguir."
                                        FontSize="12" Margin="0,20,0,0" TextWrapping="Wrap"
                                        HorizontalAlignment="Center"
                                        Foreground="{StaticResource TextoApagado}"/>
@@ -278,16 +358,112 @@
                                     Command="{Binding NovaMultaCommand}"/>
                         </Grid>
 
-                        <!-- ============ PASSO 3: SERVIÇO E PREÇO ============ -->
-                        <Grid IsVisible="{Binding NoServico}" RowDefinitions="*,Auto">
-                            <ScrollViewer Grid.Row="0" MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                        <!-- ============ PROCESSO DE CNH ============ -->
+                        <Grid IsVisible="{Binding NoProcesso}" RowDefinitions="Auto,Auto,Auto,*,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,16,150,16,150">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Número do processo *"/>
+                                    <TextBox Classes="entrada" Text="{Binding NumeroProcesso}"
+                                             Classes.erro="{Binding ErroNumero, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             PlaceholderText="50227/2026"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Notificação em"/>
+                                    <TextBox Classes="entrada" Text="{Binding DataNotificacao}"
+                                             servicos:Mascara.Padrao="data"
+                                             PlaceholderText="dd/mm/aaaa"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Classes="rotulo" Text="Prazo de defesa *"/>
+                                    <TextBox Classes="entrada" Text="{Binding PrazoDoProcesso}"
+                                             servicos:Mascara.Padrao="data"
+                                             Classes.erro="{Binding ErroPrazo, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             PlaceholderText="dd/mm/aaaa"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="1" ColumnDefinitions="170,16,*,16,*" Margin="0,14,0,0">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Tipo"/>
+                                    <ComboBox Classes="entrada" ItemsSource="{Binding TiposDeProcesso}"
+                                              SelectedItem="{Binding TipoDeProcesso}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Órgão instaurador"/>
+                                    <TextBox Classes="entrada" Text="{Binding OrgaoInstaurador}"
+                                             PlaceholderText="DETRAN/SC"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Classes="rotulo" Text="Portaria"/>
+                                    <TextBox Classes="entrada" Text="{Binding Portaria}"
+                                             PlaceholderText="Portaria 1234/2026"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Grid.Row="2" Classes="rotulo" Margin="0,16,0,5"
+                                       Text="Multas que contaram na pontuação"/>
+
+                            <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding MultasDoCliente}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:MultaDaPontuacaoViewModel">
+                                            <Button Classes="linha"
+                                                    Classes.escolhido="{Binding Marcada}"
+                                                    Command="{Binding $parent[UserControl].((vm:NovoServicoViewModel)DataContext).AlternarPontuacaoCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Grid ColumnDefinitions="Auto,90,*,Auto">
+                                                    <CheckBox Grid.Column="0" Margin="0,0,6,0"
+                                                              IsChecked="{Binding Marcada, Mode=OneWay}"
+                                                              IsHitTestVisible="False"
+                                                              VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Classes="placa" FontSize="12"
+                                                               Text="{Binding Placa}"/>
+                                                    <StackPanel Grid.Column="2" Spacing="1">
+                                                        <TextBlock Text="{Binding Ait}" FontSize="12"
+                                                                   FontWeight="SemiBold"
+                                                                   FontFamily="Consolas,monospace"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <TextBlock Text="{Binding Descricao}" FontSize="11.5"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource TextoFraco}"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="3" IsVisible="{Binding TemGravidade}"
+                                                            CornerRadius="{StaticResource RaioSelo}"
+                                                            Padding="8,3" VerticalAlignment="Center"
+                                                            Background="{Binding FundoGravidade, Converter={x:Static vm:Conversores.Pincel}}">
+                                                        <TextBlock Text="{Binding Gravidade}" FontSize="10"
+                                                                   Foreground="{Binding CorGravidade, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <TextBlock Grid.Row="3" IsVisible="{Binding SemMultasDoCliente}"
+                                       Text="Nenhuma multa registrada para este cliente. É possível prosseguir sem marcar nenhuma."
+                                       FontSize="12" Margin="0,16,0,0" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextoApagado}"/>
+
+                            <!-- A multa da pontuação pode não estar no sistema ainda -->
+                            <Button Grid.Row="4" Classes="neutro" Margin="0,12,0,0"
+                                    HorizontalAlignment="Left"
+                                    Content="+ Registrar uma multa"
+                                    Command="{Binding NovaMultaDaPontuacaoCommand}"/>
+                        </Grid>
+
+                        <!-- ============ PREÇO ============ -->
+                        <Grid IsVisible="{Binding NoPreco}" RowDefinitions="*,Auto">
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Itens}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ItemDoRecursoViewModel">
-                                            <Grid ColumnDefinitions="130,*,90" Margin="0,0,0,8">
+                                        <DataTemplate x:DataType="vm:ItemDoServicoViewModel">
+                                            <Grid ColumnDefinitions="150,*,90" Margin="0,0,0,8">
                                                 <StackPanel Grid.Column="0" Spacing="1"
                                                             VerticalAlignment="Center" Margin="0,0,10,0">
-                                                    <TextBlock Text="{Binding Ait}" FontSize="12"
+                                                    <TextBlock Text="{Binding Rotulo}" FontSize="12"
                                                                FontWeight="SemiBold"
                                                                FontFamily="Consolas,monospace"
                                                                TextTrimming="CharacterEllipsis"
@@ -350,25 +526,18 @@
                                 <StackPanel>
                                     <TextBlock Classes="rotulo" Text="Observações da contratação"/>
                                     <TextBox Classes="entrada" Text="{Binding Observacoes}"
-                                             PlaceholderText="Combinado com desconto de cliente antigo..."/>
+                                             PlaceholderText="Condições combinadas, desconto concedido..."/>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
 
-                        <!-- Enquanto a lista vem da nuvem, dizer isso: senão o passo
-                             parece estar dizendo que não há veículo nem multa. -->
-                        <TextBlock IsVisible="{Binding Carregando}" Text="buscando..."
-                                   FontSize="12" Margin="0,24,0,0"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{StaticResource TextoApagado}"/>
-
-                        <!-- ============ PASSO 4: PAGAMENTO ============ -->
+                        <!-- ============ PAGAMENTO ============ -->
                         <StackPanel IsVisible="{Binding NoPagamento}" Spacing="14">
                             <Border Background="{StaticResource PrimariaClara}"
                                     BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
                                     CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
                                 <TextBlock Text="{Binding ResumoFinal}" FontSize="13"
-                                           FontWeight="SemiBold"
+                                           FontWeight="SemiBold" TextWrapping="Wrap"
                                            Foreground="{StaticResource PrimariaEscura}"/>
                             </Border>
 
@@ -399,10 +568,17 @@
                                 <StackPanel>
                                     <TextBlock Classes="rotulo" Text="Observação do pagamento"/>
                                     <TextBox Classes="entrada" Text="{Binding ObservacaoPagamento}"
-                                             PlaceholderText="Entrada hoje, resto na retirada..."/>
+                                             PlaceholderText="Entrada, restante na retirada..."/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
+
+                        <!-- Enquanto a lista vem da nuvem, dizer isso: senão o passo
+                             parece estar dizendo que não há nada. -->
+                        <TextBlock IsVisible="{Binding Carregando}" Text="buscando..."
+                                   FontSize="12" Margin="0,24,0,0"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextoApagado}"/>
                     </Panel>
 
                     <!-- ============ RODAPÉ ============ -->
@@ -415,6 +591,12 @@
                                            Foreground="{StaticResource TextoApagado}"/>
                                 <TextBlock Text="{Binding ResumoMarcadas}" FontSize="11"
                                            IsVisible="{Binding NasMultas}"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock Text="{Binding ResumoPontuacao}" FontSize="11"
+                                           IsVisible="{Binding NoProcesso}"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock Text="Os passos seguintes variam conforme o serviço"
+                                           FontSize="11" IsVisible="{Binding NoServico}"
                                            Foreground="{StaticResource TextoFraco}"/>
                             </StackPanel>
 

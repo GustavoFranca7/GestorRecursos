@@ -176,7 +176,7 @@
                                            Foreground="{StaticResource Texto}"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="12"
                                            Foreground="{StaticResource TextoFraco}"
-                                           Text="O carro já foi cadastrado para outro cliente, ou para este em outro papel. Procure pela placa ou pelo RENAVAM."/>
+                                           Text="O veículo já consta no sistema, para outro cliente ou para este em outro vínculo. A busca é por placa ou RENAVAM."/>
                             </StackPanel>
                         </Button>
 
@@ -187,7 +187,7 @@
                                            Foreground="{StaticResource Texto}"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="12"
                                            Foreground="{StaticResource TextoFraco}"
-                                           Text="É a primeira vez que este carro entra no sistema."/>
+                                           Text="O veículo ainda não consta no sistema."/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -239,6 +239,11 @@
                                                     <TextBlock Text="{Binding Resumo}" FontSize="10.5"
                                                                HorizontalAlignment="Right"
                                                                Foreground="{StaticResource TextoApagado}"/>
+                                                    <!-- Dizer o dono antes da escolha poupa a recusa depois -->
+                                                    <TextBlock Text="{Binding AvisoProprietario}" FontSize="10.5"
+                                                               IsVisible="{Binding TemProprietario}"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{StaticResource Aviso}"/>
                                                     <TextBlock Text="já nesta ficha" FontSize="10.5"
                                                                IsVisible="{Binding JaLigado}"
                                                                HorizontalAlignment="Right"
@@ -260,7 +265,14 @@
                         <StackPanel Grid.Row="2" Margin="0,14,0,0">
                             <TextBlock Classes="rotulo" Text="Vínculo com o cliente"/>
                             <ComboBox Classes="entrada" ItemsSource="{Binding Vinculos}"
-                                      SelectedItem="{Binding Vinculo}"/>
+                                      SelectedItem="{Binding Vinculo}"
+                                      IsEnabled="{Binding !ProprietarioTravado}"/>
+
+                            <!-- Carro com dono: o combo trava em condutor e diz por quê -->
+                            <TextBlock Text="{Binding AvisoDoProprietario}" FontSize="11"
+                                       Margin="0,6,0,0" TextWrapping="Wrap" LineHeight="16"
+                                       IsVisible="{Binding ProprietarioTravado}"
+                                       Foreground="{StaticResource Aviso}"/>
                         </StackPanel>
                     </Grid>
 

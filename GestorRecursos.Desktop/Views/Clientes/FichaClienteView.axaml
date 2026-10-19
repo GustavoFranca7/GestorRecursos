@@ -91,6 +91,27 @@
             <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
         </Style>
 
+        <!-- Linha do roteiro de um serviço direto -->
+        <Style Selector="Button.etapa">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.etapa /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.etapa:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <!-- Etapa cumprida sai de cena sem sumir: ela ainda explica o que já foi feito -->
+        <Style Selector="TextBlock.cumprida">
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+
         <!-- Coluna de uma fase do recurso: autuação, JARI ou CETRAN -->
         <Style Selector="Border.fase">
             <Setter Property="Background" Value="{StaticResource Cartao}"/>
@@ -285,9 +306,9 @@
                      para Arquivados. -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                             VerticalAlignment="Top">
-                    <Button Classes="primario" Content="+ Novo recurso"
-                            Command="{Binding NovoRecursoCommand}"
-                            ToolTip.Tip="Montar um recurso para este cliente"/>
+                    <Button Classes="primario" Content="+ Novo serviço"
+                            Command="{Binding NovoServicoCommand}"
+                            ToolTip.Tip="Contratar um serviço para este cliente"/>
 
                     <Button Classes="acao perigosa"
                             Command="{Binding PedirArquivamentoCommand}"
@@ -788,7 +809,7 @@
                                 <TextBlock Text="Nenhum veículo ligado a este cliente." FontSize="13"
                                            HorizontalAlignment="Center"
                                            Foreground="{StaticResource TextoFraco}"/>
-                                <TextBlock Text="As multas são registradas no veículo, então é por ele que se começa."
+                                <TextBlock Text="As multas são registradas no veículo. Cadastre o veículo para iniciar."
                                            FontSize="11.5" HorizontalAlignment="Center"
                                            Foreground="{StaticResource TextoApagado}"/>
                             </StackPanel>
@@ -811,12 +832,12 @@
                      Um cartão por recurso, com autuação, JARI e CETRAN lado a lado.
                      As três aparecem sempre: o valor pago cobre as três, e ver o
                      caminho inteiro é o que explica em que pé está o processo. -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaProcessos}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaServicos}">
                     <StackPanel Margin="24,18,24,24" Spacing="14">
 
-                        <ItemsControl ItemsSource="{Binding Recursos}">
+                        <ItemsControl ItemsSource="{Binding Servicos}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:RecursoDaFichaViewModel">
+                                <DataTemplate x:DataType="vm:ServicoDaFichaViewModel">
                                     <Border Classes="cartao" Margin="0,0,0,14">
                                         <StackPanel Spacing="12">
 
@@ -827,16 +848,30 @@
                                                            TextTrimming="CharacterEllipsis"
                                                            VerticalAlignment="Center"/>
 
-                                                <Button Grid.Column="1" Classes="acao perigosa"
-                                                        IsVisible="{Binding PodeCancelar}"
-                                                        ToolTip.Tip="Encerrar este recurso"
-                                                        Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).PedirCancelamentoCommand}"
-                                                        CommandParameter="{Binding}">
-                                                    <Viewbox Width="13" Height="13">
-                                                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
-                                                              Data="{StaticResource IconeFechar}"/>
-                                                    </Viewbox>
-                                                </Button>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                            Spacing="4">
+                                                    <!-- Dado digitado errado é a regra, não a exceção -->
+                                                    <Button Classes="acao"
+                                                            ToolTip.Tip="Corrigir o serviço ou o valor"
+                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).EditarServicoCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Viewbox Width="13" Height="13">
+                                                            <Path Fill="{StaticResource Sucesso}" Stretch="Uniform"
+                                                                  Data="{StaticResource IconeEditar}"/>
+                                                        </Viewbox>
+                                                    </Button>
+
+                                                    <Button Classes="acao perigosa"
+                                                            IsVisible="{Binding PodeCancelar}"
+                                                            ToolTip.Tip="Encerrar este serviço"
+                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).PedirCancelamentoCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Viewbox Width="13" Height="13">
+                                                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                                  Data="{StaticResource IconeFechar}"/>
+                                                        </Viewbox>
+                                                    </Button>
+                                                </StackPanel>
                                             </Grid>
 
                                             <!-- Placa, data, valor e órgão -->
@@ -872,6 +907,7 @@
                                                 </StackPanel>
 
                                                 <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            Margin="0,0,20,0"
                                                             IsVisible="{Binding TemOrgao}">
                                                     <TextBlock Text="Órgão" FontSize="11.5"
                                                                Foreground="{StaticResource TextoApagado}"/>
@@ -879,10 +915,87 @@
                                                                FontWeight="SemiBold"
                                                                Foreground="{StaticResource Texto}"/>
                                                 </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            IsVisible="{Binding TemAndamento}">
+                                                    <TextBlock Text="Andamento" FontSize="11.5"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                    <TextBlock Text="{Binding Andamento}" FontSize="11.5"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                </StackPanel>
                                             </WrapPanel>
 
-                                            <!-- As três fases -->
-                                            <ItemsControl ItemsSource="{Binding Fases}">
+                                            <!-- ======= SERVIÇO DIRETO: o roteiro de etapas =======
+                                                 O mesmo cartão serve aos dois formatos. Quem anda
+                                                 por etapas mostra o checklist; quem anda por fases
+                                                 mostra as três instâncias, logo abaixo. -->
+                                            <ItemsControl ItemsSource="{Binding Etapas}"
+                                                          IsVisible="{Binding TemEtapas}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:EtapaViewModel">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Button Grid.Column="0" Classes="etapa"
+                                                                    IsEnabled="{Binding PodeMarcar}"
+                                                                    Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).MarcarEtapaCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                    <!-- O quadrado mostra o estado, não recebe o clique: quem
+                                                                         marca é o botão da linha inteira. Antes ele tratava o
+                                                                         próprio clique e a data não acompanhava. -->
+                                                                    <CheckBox Grid.Column="0" Margin="0,0,8,0"
+                                                                              IsChecked="{Binding Concluida, Mode=OneWay}"
+                                                                              IsHitTestVisible="False"
+                                                                              IsEnabled="{Binding PodeMarcar}"
+                                                                              VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Column="1" FontSize="12.5"
+                                                                               Text="{Binding Nome}"
+                                                                               VerticalAlignment="Center"
+                                                                               Classes.cumprida="{Binding Concluida}"
+                                                                               Foreground="{StaticResource Texto}"/>
+
+                                                                    <!-- O prazo é o que a agenda vai vigiar -->
+                                                                    <Border Grid.Column="2" Margin="10,0"
+                                                                            IsVisible="{Binding TemAviso}"
+                                                                            CornerRadius="{StaticResource RaioSelo}"
+                                                                            Padding="8,2" VerticalAlignment="Center"
+                                                                            Background="{Binding FundoPrazo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                            <TextBlock Text="{Binding Prazo}" FontSize="10"
+                                                                                       Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            <TextBlock Text="·" FontSize="10"
+                                                                                       Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            <TextBlock Text="{Binding Aviso}" FontSize="10"
+                                                                                       Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                        </StackPanel>
+                                                                    </Border>
+
+                                                                    <TextBlock Grid.Column="3" FontSize="11"
+                                                                               Text="{Binding Quando}"
+                                                                               MinWidth="72" TextAlignment="Right"
+                                                                               VerticalAlignment="Center"
+                                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                                </Grid>
+                                                            </Button>
+
+                                                            <Button Grid.Column="1" Classes="acao"
+                                                                    Margin="6,0,0,0"
+                                                                    ToolTip.Tip="Prazo e data de conclusão"
+                                                                    Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).EditarEtapaCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <Viewbox Width="12" Height="12">
+                                                                    <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                                          Data="{StaticResource IconeEditar}"/>
+                                                                </Viewbox>
+                                                            </Button>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- ======= RECURSO: as três fases ======= -->
+                                            <ItemsControl ItemsSource="{Binding Fases}"
+                                                          IsVisible="{Binding PorInstancias}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <UniformGrid Columns="3"/>
@@ -989,28 +1102,28 @@
                                        Foreground="{StaticResource TextoFraco}"/>
                         </Border>
 
-                        <Border Classes="cartao" IsVisible="{Binding SemRecursos}" Padding="24,28">
+                        <Border Classes="cartao" IsVisible="{Binding SemServicos}" Padding="24,28">
                             <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <TextBlock Text="Nenhum recurso para este cliente." FontSize="13"
+                                <TextBlock Text="Nenhum serviço contratado para este cliente." FontSize="13"
                                            HorizontalAlignment="Center"
                                            Foreground="{StaticResource TextoFraco}"/>
                                 <TextBlock FontSize="11.5" HorizontalAlignment="Center"
                                            TextWrapping="Wrap" MaxWidth="420"
                                            TextAlignment="Center"
                                            Foreground="{StaticResource TextoApagado}"
-                                           Text="O processo nasce da contratação: use o + Novo recurso, lá em cima, para montar o primeiro."/>
+                                           Text="Todo serviço nasce de uma contratação. Use o botão + Novo serviço para registrar a primeira."/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
 
-                <TextBlock IsVisible="{Binding CarregandoRecursos}"
-                           Text="Carregando os processos..."
+                <TextBlock IsVisible="{Binding CarregandoServicos}"
+                           Text="Carregando os serviços..."
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            FontSize="13" Foreground="{StaticResource TextoFraco}"/>
 
                 <TextBlock IsVisible="{Binding AbaEmConstrucao}"
-                           Text="Esta aba ainda será construída."
+                           Text="Esta aba ainda não está disponível."
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            FontSize="13" Foreground="{StaticResource TextoApagado}"/>
 

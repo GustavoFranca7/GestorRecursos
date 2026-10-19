@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace GestorRecursos.Desktop.Views;
 
-public partial class NovoRecursoView : UserControl
+public partial class NovoServicoView : UserControl
 {
-    public NovoRecursoView()
+    public NovoServicoView()
     {
         InitializeComponent();
     }
