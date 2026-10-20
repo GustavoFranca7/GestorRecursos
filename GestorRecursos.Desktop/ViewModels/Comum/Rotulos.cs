@@ -47,6 +47,23 @@ public static class Rotulos
     public static bool Encerrada(string? situacao) =>
         situacao is "DEFERIDO" or "INDEFERIDO" or "CANCELADO" or "DESISTENCIA";
 
+    /// <summary>Como o dinheiro entrou, já com as parcelas quando elas importam.</summary>
+    public static string Forma(Core.Models.FormaPagamento forma, int parcelas)
+    {
+        var nome = forma switch
+        {
+            Core.Models.FormaPagamento.Dinheiro => "dinheiro",
+            Core.Models.FormaPagamento.Pix => "PIX",
+            Core.Models.FormaPagamento.PixParcelado => "PIX parcelado",
+            Core.Models.FormaPagamento.Debito => "débito",
+            Core.Models.FormaPagamento.Credito => "crédito",
+            _ => forma.ToString().ToLowerInvariant()
+        };
+
+        // Uma parcela não é parcelamento: dizer "em 1x" só polui a linha.
+        return parcelas > 1 ? $"{nome} em {parcelas}x" : nome;
+    }
+
     /// <summary>O papel do cliente no veículo.</summary>
     public static string Vinculo(string? vinculo) => vinculo switch
     {

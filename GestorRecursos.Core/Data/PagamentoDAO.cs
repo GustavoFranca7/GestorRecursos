@@ -80,6 +80,45 @@ public class PagamentoDAO
         return lista;
     }
 
+    /// <summary>Todos os pagamentos do cliente, de todas as contratações dele.</summary>
+    /// <remarks>
+    /// A aba Financeiro mostra as contratações lado a lado; buscar os pagamentos de uma em
+    /// uma seria uma ida ao banco por cartão. Quem chama agrupa por contratação.
+    /// </remarks>
+    public async Task<List<Pagamento>> ListarPorClienteAsync(int clienteId, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT P.ID, P.CONTRATACAO_ID, P.DATA_PAGAMENTO, P.VALOR, P.FORMA,
+                   P.PARCELAS, P.OBSERVACAO
+              FROM PAGAMENTOS P
+              JOIN CONTRATACOES C ON C.ID = P.CONTRATACAO_ID
+             WHERE C.CLIENTE_ID = :clienteId
+             ORDER BY P.DATA_PAGAMENTO, P.ID
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("clienteId", clienteId);
+
+        var lista = new List<Pagamento>();
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new Pagamento
+            {
+                Id = reader.Inteiro(0),
+                ContratacaoId = reader.Inteiro(1),
+                DataPagamento = reader.Data(2),
+                Valor = reader.Decimal(3),
+                Forma = ValorBanco.De<FormaPagamento>(reader.Texto(4)),
+                Parcelas = reader.Inteiro(5),
+                Observacao = reader.TextoOuNulo(6)
+            });
+        }
+
+        return lista;
+    }
+
     public async Task<bool> ExcluirAsync(int id, CancellationToken cancelamento = default)
     {
         // Pagamento lançado errado precisa poder sair, mas é o único registro
@@ -113,6 +152,40 @@ public class PagamentoDAO
     // ---------------------------------------------------------------------
     // Despesas
     // ---------------------------------------------------------------------
+
+    /// <summary>Insere a despesa na transação de quem chamou.</summary>
+    /// <remarks>
+    /// A contratação já nasce com as despesas combinadas na hora: a taxa que ela adianta
+    /// entra no mesmo commit do contrato que a cobre, ou nenhum dos dois entra.
+    /// </remarks>
+    internal static async Task<int> InserirDespesaAsync(
+        OracleConnection conexao,
+        OracleTransaction? transacao,
+        Despesa despesa,
+        CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            INSERT INTO DESPESAS (CONTRATACAO_ID, TIPO, VALOR, DATA_DESPESA)
+            VALUES (:contratacaoId, :tipo, :valor, :dataDespesa)
+            RETURNING ID INTO :novoId
+            """;
+
+        await using var cmd = conexao.Comando(sql, transacao);
+        cmd.Param("contratacaoId", despesa.ContratacaoId)
+           .Param("tipo", despesa.Tipo)
+           .Param("valor", despesa.Valor)
+           .Param("dataDespesa", despesa.DataDespesa == default ? DateTime.Today : despesa.DataDespesa);
+
+        var pId = new OracleParameter("novoId", OracleDbType.Int32)
+        {
+            Direction = System.Data.ParameterDirection.Output
+        };
+        cmd.Parameters.Add(pId);
+
+        await cmd.ExecuteNonQueryAsync(cancelamento);
+        despesa.Id = Convert.ToInt32(pId.Value.ToString());
+        return despesa.Id;
+    }
 
     public async Task<int> RegistrarDespesaAsync(Despesa despesa, CancellationToken cancelamento = default)
     {
@@ -152,6 +225,38 @@ public class PagamentoDAO
         await using var conexao = await Database.AbrirAsync(cancelamento);
         await using var cmd = conexao.Comando(sql);
         cmd.Param("contratacaoId", contratacaoId);
+
+        var lista = new List<Despesa>();
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new Despesa
+            {
+                Id = reader.Inteiro(0),
+                ContratacaoId = reader.Inteiro(1),
+                Tipo = reader.Texto(2),
+                Valor = reader.Decimal(3),
+                DataDespesa = reader.Data(4)
+            });
+        }
+
+        return lista;
+    }
+
+    /// <summary>Todas as despesas do cliente, pelo mesmo motivo dos pagamentos.</summary>
+    public async Task<List<Despesa>> ListarDespesasPorClienteAsync(int clienteId, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT D.ID, D.CONTRATACAO_ID, D.TIPO, D.VALOR, D.DATA_DESPESA
+              FROM DESPESAS D
+              JOIN CONTRATACOES C ON C.ID = D.CONTRATACAO_ID
+             WHERE C.CLIENTE_ID = :clienteId
+             ORDER BY D.DATA_DESPESA, D.ID
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("clienteId", clienteId);
 
         var lista = new List<Despesa>();
         await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);

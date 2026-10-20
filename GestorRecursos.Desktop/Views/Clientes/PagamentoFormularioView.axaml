@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.PagamentoFormularioView"
+             x:DataType="vm:PagamentoFormularioViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="ComboBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.numero">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="TextBlock.legenda">
+            <Setter Property="FontSize" Value="9.5"/>
+            <Setter Property="LetterSpacing" Value="0.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Flutuante por cima da ficha, como as outras janelas do sistema -->
+    <Border Background="#73102A2C">
+        <Border Width="560" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+                <StackPanel Grid.Row="0" Spacing="3" Margin="26,22,26,0">
+                    <TextBlock Text="Lançar pagamento" FontSize="17" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock Text="{Binding Referencia}" FontSize="11.5" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextoApagado}"/>
+                </StackPanel>
+
+                <!-- Os três números da contratação, para conferir antes de lançar -->
+                <Border Grid.Row="1" Background="{StaticResource CartaoSuave}"
+                        BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioCartao}"
+                        Margin="26,18,26,0" Padding="16,13">
+                    <Grid ColumnDefinitions="*,*,*">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Classes="numero" Text="{Binding Contratado}"
+                                       Foreground="{StaticResource Texto}"/>
+                            <TextBlock Classes="legenda" Text="CONTRATADO"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Classes="numero" Text="{Binding JaPago}"
+                                       Foreground="{StaticResource Sucesso}"/>
+                            <TextBlock Classes="legenda" Text="JÁ PAGO"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2">
+                            <TextBlock Classes="numero" Text="{Binding EmAberto}"
+                                       Foreground="{StaticResource Alerta}"/>
+                            <TextBlock Classes="legenda" Text="EM ABERTO"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Row="2" Margin="26,18,26,0" Spacing="15">
+                    <Grid ColumnDefinitions="*,14,*">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="rotulo" Text="Valor *"/>
+                            <Grid ColumnDefinitions="*,8,Auto">
+                                <TextBox Grid.Column="0" Classes="entrada" Text="{Binding Valor}"
+                                         Classes.erro="{Binding ErroValor, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         PlaceholderText="0,00"/>
+                                <Button Grid.Column="2" Classes="neutro" Content="Tudo"
+                                        ToolTip.Tip="Preenche com o valor em aberto"
+                                        Command="{Binding QuitarCommand}"/>
+                            </Grid>
+                            <TextBlock Classes="erroCampo" Text="{Binding ErroValor}"
+                                       IsVisible="{Binding ErroValor, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Classes="rotulo" Text="Data *"/>
+                            <TextBox Classes="entrada" Text="{Binding Data}"
+                                     servicos:Mascara.Padrao="data"
+                                     Classes.erro="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                     PlaceholderText="dd/mm/aaaa"/>
+                            <TextBlock Classes="erroCampo" Text="{Binding ErroData}"
+                                       IsVisible="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,14,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Classes="rotulo" Text="Forma"/>
+                            <ComboBox Classes="entrada" ItemsSource="{Binding Formas}"
+                                      SelectedItem="{Binding Forma}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Width="120"
+                                    IsVisible="{Binding Parcelavel}">
+                            <TextBlock Classes="rotulo" Text="Parcelas"/>
+                            <TextBox Classes="entrada" Text="{Binding Parcelas}"
+                                     servicos:Mascara.Padrao="numero:2"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel>
+                        <TextBlock Classes="rotulo" Text="Observação"/>
+                        <TextBox Classes="entrada" Text="{Binding Observacao}"
+                                 PlaceholderText="Opcional"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ============ RODAPÉ ============ -->
+                <Border Grid.Row="3" Background="{StaticResource CartaoSuave}"
+                        BorderBrush="{StaticResource BordaClara}" BorderThickness="0,1,0,0"
+                        Padding="26,14" Margin="0,22,0,0">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Text="{Binding Erro}" FontSize="12"
+                                   TextWrapping="Wrap" Margin="0,0,0,10"
+                                   Foreground="{StaticResource Alerta}"
+                                   IsVisible="{Binding TemErro}"/>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Classes="neutro" Content="Cancelar"
+                                    Command="{Binding CancelarCommand}"/>
+                            <Button Classes="primario" Content="Lançar pagamento"
+                                    IsEnabled="{Binding !Salvando}"
+                                    Command="{Binding SalvarCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

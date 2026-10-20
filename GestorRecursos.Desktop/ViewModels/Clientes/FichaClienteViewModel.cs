@@ -12,6 +12,12 @@ using GestorRecursos.Desktop.Servicos;
 
 namespace GestorRecursos.Desktop.ViewModels;
 
+/// <summary>O recorte da aba Serviços.</summary>
+public enum FiltroServico { Ativos, Encerrados, Todos }
+
+/// <summary>O recorte da aba Financeiro.</summary>
+public enum FiltroLancamento { EmAberto, Quitadas, Todas }
+
 /// <summary>As abas da ficha.</summary>
 public enum AbaFicha
 {
@@ -72,6 +78,8 @@ public partial class FichaClienteViewModel : ViewModelBase
 {
     private readonly FichaClienteDAO _fichas = new();
     private readonly ClienteDAO _clientes = new();
+    private readonly ContratacaoDAO _contratacoes = new();
+    private readonly PagamentoDAO _pagamentos = new();
     private readonly Action? _aoVoltar;
     private readonly Action? _aoNovoCliente;
     private readonly Action<GrupoCadastro>? _aoEditar;
@@ -94,7 +102,7 @@ public partial class FichaClienteViewModel : ViewModelBase
         new("Dados", AbaFicha.Dados, pronta: true),
         new("Veículos e multas", AbaFicha.Veiculos, pronta: true),
         new("Serviços", AbaFicha.Servicos, pronta: true),
-        new("Financeiro", AbaFicha.Financeiro, pronta: false),
+        new("Financeiro", AbaFicha.Financeiro, pronta: true),
         new("Documentos", AbaFicha.Documentos, pronta: false),
         new("Histórico", AbaFicha.Historico, pronta: false)
     ];
@@ -170,15 +178,44 @@ public partial class FichaClienteViewModel : ViewModelBase
     public bool AbaDados => AbaAtual == AbaFicha.Dados;
     public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
     public bool AbaServicos => AbaAtual == AbaFicha.Servicos;
+    public bool AbaFinanceiro => AbaAtual == AbaFicha.Financeiro;
 
     public bool AbaEmConstrucao =>
-        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Servicos);
+        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Servicos
+                      or AbaFicha.Financeiro);
 
     /// <summary>Os cartões da aba Veículos e multas.</summary>
     public ObservableCollection<VeiculoComMultasViewModel> VeiculosEMultas { get; } = [];
 
     /// <summary>Os cartões da aba Serviços: recurso com as três fases, serviço direto com o roteiro.</summary>
     public ObservableCollection<ServicoDaFichaViewModel> Servicos { get; } = [];
+
+    /// <summary>Os cartões da aba Financeiro: uma contratação por cartão, com os pagamentos.</summary>
+    public ObservableCollection<LancamentoDaFichaViewModel> Lancamentos { get; } = [];
+
+    public bool SemLancamentos => !CarregandoFinanceiro && Lancamentos.Count == 0;
+
+    // As listas completas ficam de lado; o que a tela mostra é o recorte do filtro.
+    // Filtrar em memória evita uma ida ao banco a cada clique em sub-aba.
+    private readonly List<ServicoDaFichaViewModel> _todosServicos = [];
+    private readonly List<LancamentoDaFichaViewModel> _todosLancamentos = [];
+
+    [ObservableProperty] public partial FiltroServico FiltroDeServico { get; set; } = FiltroServico.Ativos;
+    [ObservableProperty] public partial FiltroLancamento FiltroDeLancamento { get; set; } = FiltroLancamento.Todas;
+
+    /// <summary>Contratação escolhida no financeiro, para ver só os serviços dela.</summary>
+    [ObservableProperty] public partial int? ContratacaoEmFoco { get; set; }
+    [ObservableProperty] public partial string? TituloEmFoco { get; set; }
+
+    public bool TemFocoDeContratacao => ContratacaoEmFoco is not null;
+
+    public bool FiltroEmAtivos => FiltroDeServico == FiltroServico.Ativos;
+    public bool FiltroEmEncerrados => FiltroDeServico == FiltroServico.Encerrados;
+    public bool FiltroEmTodos => FiltroDeServico == FiltroServico.Todos;
+
+    public bool LancamentosEmAberto => FiltroDeLancamento == FiltroLancamento.EmAberto;
+    public bool LancamentosQuitados => FiltroDeLancamento == FiltroLancamento.Quitadas;
+    public bool LancamentosTodos => FiltroDeLancamento == FiltroLancamento.Todas;
 
     /// <summary>Formulário aberto por cima da ficha. Nulo quando não há nenhum.</summary>
     /// <remarks>
@@ -194,15 +231,19 @@ public partial class FichaClienteViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool CarregandoServicos { get; set; }
 
+    [ObservableProperty]
+    public partial bool CarregandoFinanceiro { get; set; }
+
     /// <summary>Evita ir ao banco de novo a cada vez que a aba é reaberta.</summary>
     private bool _veiculosCarregados;
     private bool _servicosCarregados;
+    private bool _financeiroCarregado;
 
     public bool SemVeiculos => !CarregandoVeiculos && _veiculosCarregados && VeiculosEMultas.Count == 0;
     public bool SemServicos => !CarregandoServicos && _servicosCarregados && Servicos.Count == 0;
 
     /// <summary>Quantos recursos já não esperam nada: entram na contagem do rodapé.</summary>
-    public int ServicosEncerrados => Servicos.Count(r => r.Encerrado);
+    public int ServicosEncerrados => _todosServicos.Count(r => r.Encerrado);
     public bool TemEncerrados => ServicosEncerrados > 0;
 
     public string ResumoEncerrados => ServicosEncerrados == 1
@@ -302,6 +343,10 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await CarregarServicos();
         }
+        else if (AbaAtual == AbaFicha.Financeiro && !_financeiroCarregado)
+        {
+            await CarregarFinanceiro();
+        }
     }
 
     /// <summary>Faz as abas pesadas esquecerem o que buscaram.</summary>
@@ -311,7 +356,12 @@ public partial class FichaClienteViewModel : ViewModelBase
         VeiculosEMultas.Clear();
 
         _servicosCarregados = false;
+        _todosServicos.Clear();
         Servicos.Clear();
+
+        _financeiroCarregado = false;
+        _todosLancamentos.Clear();
+        Lancamentos.Clear();
     }
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
@@ -369,12 +419,13 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             var servicos = await _fichas.ListarServicosAsync(ClienteId);
 
-            Servicos.Clear();
+            _todosServicos.Clear();
             foreach (var servico in servicos)
             {
-                Servicos.Add(new ServicoDaFichaViewModel(servico));
+                _todosServicos.Add(new ServicoDaFichaViewModel(servico));
             }
 
+            AplicarFiltroDeServico();
             _servicosCarregados = true;
         }
         catch (Exception excecao)
@@ -449,6 +500,193 @@ public partial class FichaClienteViewModel : ViewModelBase
         catch (Exception excecao)
         {
             Erro = $"Não foi possível marcar a etapa: {excecao.Message}";
+        }
+    }
+
+    /// <summary>Enche a aba Financeiro: as contratações do cliente e o que entrou em cada uma.</summary>
+    /// <remarks>
+    /// Três consultas, e não uma por contratação: pagamentos e despesas vêm todos de uma
+    /// vez e são agrupados aqui. O nome dos serviços sai da mesma consulta que alimenta a
+    /// aba Serviços, porque a contratação sozinha não sabe o que foi contratado.
+    /// </remarks>
+    private async Task CarregarFinanceiro()
+    {
+        CarregandoFinanceiro = true;
+
+        try
+        {
+            var contratacoes = await _contratacoes.ListarPorClienteAsync(ClienteId);
+            var pagamentos = await _pagamentos.ListarPorClienteAsync(ClienteId);
+            var despesas = await _pagamentos.ListarDespesasPorClienteAsync(ClienteId);
+            var servicos = await _fichas.ListarServicosAsync(ClienteId);
+
+            _todosLancamentos.Clear();
+            foreach (var contratacao in contratacoes)
+            {
+                _todosLancamentos.Add(new LancamentoDaFichaViewModel(
+                    contratacao,
+                    servicos.Where(s => s.ContratacaoId == contratacao.Id).ToList(),
+                    pagamentos.Where(p => p.ContratacaoId == contratacao.Id),
+                    despesas.Where(d => d.ContratacaoId == contratacao.Id)));
+            }
+
+            AplicarFiltroDeLancamento();
+            _financeiroCarregado = true;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível carregar o financeiro: {excecao.Message}";
+        }
+        finally
+        {
+            CarregandoFinanceiro = false;
+            OnPropertyChanged(nameof(SemLancamentos));
+        }
+    }
+
+    /// <summary>Troca o recorte da aba Serviços.</summary>
+    [RelayCommand]
+    private void FiltrarServicos(FiltroServico filtro)
+    {
+        FiltroDeServico = filtro;
+        AplicarFiltroDeServico();
+    }
+
+    /// <summary>Troca o recorte da aba Financeiro.</summary>
+    [RelayCommand]
+    private void FiltrarLancamentos(FiltroLancamento filtro)
+    {
+        FiltroDeLancamento = filtro;
+        AplicarFiltroDeLancamento();
+    }
+
+    /// <summary>Abre a aba Serviços mostrando só os serviços daquela contratação.</summary>
+    /// <remarks>
+    /// Com muitas contratações, saber que uma delas custou um valor não diz qual recurso
+    /// ela cobre. Este caminho responde isso sem obrigar a procurar na lista inteira.
+    /// </remarks>
+    [RelayCommand]
+    private async Task VerServicosDaContratacao(LancamentoDaFichaViewModel? lancamento)
+    {
+        if (lancamento is null)
+        {
+            return;
+        }
+
+        ContratacaoEmFoco = lancamento.Id;
+        TituloEmFoco = lancamento.Titulo;
+        FiltroDeServico = FiltroServico.Todos;
+
+        MarcarAba(AbaFicha.Servicos);
+        await CarregarAbaAtual();
+        AplicarFiltroDeServico();
+    }
+
+    /// <summary>Volta a mostrar os serviços de todas as contratações.</summary>
+    [RelayCommand]
+    private void LimparFoco()
+    {
+        ContratacaoEmFoco = null;
+        TituloEmFoco = null;
+        AplicarFiltroDeServico();
+    }
+
+    private void AplicarFiltroDeServico()
+    {
+        Servicos.Clear();
+        foreach (var servico in _todosServicos.Where(Cabe))
+        {
+            Servicos.Add(servico);
+        }
+
+        OnPropertyChanged(nameof(SemServicos));
+        OnPropertyChanged(nameof(FiltroEmAtivos));
+        OnPropertyChanged(nameof(FiltroEmEncerrados));
+        OnPropertyChanged(nameof(FiltroEmTodos));
+        OnPropertyChanged(nameof(ServicosEncerrados));
+        OnPropertyChanged(nameof(TemEncerrados));
+        OnPropertyChanged(nameof(ResumoEncerrados));
+        OnPropertyChanged(nameof(TemFocoDeContratacao));
+        return;
+
+        bool Cabe(ServicoDaFichaViewModel servico) =>
+            (ContratacaoEmFoco is not { } contratacao || servico.ContratacaoId == contratacao)
+            && FiltroDeServico switch
+            {
+                FiltroServico.Ativos => !servico.Encerrado,
+                FiltroServico.Encerrados => servico.Encerrado,
+                _ => true
+            };
+    }
+
+    private void AplicarFiltroDeLancamento()
+    {
+        Lancamentos.Clear();
+        foreach (var lancamento in _todosLancamentos.Where(Cabe))
+        {
+            Lancamentos.Add(lancamento);
+        }
+
+        OnPropertyChanged(nameof(SemLancamentos));
+        OnPropertyChanged(nameof(LancamentosEmAberto));
+        OnPropertyChanged(nameof(LancamentosQuitados));
+        OnPropertyChanged(nameof(LancamentosTodos));
+        return;
+
+        bool Cabe(LancamentoDaFichaViewModel lancamento) => FiltroDeLancamento switch
+        {
+            FiltroLancamento.EmAberto => lancamento.Devendo,
+            FiltroLancamento.Quitadas => lancamento.Quitado,
+            _ => true
+        };
+    }
+
+    /// <summary>Lança uma entrada de dinheiro na contratação escolhida.</summary>
+    [RelayCommand]
+    private void LancarPagamento(LancamentoDaFichaViewModel? lancamento)
+    {
+        if (lancamento is null)
+        {
+            return;
+        }
+
+        Formulario = new PagamentoFormularioViewModel(
+            lancamento,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: Recarregar);
+    }
+
+    /// <summary>Pergunta antes de apagar um pagamento lançado errado.</summary>
+    [RelayCommand]
+    private void PedirExclusaoPagamento(PagamentoDaFichaViewModel? pagamento)
+    {
+        if (pagamento is null)
+        {
+            return;
+        }
+
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: "Apagar este pagamento?",
+            texto: $"O lançamento de {pagamento.Valor}, em {pagamento.Quando}, será removido "
+                 + "e o valor volta a constar em aberto. Use apenas para corrigir um "
+                 + "lançamento equivocado.",
+            botao: "Apagar pagamento",
+            aoConfirmar: () => ApagarPagamento(pagamento.Id),
+            aoCancelar: () => Confirmacao = null);
+    }
+
+    private async void ApagarPagamento(int pagamentoId)
+    {
+        try
+        {
+            await _pagamentos.ExcluirAsync(pagamentoId);
+            Confirmacao = null;
+            Recarregar();
+        }
+        catch (Exception excecao)
+        {
+            Confirmacao = null;
+            Erro = $"Não foi possível apagar o pagamento: {excecao.Message}";
         }
     }
 
@@ -935,11 +1173,13 @@ public partial class FichaClienteViewModel : ViewModelBase
         OnPropertyChanged(nameof(AbaDados));
         OnPropertyChanged(nameof(AbaVeiculos));
         OnPropertyChanged(nameof(AbaServicos));
+        OnPropertyChanged(nameof(AbaFinanceiro));
         OnPropertyChanged(nameof(AbaEmConstrucao));
     }
 
     partial void OnCarregandoVeiculosChanged(bool valor) => OnPropertyChanged(nameof(SemVeiculos));
     partial void OnCarregandoServicosChanged(bool valor) => OnPropertyChanged(nameof(SemServicos));
+    partial void OnCarregandoFinanceiroChanged(bool valor) => OnPropertyChanged(nameof(SemLancamentos));
 
     private static string MontarIdentificacao(Cliente cliente)
     {

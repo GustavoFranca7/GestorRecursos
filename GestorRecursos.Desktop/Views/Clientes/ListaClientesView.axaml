@@ -13,39 +13,6 @@
          declarar num recurso: cada Grid precisa da sua própria lista de colunas. -->
 
     <UserControl.Styles>
-        <!-- Aba de filtro: cápsula que acende quando é a escolhida -->
-        <Style Selector="Button.aba">
-            <Setter Property="Background" Value="{StaticResource Cartao}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="15,7"/>
-            <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusAdorner" Value="{x:Null}"/>
-        </Style>
-        <!-- O estado de repouso precisa estar escrito aqui, e não só nos estados. Sem ele, ao
-             sair a classe "escolhida" o fundo volta a um valor indefinido, e a animação do
-             tema interpola até o preto — era isso que piscava ao trocar de filtro. -->
-        <Style Selector="Button.aba /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource Cartao}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
-        </Style>
-        <Style Selector="Button.aba:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
-        </Style>
-        <Style Selector="Button.aba.escolhida /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource Primaria}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
-            <Setter Property="TextBlock.Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.aba.escolhida:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource PrimariaEscura}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource PrimariaEscura}"/>
-        </Style>
-
         <!-- Cabeçalho da tabela -->
         <Style Selector="TextBlock.cabecalho">
             <Setter Property="FontSize" Value="10.5"/>

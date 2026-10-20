@@ -80,8 +80,10 @@ public partial class ItemDoServicoViewModel : ObservableObject
     private readonly Action _aoTrocar;
 
     public ItemDoServicoViewModel(
-        string rotulo,
-        string resumo,
+        string identificacao,
+        string selo,
+        string fundoSelo,
+        string corSelo,
         IReadOnlyList<TipoServico> servicos,
         TipoServico? sugerido,
         int? multaId,
@@ -89,16 +91,27 @@ public partial class ItemDoServicoViewModel : ObservableObject
         Action aoTrocar)
     {
         _aoTrocar = aoTrocar;
-        Rotulo = rotulo;
-        Resumo = resumo;
+        Identificacao = identificacao;
+        Selo = selo;
+        FundoSelo = fundoSelo;
+        CorSelo = corSelo;
         Servicos = servicos;
         MultaId = multaId;
         Prazo = prazo;
         Servico = sugerido ?? (servicos.Count == 1 ? servicos[0] : null);
     }
 
-    public string Rotulo { get; }
-    public string Resumo { get; }
+    /// <summary>O que identifica o item: AIT com placa, número do processo ou a origem.</summary>
+    public string Identificacao { get; }
+
+    /// <summary>Gravidade da multa ou tipo do processo. Vazio quando não se aplica.</summary>
+    public string Selo { get; }
+    public string FundoSelo { get; }
+    public string CorSelo { get; }
+    public bool TemSelo => Selo.Length > 0;
+
+    /// <summary>O serviço da tabela, decidido pela gravidade. Não se escolhe aqui.</summary>
+    public string Nome => Servico?.Nome ?? "—";
     public int? MultaId { get; }
 
     /// <summary>Prazo que a primeira instância vai vigiar, quando o serviço tiver fases.</summary>
@@ -113,6 +126,7 @@ public partial class ItemDoServicoViewModel : ObservableObject
 
     partial void OnServicoChanged(TipoServico? valor)
     {
+        OnPropertyChanged(nameof(Nome));
         OnPropertyChanged(nameof(ValorTexto));
         _aoTrocar();
     }
@@ -147,8 +161,6 @@ public partial class NovoServicoViewModel : ViewModelBase
     private List<PassoServico> _caminho = [PassoServico.Servico];
 
     /// <summary>Evita que o recálculo do preço apague o valor que ela acabou de digitar.</summary>
-    private bool _escrevendoValor;
-    private bool _valorNegociado;
 
     public NovoServicoViewModel(int clienteId, Action? aoCancelar = null, Action? aoSalvar = null)
     {
@@ -168,6 +180,14 @@ public partial class NovoServicoViewModel : ViewModelBase
     public ObservableCollection<MultaDoServicoViewModel> Multas { get; } = [];
     public ObservableCollection<MultaDaPontuacaoViewModel> MultasDoCliente { get; } = [];
     public ObservableCollection<ItemDoServicoViewModel> Itens { get; } = [];
+
+    /// <summary>Custos adiantados pelo escritório e repassados ao cliente.</summary>
+    /// <remarks>
+    /// Nome e valor são livres porque a lista muda: correio hoje, taxa de DETRAN amanhã,
+    /// autenticação de firma quando for o caso. Entram no que o cliente deve e saem do
+    /// resultado do escritório, que é o combinado dos serviços.
+    /// </remarks>
+    public ObservableCollection<DespesaDoServicoViewModel> Despesas { get; } = [];
 
     public IReadOnlyList<string> Formas { get; } =
         ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito"];
@@ -199,8 +219,11 @@ public partial class NovoServicoViewModel : ViewModelBase
     [ObservableProperty] public partial string? ErroPrazo { get; set; }
 
     // ---------- preço ----------
-    [ObservableProperty] public partial string ValorFinalTexto { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DescontoTexto { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MotivoDesconto { get; set; } = string.Empty;
     [ObservableProperty] public partial string Observacoes { get; set; } = string.Empty;
+    [ObservableProperty] public partial string NovaDespesa { get; set; } = string.Empty;
+    [ObservableProperty] public partial string NovaDespesaValor { get; set; } = string.Empty;
 
     // ---------- pagamento ----------
     [ObservableProperty] public partial bool PagarAgora { get; set; } = true;
@@ -276,11 +299,28 @@ public partial class NovoServicoViewModel : ViewModelBase
     public decimal TotalTabela => Itens.Sum(i => i.Valor);
     public string TotalTabelaTexto => Formato.Dinheiro(TotalTabela);
 
-    public decimal ValorFinal => Formato.LerDinheiro(ValorFinalTexto) ?? 0m;
+    public decimal TotalDespesas => Despesas.Sum(d => d.Valor);
+    public string TotalDespesasTexto => Formato.Dinheiro(TotalDespesas);
+    public bool TemDespesas => Despesas.Count > 0;
 
-    /// <summary>O que ela abriu mão. Sai da conta, não de um campo: campo desatualiza.</summary>
-    public decimal Desconto => Math.Max(0m, TotalTabela - ValorFinal);
-    public string DescontoTexto => Formato.Dinheiro(Desconto);
+    /// <summary>Quanto o desconto tirou da tabela. Digitado, e não deduzido do total.</summary>
+    /// <remarks>
+    /// Antes ela digitava o valor fechado e o desconto saía da diferença. Invertido, o que
+    /// fica registrado é o abatimento concedido — que é o dado que ela quer rever depois.
+    /// </remarks>
+    public decimal Desconto => Math.Min(Math.Max(0m, Formato.LerDinheiro(DescontoTexto) ?? 0m), TotalTabela);
+
+    /// <summary>O combinado pelos serviços, antes das despesas repassadas.</summary>
+    public decimal ValorServicos => TotalTabela - Desconto;
+    public string ValorServicosTexto => Formato.Dinheiro(ValorServicos);
+
+    /// <summary>O que o cliente deve: os serviços mais o que o escritório adianta por ele.</summary>
+    public decimal ValorFinal => ValorServicos + TotalDespesas;
+    public string ValorFinalTotalTexto => Formato.Dinheiro(ValorFinal);
+
+    // O sinal no resumo: sem ele, uma coluna de valores não diz o que soma e o que abate.
+    public string DescontoResumo => $"− {Formato.Dinheiro(Desconto)}";
+    public string DespesasResumo => $"+ {Formato.Dinheiro(TotalDespesas)}";
     public bool TemDesconto => Desconto > 0;
 
     public bool Parcelavel => Forma is "Crédito" or "PIX parcelado";
@@ -289,6 +329,42 @@ public partial class NovoServicoViewModel : ViewModelBase
 
     [RelayCommand]
     private void Cancelar() => _aoCancelar?.Invoke();
+
+    /// <summary>Põe mais um custo na conta da contratação.</summary>
+    [RelayCommand]
+    private void AdicionarDespesa()
+    {
+        var nome = NovaDespesa.Trim();
+        if (nome.Length == 0 || Formato.LerDinheiro(NovaDespesaValor) is not { } valor || valor <= 0)
+        {
+            Erro = "Informe o nome e o valor da despesa.";
+            return;
+        }
+
+        Despesas.Add(new DespesaDoServicoViewModel(nome, valor));
+        NovaDespesa = string.Empty;
+        NovaDespesaValor = string.Empty;
+        Erro = null;
+        RecalcularPreco();
+    }
+
+    [RelayCommand]
+    private void RemoverDespesa(DespesaDoServicoViewModel? despesa)
+    {
+        if (despesa is not null && Despesas.Remove(despesa))
+        {
+            RecalcularPreco();
+        }
+    }
+
+    private void RecalcularPreco()
+    {
+        OnPropertyChanged(nameof(TotalDespesas));
+        OnPropertyChanged(nameof(TotalDespesasTexto));
+        OnPropertyChanged(nameof(DespesasResumo));
+        OnPropertyChanged(nameof(TemDespesas));
+        AtualizarDinheiro();
+    }
 
     [RelayCommand]
     private async Task Carregar()
@@ -635,9 +711,10 @@ public partial class NovoServicoViewModel : ViewModelBase
             foreach (var multa in Multas.Where(m => m.Marcada))
             {
                 Itens.Add(new ItemDoServicoViewModel(
-                    multa.Ait,
-                    string.Join(" · ", new[] { multa.Gravidade, multa.Dados.Enquadramento }
-                        .Where(p => !string.IsNullOrWhiteSpace(p))),
+                    IdentificarMulta(multa),
+                    multa.Gravidade,
+                    multa.FundoGravidade,
+                    multa.CorGravidade,
                     variantes,
                     SugerirPelaGravidade(multa.Dados.Gravidade, variantes),
                     multa.Id,
@@ -648,8 +725,10 @@ public partial class NovoServicoViewModel : ViewModelBase
         else if (fluxo.PedeProcessoCnh())
         {
             Itens.Add(new ItemDoServicoViewModel(
-                NumeroProcesso.Trim().ToUpperInvariant(),
+                $"processo {NumeroProcesso.Trim().ToUpperInvariant()}",
                 $"{TipoDeProcesso?.ToLowerInvariant()} · {PontosMarcados} pontos",
+                "RoxoClaro",
+                "Roxo",
                 variantes,
                 SugerirPeloTipo(variantes),
                 null,
@@ -659,8 +738,10 @@ public partial class NovoServicoViewModel : ViewModelBase
         else
         {
             Itens.Add(new ItemDoServicoViewModel(
-                "Serviço",
                 Veiculo is null ? "da tabela de preços" : $"placa {Veiculo.Placa}",
+                string.Empty,
+                "Fundo",
+                "TextoFraco",
                 variantes,
                 variantes.Count == 1 ? variantes[0] : null,
                 null,
@@ -668,7 +749,6 @@ public partial class NovoServicoViewModel : ViewModelBase
                 Recalcular));
         }
 
-        _valorNegociado = false;
         Recalcular();
     }
 
@@ -707,22 +787,17 @@ public partial class NovoServicoViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(TotalTabela));
         OnPropertyChanged(nameof(TotalTabelaTexto));
-
-        if (!_valorNegociado)
-        {
-            _escrevendoValor = true;
-            ValorFinalTexto = TotalTabela.ToString("N2", Brasil);
-            _escrevendoValor = false;
-        }
-
         AtualizarDinheiro();
     }
 
     private void AtualizarDinheiro()
     {
+        OnPropertyChanged(nameof(ValorServicos));
+        OnPropertyChanged(nameof(ValorServicosTexto));
         OnPropertyChanged(nameof(ValorFinal));
+        OnPropertyChanged(nameof(ValorFinalTotalTexto));
         OnPropertyChanged(nameof(Desconto));
-        OnPropertyChanged(nameof(DescontoTexto));
+        OnPropertyChanged(nameof(DescontoResumo));
         OnPropertyChanged(nameof(TemDesconto));
         OnPropertyChanged(nameof(ResumoFinal));
     }
@@ -798,7 +873,7 @@ public partial class NovoServicoViewModel : ViewModelBase
                 Erro = "Escolha o serviço de cada item.";
                 return false;
 
-            case PassoServico.Preco when Formato.LerDinheiro(ValorFinalTexto) is not { } v || v < 0:
+            case PassoServico.Preco when Formato.LerDinheiro(DescontoTexto) is { } d && d < 0:
                 Erro = "Valor combinado inválido.";
                 return false;
 
@@ -870,7 +945,8 @@ public partial class NovoServicoViewModel : ViewModelBase
             await _contratacoes.CadastrarAsync(
                 Montar(valorFinal),
                 PagarAgora ? Pagar(pago) : null,
-                Escolha!.Fluxo.PedeProcessoCnh() ? MontarProcesso() : null);
+                Escolha!.Fluxo.PedeProcessoCnh() ? MontarProcesso() : null,
+                Despesas.Select(d => d.Montar()).ToList());
 
             _aoSalvar?.Invoke();
         }
@@ -889,10 +965,10 @@ public partial class NovoServicoViewModel : ViewModelBase
         ClienteId = _clienteId,
         DataContratacao = DateTime.Today,
         ValorTabela = TotalTabela,
-        Desconto = Math.Max(0m, TotalTabela - valorFinal),
+        Desconto = Desconto,
         ValorFinal = valorFinal,
         Situacao = SituacaoRegistro.Andamento,
-        Observacoes = Limpar(Observacoes),
+        Observacoes = Limpar(JuntarObservacoes()),
         Itens = Itens.Select(item => new ItemContratacao
         {
             TipoServicoId = item.Servico!.Id,
@@ -928,6 +1004,24 @@ public partial class NovoServicoViewModel : ViewModelBase
         OrgaoInstaurador = Limpar(OrgaoInstaurador),
         MultasRelacionadas = MultasDoCliente.Where(m => m.Marcada).Select(m => m.Dados).ToList()
     };
+
+    /// <summary>O motivo do desconto entra nas observações: é lá que ela relê depois.</summary>
+    private string JuntarObservacoes()
+    {
+        var anotado = Observacoes.Trim();
+        var motivo = MotivoDesconto.Trim();
+
+        if (motivo.Length == 0 || Desconto <= 0)
+        {
+            return anotado;
+        }
+
+        var linha = $"Desconto de {Formato.Dinheiro(Desconto)}: {motivo}";
+        return anotado.Length == 0 ? linha : anotado + Environment.NewLine + linha;
+    }
+
+    private string IdentificarMulta(MultaDoServicoViewModel multa) =>
+        Veiculo is null ? $"AIT {multa.Ait}" : $"AIT {multa.Ait} · {Veiculo.Placa}";
 
     private Pagamento Pagar(decimal valor) => new()
     {
@@ -991,16 +1085,7 @@ public partial class NovoServicoViewModel : ViewModelBase
 
     partial void OnBuscaServicoChanged(string valor) => MontarOpcoes();
 
-    // Mexer no valor final é negociar: a partir daí a soma da tabela não manda mais nele.
-    partial void OnValorFinalTextoChanged(string valor)
-    {
-        if (!_escrevendoValor)
-        {
-            _valorNegociado = true;
-        }
-
-        AtualizarDinheiro();
-    }
+    partial void OnDescontoTextoChanged(string valor) => AtualizarDinheiro();
 
     partial void OnErroChanged(string? valor) => OnPropertyChanged(nameof(TemErro));
 

@@ -19,6 +19,7 @@ public class ContratacaoDAO
         Contratacao contratacao,
         Pagamento? pagamento = null,
         ProcessoCnh? processoCnh = null,
+        IReadOnlyList<Despesa>? despesas = null,
         CancellationToken cancelamento = default)
     {
         const string sqlCabecalho = """
@@ -110,6 +111,15 @@ public class ContratacaoDAO
                 // não ganha nada: o INSERT ... SELECT simplesmente não acha linhas.
                 await EtapaDAO.CriarDoModeloAsync(
                     conexao, transacao, idItem, item.TipoServicoId, cancelamento);
+            }
+
+            // As despesas combinadas na contratação entram no mesmo commit: elas fazem
+            // parte do valor cobrado, então gravar o contrato sem elas deixaria a conta
+            // do cliente maior do que o que está registrado.
+            foreach (var despesa in despesas ?? [])
+            {
+                despesa.ContratacaoId = idContratacao;
+                await PagamentoDAO.InserirDespesaAsync(conexao, transacao, despesa, cancelamento);
             }
 
             if (pagamento is not null)

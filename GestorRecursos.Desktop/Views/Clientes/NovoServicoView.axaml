@@ -454,82 +454,190 @@
                                     Command="{Binding NovaMultaDaPontuacaoCommand}"/>
                         </Grid>
 
-                        <!-- ============ PREÇO ============ -->
-                        <Grid IsVisible="{Binding NoPreco}" RowDefinitions="*,Auto">
-                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding Itens}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ItemDoServicoViewModel">
-                                            <Grid ColumnDefinitions="150,*,90" Margin="0,0,0,8">
-                                                <StackPanel Grid.Column="0" Spacing="1"
-                                                            VerticalAlignment="Center" Margin="0,0,10,0">
-                                                    <TextBlock Text="{Binding Rotulo}" FontSize="12"
-                                                               FontWeight="SemiBold"
-                                                               FontFamily="Consolas,monospace"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               Foreground="{StaticResource Texto}"/>
-                                                    <TextBlock Text="{Binding Resumo}" FontSize="10.5"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               Foreground="{StaticResource TextoApagado}"/>
-                                                </StackPanel>
+                        <!-- ============ PREÇO ============
+                             A ordem é a da maquete P1: o que a tabela manda, o que o
+                             escritório adianta, o que foi abatido, e o total no fim. -->
+                        <ScrollViewer IsVisible="{Binding NoPreco}" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="12">
 
-                                                <ComboBox Grid.Column="1" Classes="entrada"
-                                                          ItemsSource="{Binding Servicos}"
-                                                          SelectedItem="{Binding Servico}">
-                                                    <ComboBox.ItemTemplate>
-                                                        <DataTemplate x:DataType="modelos:TipoServico">
-                                                            <TextBlock Text="{Binding Nome}"/>
-                                                        </DataTemplate>
-                                                    </ComboBox.ItemTemplate>
-                                                </ComboBox>
-
-                                                <TextBlock Grid.Column="2" Text="{Binding ValorTexto}"
-                                                           FontSize="12.5" VerticalAlignment="Center"
-                                                           HorizontalAlignment="Right"
-                                                           Foreground="{StaticResource Texto}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-
-                            <StackPanel Grid.Row="1" Spacing="12" Margin="0,14,0,0">
-                                <Border Background="{StaticResource Fundo}"
+                                <!-- Os serviços, pelo preço de tabela. O valor sai da
+                                     gravidade da multa: não há o que escolher aqui. -->
+                                <Border Background="{StaticResource Cartao}"
                                         BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
-                                        CornerRadius="{StaticResource RaioCartao}" Padding="14,12">
-                                    <Grid ColumnDefinitions="*,16,180">
-                                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="Soma da tabela" FontSize="12"
-                                                           Foreground="{StaticResource TextoFraco}"/>
-                                                <TextBlock Text="{Binding TotalTabelaTexto}" FontSize="12"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{StaticResource Texto}"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="8"
-                                                        IsVisible="{Binding TemDesconto}">
-                                                <TextBlock Text="Desconto" FontSize="12"
-                                                           Foreground="{StaticResource TextoFraco}"/>
-                                                <TextBlock Text="{Binding DescontoTexto}" FontSize="12"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{StaticResource Sucesso}"/>
-                                            </StackPanel>
-                                        </StackPanel>
+                                        CornerRadius="{StaticResource RaioCartao}" Padding="15,13">
+                                    <StackPanel Spacing="9">
+                                        <TextBlock Text="SERVIÇOS DA CONTRATAÇÃO · TABELA DE PREÇOS"
+                                                   FontSize="10" FontWeight="SemiBold" LetterSpacing="0.6"
+                                                   Foreground="{StaticResource TextoApagado}"/>
 
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Classes="rotulo" Text="Valor combinado (R$)"/>
-                                            <TextBox Classes="entrada" Text="{Binding ValorFinalTexto}"/>
-                                        </StackPanel>
-                                    </Grid>
+                                        <ItemsControl ItemsSource="{Binding Itens}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ItemDoServicoViewModel">
+                                                    <Grid ColumnDefinitions="*,Auto,100" Margin="0,0,0,7">
+                                                        <StackPanel Grid.Column="0" Spacing="2"
+                                                                    VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Nome}" FontSize="12.5"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                            <TextBlock Text="{Binding Identificacao}" FontSize="11"
+                                                                       FontFamily="Consolas,monospace"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                        </StackPanel>
+
+                                                        <Border Grid.Column="1" VerticalAlignment="Center"
+                                                                Margin="10,0" Padding="9,3"
+                                                                IsVisible="{Binding TemSelo}"
+                                                                CornerRadius="{StaticResource RaioSelo}"
+                                                                Background="{Binding FundoSelo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                            <TextBlock Text="{Binding Selo}" FontSize="10.5"
+                                                                       Foreground="{Binding CorSelo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                        </Border>
+
+                                                        <TextBlock Grid.Column="2" Text="{Binding ValorTexto}"
+                                                                   FontSize="12.5" FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center"
+                                                                   HorizontalAlignment="Right"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Despesas: nome livre, porque a lista de taxas muda -->
+                                <Border Background="{StaticResource Cartao}"
+                                        BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RaioCartao}" Padding="15,13">
+                                    <StackPanel Spacing="9">
+                                        <TextBlock Text="DESPESAS" FontSize="10" FontWeight="SemiBold"
+                                                   LetterSpacing="0.6"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+
+                                        <TextBlock IsVisible="{Binding !TemDespesas}" FontSize="12"
+                                                   Text="Nenhuma despesa incluída."
+                                                   Foreground="{StaticResource TextoApagado}"/>
+
+                                        <ItemsControl ItemsSource="{Binding Despesas}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:DespesaDoServicoViewModel">
+                                                    <Grid ColumnDefinitions="*,100,Auto" Margin="0,0,0,5">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Nome}"
+                                                                   FontSize="12.5" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding ValorTexto}"
+                                                                   FontSize="12.5" VerticalAlignment="Center"
+                                                                   HorizontalAlignment="Right"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <Button Grid.Column="2" Classes="atalhocartao"
+                                                                Content="remover" Margin="12,0,0,0"
+                                                                VerticalAlignment="Center"
+                                                                Command="{Binding $parent[ItemsControl].((vm:NovoServicoViewModel)DataContext).RemoverDespesaCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Grid ColumnDefinitions="*,8,110,8,Auto">
+                                            <TextBox Grid.Column="0" Classes="entrada"
+                                                     Text="{Binding NovaDespesa}"
+                                                     PlaceholderText="Correio, taxa do DETRAN, autenticação..."/>
+                                            <TextBox Grid.Column="2" Classes="entrada"
+                                                     Text="{Binding NovaDespesaValor}"
+                                                     PlaceholderText="0,00"/>
+                                            <Button Grid.Column="4" Classes="neutro" Content="+ Incluir"
+                                                    Command="{Binding AdicionarDespesaCommand}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Desconto digitado, e não deduzido: é o abatimento que fica registrado -->
+                                <Border Background="{StaticResource Cartao}"
+                                        BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RaioCartao}" Padding="15,13">
+                                    <StackPanel Spacing="9">
+                                        <TextBlock Text="DESCONTO" FontSize="10" FontWeight="SemiBold"
+                                                   LetterSpacing="0.6"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                        <Grid ColumnDefinitions="150,10,*">
+                                            <TextBox Grid.Column="0" Classes="entrada"
+                                                     Text="{Binding DescontoTexto}"
+                                                     PlaceholderText="0,00"/>
+                                            <TextBox Grid.Column="2" Classes="entrada"
+                                                     Text="{Binding MotivoDesconto}"
+                                                     PlaceholderText="Motivo do desconto (opcional)"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- O fechamento da conta -->
+                                <Border Background="{StaticResource PrimariaClara}"
+                                        BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RaioCartao}" Padding="17,15">
+                                    <StackPanel Spacing="4">
+                                        <ItemsControl ItemsSource="{Binding Itens}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ItemDoServicoViewModel">
+                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,3">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Nome}"
+                                                                   FontSize="12" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource TextoFraco}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding ValorTexto}"
+                                                                   FontSize="12"
+                                                                   Foreground="{StaticResource TextoFraco}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Border Height="1" Margin="0,6"
+                                                Background="{StaticResource PrimariaBorda}"/>
+
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="Serviços" FontSize="12.5"
+                                                       Foreground="{StaticResource Texto}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalTabelaTexto}"
+                                                       FontSize="12.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Texto}"/>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding TemDespesas}">
+                                            <TextBlock Grid.Column="0" Text="Despesas" FontSize="12.5"
+                                                       Foreground="{StaticResource Texto}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding DespesasResumo}"
+                                                       FontSize="12.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Alerta}"/>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding TemDesconto}">
+                                            <TextBlock Grid.Column="0" Text="Desconto" FontSize="12.5"
+                                                       Foreground="{StaticResource Texto}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding DescontoResumo}"
+                                                       FontSize="12.5" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Sucesso}"/>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                            <TextBlock Grid.Column="0" Text="TOTAL A COBRAR" FontSize="12.5"
+                                                       VerticalAlignment="Bottom" LetterSpacing="0.4"
+                                                       Foreground="{StaticResource TextoFraco}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding ValorFinalTotalTexto}"
+                                                       FontSize="26" FontWeight="Bold"
+                                                       Foreground="{StaticResource PrimariaEscura}"/>
+                                        </Grid>
+                                    </StackPanel>
                                 </Border>
 
                                 <StackPanel>
                                     <TextBlock Classes="rotulo" Text="Observações da contratação"/>
                                     <TextBox Classes="entrada" Text="{Binding Observacoes}"
-                                             PlaceholderText="Condições combinadas, desconto concedido..."/>
+                                             PlaceholderText="Condições combinadas, prazo de entrega..."/>
                                 </StackPanel>
                             </StackPanel>
-                        </Grid>
+                        </ScrollViewer>
 
                         <!-- ============ PAGAMENTO ============ -->
                         <StackPanel IsVisible="{Binding NoPagamento}" Spacing="14">

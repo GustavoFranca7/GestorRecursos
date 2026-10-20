@@ -88,3 +88,22 @@ public partial class MultaDoServicoViewModel : ObservableObject
 
     partial void OnMarcadaChanged(bool valor) => _aoMarcar();
 }
+
+/// <summary>Um custo adiantado pelo escritório e repassado ao cliente na contratação.</summary>
+/// <remarks>
+/// Nome livre de propósito: a lista de custos muda com o tipo de serviço e com o órgão,
+/// e uma lista fechada obrigaria a mexer no código a cada taxa nova.
+/// </remarks>
+public class DespesaDoServicoViewModel(string nome, decimal valor)
+{
+    public string Nome { get; } = nome;
+    public decimal Valor { get; } = valor;
+    public string ValorTexto { get; } = Formato.Dinheiro(valor);
+
+    public Despesa Montar() => new()
+    {
+        Tipo = Nome,
+        Valor = Valor,
+        DataDespesa = System.DateTime.Today
+    };
+}

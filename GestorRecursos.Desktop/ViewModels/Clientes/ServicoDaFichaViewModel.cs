@@ -240,6 +240,7 @@ public class ServicoDaFichaViewModel : CommunityToolkit.Mvvm.ComponentModel.Obse
     {
         Dados = dados;
         ItemId = dados.ItemId;
+        ContratacaoId = dados.ContratacaoId;
         Cancelado = dados.Situacao == "CANCELADO";
         PorInstancias = dados.PorInstancias;
 
@@ -300,6 +301,9 @@ public class ServicoDaFichaViewModel : CommunityToolkit.Mvvm.ComponentModel.Obse
 
     public ServicoDaFicha Dados { get; }
     public int ItemId { get; }
+
+    /// <summary>De qual contratação este serviço veio. Serve ao filtro do financeiro.</summary>
+    public int ContratacaoId { get; }
 
     public string Titulo { get; }
     public string? Ait { get; }
