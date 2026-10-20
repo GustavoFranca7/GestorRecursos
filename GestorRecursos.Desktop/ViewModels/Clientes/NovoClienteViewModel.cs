@@ -21,7 +21,8 @@ public enum GrupoCadastro
 {
     DadosPessoais,
     ContatoEndereco,
-    Cnh
+    Cnh,
+    Observacoes
 }
 
 /// <summary>Uma linha do índice da esquerda.</summary>
@@ -68,7 +69,8 @@ public partial class NovoClienteViewModel : ViewModelBase
     /// <summary>CEP já consultado, para não repetir a chamada a cada tecla.</summary>
     private string _cepConsultado = string.Empty;
     private readonly Action? _aoCancelar;
-    private readonly Action<int>? _aoSalvar;
+    /// <summary>Recebe o id gravado e se a pessoa pediu para emendar um servico.</summary>
+    private readonly Action<int, bool>? _aoSalvar;
 
     /// <summary>O cliente que está sendo editado. Nulo quando é cadastro novo.</summary>
     private readonly Cliente? _original;
@@ -77,7 +79,8 @@ public partial class NovoClienteViewModel : ViewModelBase
     [
         new("Dados pessoais",     GrupoCadastro.DadosPessoais,   "1", obrigatorio: true),
         new("Contato e endereço", GrupoCadastro.ContatoEndereco, "2", obrigatorio: true),
-        new("CNH",                GrupoCadastro.Cnh,             "3", obrigatorio: false)
+        new("CNH",                GrupoCadastro.Cnh,             "3", obrigatorio: false),
+        new("Observações",        GrupoCadastro.Observacoes,     "4", obrigatorio: false)
     ];
 
     // Listas abertas: um cadastro antigo pode trazer valor fora delas, e perder o dado
@@ -123,6 +126,10 @@ public partial class NovoClienteViewModel : ViewModelBase
     [ObservableProperty] public partial string CnhValidade { get; set; } = string.Empty;
     [ObservableProperty] public partial string CnhRegistro { get; set; } = string.Empty;
 
+    // ---------- observações ----------
+    // Anotação livre sobre o cliente. Senha de terceiro não entra aqui: decidido em 29/09.
+    [ObservableProperty] public partial string Observacoes { get; set; } = string.Empty;
+
     // ---------- estado da tela ----------
     [ObservableProperty] public partial GrupoCadastro GrupoAtual { get; set; } = GrupoCadastro.DadosPessoais;
     [ObservableProperty] public partial bool Salvando { get; set; }
@@ -140,7 +147,7 @@ public partial class NovoClienteViewModel : ViewModelBase
 
     public NovoClienteViewModel(
         Action? aoCancelar = null,
-        Action<int>? aoSalvar = null,
+        Action<int, bool>? aoSalvar = null,
         Cliente? paraEditar = null,
         GrupoCadastro grupoInicial = GrupoCadastro.DadosPessoais)
     {
@@ -170,6 +177,7 @@ public partial class NovoClienteViewModel : ViewModelBase
     public bool NosDadosPessoais => GrupoAtual == GrupoCadastro.DadosPessoais;
     public bool NoContatoEndereco => GrupoAtual == GrupoCadastro.ContatoEndereco;
     public bool NaCnh => GrupoAtual == GrupoCadastro.Cnh;
+    public bool NasObservacoes => GrupoAtual == GrupoCadastro.Observacoes;
 
     public bool TemErro => Erro is not null;
 
@@ -178,10 +186,14 @@ public partial class NovoClienteViewModel : ViewModelBase
     {
         GrupoCadastro.DadosPessoais => "Contato e endereço →",
         GrupoCadastro.ContatoEndereco => "CNH →",
+        GrupoCadastro.Cnh => "Observações →",
         _ => string.Empty
     };
 
-    public bool TemProximoGrupo => GrupoAtual != GrupoCadastro.Cnh;
+    public bool TemProximoGrupo => GrupoAtual != GrupoCadastro.Observacoes;
+
+    /// <summary>Só no cadastro novo: em edição o cliente já tem ficha para abrir serviço.</summary>
+    public bool PodeEmendarServico => !Editando;
 
     [RelayCommand]
     private void IrParaGrupo(GrupoCadastro grupo)
@@ -199,13 +211,24 @@ public partial class NovoClienteViewModel : ViewModelBase
     {
         if (GrupoAtual == GrupoCadastro.DadosPessoais) IrParaGrupo(GrupoCadastro.ContatoEndereco);
         else if (GrupoAtual == GrupoCadastro.ContatoEndereco) IrParaGrupo(GrupoCadastro.Cnh);
+        else if (GrupoAtual == GrupoCadastro.Cnh) IrParaGrupo(GrupoCadastro.Observacoes);
     }
 
     [RelayCommand]
     private void Cancelar() => _aoCancelar?.Invoke();
 
     [RelayCommand]
-    private async Task Salvar()
+    private Task Salvar() => Gravar(emendarServico: false);
+
+    /// <summary>Grava e já abre o "+ Novo serviço" na ficha do cliente recém-criado.</summary>
+    /// <remarks>
+    /// O cadastro raramente é o fim: quem chega ao escritório chega com um serviço para
+    /// contratar. Sem isto, o caminho é salvar, achar o cliente e abrir o assistente à mão.
+    /// </remarks>
+    [RelayCommand]
+    private Task SalvarEEmendarServico() => Gravar(emendarServico: true);
+
+    private async Task Gravar(bool emendarServico)
     {
         if (Salvando || !await Conferir())
         {
@@ -228,7 +251,7 @@ public partial class NovoClienteViewModel : ViewModelBase
                 cliente.Id = await _clientes.CadastrarAsync(cliente);
             }
 
-            _aoSalvar?.Invoke(cliente.Id);
+            _aoSalvar?.Invoke(cliente.Id, emendarServico);
         }
         catch (Exception excecao)
         {
@@ -308,11 +331,11 @@ public partial class NovoClienteViewModel : ViewModelBase
     {
         var cliente = new Cliente
         {
-            // Em edição, o que esta tela não mostra tem de voltar como estava: observações
-            // e o estado de arquivado entram no mesmo UPDATE e seriam apagados em silêncio.
+            // Em edição, o que esta tela não mostra tem de voltar como estava: o estado de
+            // arquivado entra no mesmo UPDATE e seria apagado em silêncio.
             Id = _original?.Id ?? 0,
-            Observacoes = _original?.Observacoes,
             Arquivado = _original?.Arquivado ?? false,
+            Observacoes = Limpar(Observacoes),
             Nome = Nome.Trim(),
             Cpf = Normalizacao.SomenteDigitos(Cpf),
             Whatsapp = Normalizacao.Telefone(Whatsapp),
@@ -365,6 +388,7 @@ public partial class NovoClienteViewModel : ViewModelBase
         CnhCategoria = Acolher(Categorias, cliente.CnhCategoria);
         CnhValidade = Formato.Data(cliente.CnhValidade);
         CnhRegistro = cliente.CnhRegistro ?? string.Empty;
+        Observacoes = cliente.Observacoes ?? string.Empty;
 
         if (cliente.Endereco is { } endereco)
         {
@@ -440,6 +464,10 @@ public partial class NovoClienteViewModel : ViewModelBase
         var cnh = Grupos[2];
         cnh.Completo = !string.IsNullOrWhiteSpace(CnhNumero);
         cnh.Resumo = string.IsNullOrWhiteSpace(CnhNumero) ? "Opcional" : CnhNumero.Trim();
+
+        var observacoes = Grupos[3];
+        observacoes.Completo = !string.IsNullOrWhiteSpace(Observacoes);
+        observacoes.Resumo = string.IsNullOrWhiteSpace(Observacoes) ? "Opcional" : "Preenchido";
     }
 
     partial void OnGrupoAtualChanged(GrupoCadastro valor)
@@ -447,6 +475,7 @@ public partial class NovoClienteViewModel : ViewModelBase
         OnPropertyChanged(nameof(NosDadosPessoais));
         OnPropertyChanged(nameof(NoContatoEndereco));
         OnPropertyChanged(nameof(NaCnh));
+        OnPropertyChanged(nameof(NasObservacoes));
         OnPropertyChanged(nameof(ProximoGrupo));
         OnPropertyChanged(nameof(TemProximoGrupo));
     }
@@ -457,6 +486,7 @@ public partial class NovoClienteViewModel : ViewModelBase
     partial void OnCpfChanged(string valor) => AtualizarIndice();
     partial void OnWhatsappChanged(string valor) => AtualizarIndice();
     partial void OnCnhNumeroChanged(string valor) => AtualizarIndice();
+    partial void OnObservacoesChanged(string valor) => AtualizarIndice();
 
     partial void OnAvisoCepChanged(string? valor) => OnPropertyChanged(nameof(TemAvisoCep));
 

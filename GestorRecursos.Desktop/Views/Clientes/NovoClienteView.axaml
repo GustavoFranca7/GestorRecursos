@@ -326,23 +326,47 @@
                                            Text="A CNH é usada nos documentos e nos processos de suspensão. Pode ficar em branco agora."/>
                             </Border>
                         </StackPanel>
+
+                        <!-- Observações -->
+                        <StackPanel IsVisible="{Binding NasObservacoes}">
+                            <TextBlock Classes="secao" Text="OBSERVAÇÕES" Margin="0,0,0,12"/>
+                            <TextBox Classes="entrada" Text="{Binding Observacoes}"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     Height="250" VerticalContentAlignment="Top"
+                                     Watermark="Anotações sobre este cliente"/>
+                            <Border Background="{StaticResource PrimariaClara}"
+                                    BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                                    CornerRadius="{StaticResource RaioCartao}" Padding="13,11" Margin="0,16,0,0">
+                                <TextBlock FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{StaticResource PrimariaEscura}"
+                                           Text="Campo livre, para o que não cabe nos demais. Não registre senhas de clientes: quando o acesso for necessário, solicite a senha no momento."/>
+                            </Border>
+                        </StackPanel>
                     </Panel>
 
                     <!-- Rodapé -->
                     <Border Grid.Row="1" Background="{StaticResource CartaoSuave}"
                             BorderBrush="{StaticResource BordaClara}" BorderThickness="0,1,0,0"
                             Padding="30,16">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="12"
-                                       VerticalAlignment="Center" TextWrapping="Wrap"
+                        <!-- Erro em cima, botões embaixo: com quatro botões na linha, a coluna
+                             do texto encolhia a ponto de a mensagem sair letra por letra. -->
+                        <Grid RowDefinitions="Auto,Auto">
+                            <TextBlock Grid.Row="0" Text="{Binding Erro}" FontSize="12"
+                                       TextWrapping="Wrap" Margin="0,0,0,10"
                                        Foreground="{StaticResource Alerta}"
                                        IsVisible="{Binding TemErro}"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8"
+                                        HorizontalAlignment="Right">
                                 <Button Classes="neutro" Content="Cancelar"
                                         Command="{Binding CancelarCommand}"/>
                                 <Button Classes="neutro" Content="{Binding ProximoGrupo}"
                                         IsVisible="{Binding TemProximoGrupo}"
                                         Command="{Binding AvancarCommand}"/>
+                                <!-- O cadastro quase nunca é o fim: emenda direto na contratação -->
+                                <Button Classes="neutro" Content="Salvar e criar serviço"
+                                        IsVisible="{Binding PodeEmendarServico}"
+                                        IsEnabled="{Binding !Salvando}"
+                                        Command="{Binding SalvarEEmendarServicoCommand}"/>
                                 <Button Classes="primario" Content="{Binding TextoSalvar}"
                                         IsEnabled="{Binding !Salvando}"
                                         Command="{Binding SalvarCommand}"/>

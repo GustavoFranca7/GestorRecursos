@@ -76,6 +76,9 @@ public partial class FichaClienteViewModel : ViewModelBase
     private readonly Action? _aoNovoCliente;
     private readonly Action<GrupoCadastro>? _aoEditar;
 
+    /// <summary>Abrir o assistente de servico assim que a ficha terminar de carregar.</summary>
+    private bool _abrirNovoServico;
+
     /// <summary>Pergunta aberta por cima da ficha. Nula quando não há nenhuma.</summary>
     [ObservableProperty]
     public partial ConfirmacaoViewModel? Confirmacao { get; set; }
@@ -113,6 +116,10 @@ public partial class FichaClienteViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string Identificacao { get; set; } = string.Empty;
+
+    /// <summary>Anotacao livre do cliente, mostrada na aba Dados.</summary>
+    [ObservableProperty]
+    public partial string? Observacoes { get; set; }
 
     [ObservableProperty]
     public partial bool Carregando { get; set; }
@@ -155,6 +162,11 @@ public partial class FichaClienteViewModel : ViewModelBase
 
     public bool TemVeiculos => Veiculos.Count > 0;
     public bool TemProcessos => Processos.Count > 0;
+    public bool TemObservacoes => !string.IsNullOrWhiteSpace(Observacoes);
+
+    /// <summary>Atalho para o Financeiro só faz sentido quando a aba abrir.</summary>
+    public bool FinanceiroPronto => AchaAba(AbaFicha.Financeiro).Pronta;
+
     public bool AbaDados => AbaAtual == AbaFicha.Dados;
     public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
     public bool AbaServicos => AbaAtual == AbaFicha.Servicos;
@@ -206,12 +218,14 @@ public partial class FichaClienteViewModel : ViewModelBase
         int clienteId,
         Action? aoVoltar = null,
         Action? aoNovoCliente = null,
-        Action<GrupoCadastro>? aoEditar = null)
+        Action<GrupoCadastro>? aoEditar = null,
+        bool abrirNovoServico = false)
     {
         ClienteId = clienteId;
         _aoVoltar = aoVoltar;
         _aoNovoCliente = aoNovoCliente;
         _aoEditar = aoEditar;
+        _abrirNovoServico = abrirNovoServico;
 
         if (!Design.IsDesignMode)
         {
@@ -241,6 +255,14 @@ public partial class FichaClienteViewModel : ViewModelBase
 
             Preencher(ficha);
             await CarregarVizinhos();
+
+            // Quem veio de "Salvar e criar serviço" já pediu o assistente: abre uma vez,
+            // com a ficha montada, e nunca mais nas recargas seguintes.
+            if (_abrirNovoServico)
+            {
+                _abrirNovoServico = false;
+                NovoServico();
+            }
         }
         catch (Exception excecao)
         {
@@ -294,6 +316,8 @@ public partial class FichaClienteViewModel : ViewModelBase
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
     /// precisa reaplicar a marcação sem disparar busca no banco.</summary>
+    partial void OnObservacoesChanged(string? valor) => OnPropertyChanged(nameof(TemObservacoes));
+
     private void MarcarAba(AbaFicha aba)
     {
         AbaAtual = aba;
@@ -532,6 +556,7 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         Nome = cliente.Nome;
         Identificacao = MontarIdentificacao(cliente);
+        Observacoes = cliente.Observacoes;
 
         DadosPessoais.Clear();
         DadosPessoais.Add(new CampoFicha("Nome", cliente.Nome));

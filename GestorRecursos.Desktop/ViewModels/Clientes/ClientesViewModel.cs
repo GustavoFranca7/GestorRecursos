@@ -44,21 +44,22 @@ public partial class ClientesViewModel : ViewModelBase
             grupoInicial: grupo);
     }
 
-    private void AbrirFichaDoNovo(int clienteId)
+    private void AbrirFichaDoNovo(int clienteId, bool criarServico)
     {
         Cadastro = null;
-        AbrirFicha(clienteId);
+        AbrirFicha(clienteId, criarServico);
     }
 
     private ListaClientesViewModel NovaLista() =>
-        new(aoAbrirFicha: AbrirFicha, aoNovoCliente: AbrirCadastro);
+        new(aoAbrirFicha: id => AbrirFicha(id), aoNovoCliente: AbrirCadastro);
 
-    private void AbrirFicha(int clienteId) =>
+    private void AbrirFicha(int clienteId, bool criarServico = false) =>
         Conteudo = new FichaClienteViewModel(
             clienteId,
             aoVoltar: VoltarParaLista,
             aoNovoCliente: AbrirCadastro,
-            aoEditar: grupo => AbrirEdicao(clienteId, grupo));
+            aoEditar: grupo => AbrirEdicao(clienteId, grupo),
+            abrirNovoServico: criarServico);
 
     private void VoltarParaLista() => Conteudo = NovaLista();
 }

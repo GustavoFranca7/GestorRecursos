@@ -408,7 +408,12 @@
                                     <StackPanel Spacing="12">
                                         <!-- Aqui é resumo: veículo se cadastra na aba Veículos e multas,
                                              que é onde ele vive junto das multas dele. -->
-                                        <TextBlock Classes="titulocartao" Text="VEÍCULOS"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Classes="titulocartao" Text="VEÍCULOS"/>
+                                            <Button Grid.Column="1" Classes="atalhocartao" Content="ver todos"
+                                                    Command="{Binding TrocarAbaCommand}"
+                                                    CommandParameter="{x:Static vm:AbaFicha.Veiculos}"/>
+                                        </Grid>
 
                                         <TextBlock IsVisible="{Binding !TemVeiculos}" FontSize="12"
                                                    Text="Nenhum veículo ligado a este cliente."
@@ -443,14 +448,35 @@
                             </StackPanel>
                         </Grid>
 
+                        <!-- Observações: o que não cabe em campo nenhum -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="titulocartao" Text="OBSERVAÇÕES"/>
+                                    <Button Grid.Column="1" Classes="atalhocartao" Content="editar"
+                                            Command="{Binding EditarCommand}"
+                                            CommandParameter="{x:Static vm:GrupoCadastro.Observacoes}"/>
+                                </Grid>
+
+                                <TextBlock IsVisible="{Binding !TemObservacoes}" FontSize="12"
+                                           Text="Nenhuma observação registrada."
+                                           Foreground="{StaticResource TextoApagado}"/>
+
+                                <TextBlock IsVisible="{Binding TemObservacoes}" FontSize="12.5"
+                                           Text="{Binding Observacoes}" TextWrapping="Wrap"
+                                           LineHeight="19" Foreground="{StaticResource Texto}"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Processos em andamento -->
                         <Border Classes="cartao">
                             <StackPanel Spacing="12">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Grid.Column="0" Classes="titulocartao"
                                                Text="PROCESSOS EM ANDAMENTO"/>
-                                    <TextBlock Grid.Column="1" Text="ver todos" FontSize="11.5"
-                                               Foreground="{StaticResource TextoApagado}"/>
+                                    <Button Grid.Column="1" Classes="atalhocartao" Content="ver todos"
+                                            Command="{Binding TrocarAbaCommand}"
+                                            CommandParameter="{x:Static vm:AbaFicha.Servicos}"/>
                                 </Grid>
 
                                 <TextBlock IsVisible="{Binding !TemProcessos}" FontSize="12"
@@ -499,8 +525,11 @@
                             <StackPanel Spacing="14">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Grid.Column="0" Classes="titulocartao" Text="RESUMO FINANCEIRO"/>
-                                    <TextBlock Grid.Column="1" Text="ver lançamentos" FontSize="11.5"
-                                               Foreground="{StaticResource TextoApagado}"/>
+                                    <!-- Só aparece quando a aba existir: atalho que não leva a lugar nenhum confunde -->
+                                    <Button Grid.Column="1" Classes="atalhocartao" Content="ver lançamentos"
+                                            IsVisible="{Binding FinanceiroPronto}"
+                                            Command="{Binding TrocarAbaCommand}"
+                                            CommandParameter="{x:Static vm:AbaFicha.Financeiro}"/>
                                 </Grid>
 
                                 <Grid ColumnDefinitions="Auto,Auto,Auto,*">
