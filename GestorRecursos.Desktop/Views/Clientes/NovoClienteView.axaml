@@ -85,6 +85,11 @@
             <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
+        <Style Selector="TextBlock.avisoCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
         <Style Selector="TextBlock.secao">
             <Setter Property="FontSize" Value="10.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -249,6 +254,8 @@
                                 <StackPanel Grid.Column="0" Margin="0,0,0,18">
                                     <TextBlock Classes="rotulo" Text="CEP"/>
                                     <TextBox Classes="entrada" Text="{Binding Cep}" servicos:Mascara.Padrao="cep" Watermark="00000-000"/>
+                                    <TextBlock Classes="avisoCampo" Text="Consultando endereço..." IsVisible="{Binding ConsultandoCep}"/>
+                                    <TextBlock Classes="avisoCampo" Text="{Binding AvisoCep}" IsVisible="{Binding TemAvisoCep}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Margin="0,0,0,18">
                                     <TextBlock Classes="rotulo" Text="Cidade"/>

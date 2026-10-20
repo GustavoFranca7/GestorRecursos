@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestorRecursos.Core.Data;
+using GestorRecursos.Core.Integracoes;
 using GestorRecursos.Core.Models;
 using GestorRecursos.Core.Validacao;
 
@@ -59,6 +60,13 @@ public partial class GrupoCadastroViewModel(string titulo, GrupoCadastro grupo, 
 public partial class NovoClienteViewModel : ViewModelBase
 {
     private readonly ClienteDAO _clientes = new();
+    private readonly IConsultaCep _cep = new ViaCepConsulta();
+
+    /// <summary>O endereço que a última consulta de CEP trouxe, para saber o que pode trocar.</summary>
+    private EnderecoDoCep? _enderecoDoCep;
+
+    /// <summary>CEP já consultado, para não repetir a chamada a cada tecla.</summary>
+    private string _cepConsultado = string.Empty;
     private readonly Action? _aoCancelar;
     private readonly Action<int>? _aoSalvar;
 
@@ -119,6 +127,11 @@ public partial class NovoClienteViewModel : ViewModelBase
     [ObservableProperty] public partial GrupoCadastro GrupoAtual { get; set; } = GrupoCadastro.DadosPessoais;
     [ObservableProperty] public partial bool Salvando { get; set; }
     [ObservableProperty] public partial string? Erro { get; set; }
+
+    [ObservableProperty] public partial bool ConsultandoCep { get; set; }
+    [ObservableProperty] public partial string? AvisoCep { get; set; }
+
+    public bool TemAvisoCep => !string.IsNullOrWhiteSpace(AvisoCep);
 
     [ObservableProperty] public partial string? ErroNome { get; set; }
     [ObservableProperty] public partial string? ErroCpf { get; set; }
@@ -355,6 +368,9 @@ public partial class NovoClienteViewModel : ViewModelBase
 
         if (cliente.Endereco is { } endereco)
         {
+            // O endereço gravado não se reconsulta: marcar o CEP como visto evita que abrir a
+            // edição sobrescreva o que a pessoa salvou.
+            _cepConsultado = Normalizacao.SomenteDigitos(endereco.Cep);
             Cep = Formato.Cep(endereco.Cep);
             Cidade = endereco.Cidade ?? string.Empty;
             Logradouro = endereco.Logradouro ?? string.Empty;
@@ -441,6 +457,82 @@ public partial class NovoClienteViewModel : ViewModelBase
     partial void OnCpfChanged(string valor) => AtualizarIndice();
     partial void OnWhatsappChanged(string valor) => AtualizarIndice();
     partial void OnCnhNumeroChanged(string valor) => AtualizarIndice();
+
+    partial void OnAvisoCepChanged(string? valor) => OnPropertyChanged(nameof(TemAvisoCep));
+
+    partial void OnCepChanged(string valor)
+    {
+        AvisoCep = null;
+
+        var digitos = Normalizacao.SomenteDigitos(valor);
+
+        // Só consulta CEP completo, e uma vez por CEP: a máscara dispara isto a cada tecla.
+        if (digitos.Length != 8 || digitos == _cepConsultado)
+        {
+            return;
+        }
+
+        _cepConsultado = digitos;
+        _ = ConsultarCepAsync(digitos);
+    }
+
+    /// <summary>Preenche o endereço a partir do CEP.</summary>
+    /// <remarks>
+    /// Serviço fora do ar ou CEP desconhecido não interrompem o cadastro: o aviso aparece
+    /// embaixo do campo e os dados continuam editáveis na mão.
+    /// </remarks>
+    private async Task ConsultarCepAsync(string digitos)
+    {
+        ConsultandoCep = true;
+
+        try
+        {
+            var resultado = await _cep.BuscarAsync(digitos);
+
+            // O CEP pode ter sido corrigido enquanto a resposta vinha; aí ela não serve mais.
+            if (Normalizacao.SomenteDigitos(Cep) != digitos)
+            {
+                return;
+            }
+
+            switch (resultado.Situacao)
+            {
+                case SituacaoCep.Encontrado when resultado.Endereco is { } endereco:
+                    AplicarCep(endereco);
+                    break;
+                case SituacaoCep.NaoEncontrado:
+                    AvisoCep = "CEP não localizado. Informe o endereço manualmente.";
+                    break;
+                default:
+                    AvisoCep = "Consulta de CEP indisponível. Informe o endereço manualmente.";
+                    break;
+            }
+        }
+        finally
+        {
+            ConsultandoCep = false;
+        }
+    }
+
+    /// <summary>Escreve o que o CEP trouxe sem passar por cima do que foi digitado.</summary>
+    private void AplicarCep(EnderecoDoCep endereco)
+    {
+        Logradouro = Preferir(Logradouro, _enderecoDoCep?.Logradouro, endereco.Logradouro);
+        Bairro = Preferir(Bairro, _enderecoDoCep?.Bairro, endereco.Bairro);
+        Cidade = Preferir(Cidade, _enderecoDoCep?.Cidade, endereco.Cidade);
+
+        var uf = Preferir(Uf, _enderecoDoCep?.Uf, endereco.Uf);
+        Uf = Ufs.Contains(uf) ? uf : Uf;
+
+        _enderecoDoCep = endereco;
+    }
+
+    // Campo vazio, ou que ainda tem o valor do CEP anterior, aceita o novo. O que foi
+    // escrito na mão permanece: corrigir o CEP não pode apagar uma correção de endereço.
+    private static string Preferir(string? atual, string? consultaAnterior, string novo) =>
+        string.IsNullOrWhiteSpace(atual) || atual.Trim() == (consultaAnterior ?? string.Empty).Trim()
+            ? novo
+            : atual;
 
     private static string? Limpar(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
