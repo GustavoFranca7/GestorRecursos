@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="GestorRecursos.Desktop.Views.ProcuracaoView"
+             x:DataType="vm:ProcuracaoViewModel">
+
+    <!-- O documento por cima da ficha, e não dentro da aba: a aba Documentos ainda vai
+         receber os anexos, e uma página inteira ali dentro tampava o resto. -->
+    <Border Background="#66102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                MaxWidth="880" MaxHeight="840" Margin="40"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 14 40 0 #30102A2C" ClipToBounds="True">
+
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <!-- Cabeçalho -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,20,18,16">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="{Binding Titulo}" FontSize="16" FontWeight="Bold"
+                                   TextWrapping="Wrap" Foreground="{StaticResource Texto}"/>
+                        <TextBlock Text="{Binding Subtitulo}" FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextoApagado}"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" Classes="neutro" Content="✕"
+                            FontSize="13" Padding="11,6" VerticalAlignment="Top"
+                            Margin="14,0,0,0" ToolTip.Tip="Fechar"
+                            Command="{Binding FecharCommand}"/>
+                </Grid>
+
+                <Border Grid.Row="1" Background="{StaticResource Fundo}"
+                        BorderBrush="{StaticResource BordaClara}"
+                        BorderThickness="0,1,0,1">
+
+                    <!-- Pronta: a prévia é o próprio PDF desenhado, não uma imitação -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  IsVisible="{Binding Pronta}">
+                        <Border Margin="24" BoxShadow="0 4 18 0 #22102A2C"
+                                HorizontalAlignment="Center">
+                            <Image Source="{Binding Previa}" Stretch="Uniform"
+                                   MaxWidth="700"/>
+                        </Border>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Falta dado: a lista vale mais que um papel com lacunas -->
+                <Border Grid.Row="1" Margin="24" Padding="20,17"
+                        IsVisible="{Binding Incompleta}"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        MaxWidth="520"
+                        Background="{StaticResource AvisoClaro}"
+                        BorderBrush="{StaticResource AvisoBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioCartao}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Falta preencher antes de gerar" FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource Aviso}"/>
+
+                        <ItemsControl ItemsSource="{Binding Faltam}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding StringFormat='·  {0}'}"
+                                               FontSize="12.5" Margin="0,0,0,3"
+                                               Foreground="{StaticResource Texto}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="18"
+                                   Foreground="{StaticResource TextoFraco}"
+                                   Text="O cliente assina o que está escrito: o documento só sai completo. Use Corrigir dados para abrir o cadastro no lugar certo."/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="1" IsVisible="{Binding Montando}"
+                           Text="Montando o documento..."
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+                <Border Grid.Row="1" Margin="24" Padding="18,14"
+                        IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        MaxWidth="520"
+                        Background="{StaticResource AlertaClaro}"
+                        BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioCartao}">
+                    <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                               Foreground="{StaticResource Alerta}"/>
+                </Border>
+
+                <!-- Rodapé -->
+                <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="24,16">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="11.5"
+                               TextWrapping="Wrap" MaxWidth="330"
+                               Foreground="{StaticResource TextoApagado}"
+                               Text="O sistema não guarda o arquivo: ele se refaz do cadastro quando for preciso."/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                        <Button Classes="neutro" Content="Corrigir dados"
+                                ToolTip.Tip="Abre o cadastro do cliente no grupo do dado"
+                                Command="{Binding CorrigirCommand}"/>
+                        <Button Classes="primario" Content="Salvar PDF"
+                                IsVisible="{Binding Pronta}"
+                                ToolTip.Tip="Escolhe onde salvar e abre o arquivo"
+                                Command="{Binding SalvarPdfCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

@@ -1478,10 +1478,126 @@
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            FontSize="13" Foreground="{StaticResource TextoFraco}"/>
 
-                <TextBlock IsVisible="{Binding AbaEmConstrucao}"
-                           Text="Esta aba ainda não está disponível."
+
+                <!-- Aba Documentos, no desenho da maquete F4. Por ora só o cartão de
+                     gerar: as duas listas de anexo e o arrastar-arquivo são RF-42 e
+                     RF-43, que ficaram para a v2 junto com o armazenamento na OCI. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaDocumentos}">
+                    <StackPanel Margin="24,18,24,24" Spacing="14">
+
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="titulocartao" Text="GERAR DOCUMENTO"/>
+
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <Button Grid.Column="0" Classes="primario"
+                                            Content="Procuração"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="Abre o documento preenchido, para conferir antes de salvar"
+                                            Command="{Binding AbrirProcuracaoCommand}"/>
+
+                                    <TextBlock Grid.Column="1" Margin="16,0,0,0"
+                                               VerticalAlignment="Center" FontSize="11.5"
+                                               TextWrapping="Wrap"
+                                               Foreground="{StaticResource TextoApagado}"
+                                               Text="Preenchida com os dados do cliente e do escritório. O arquivo não fica guardado: gera de novo quando precisar."/>
+                                </Grid>
+
+                                <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="18"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="A defesa prévia e os recursos de JARI e CETRAN entram na v2: o texto de cada peça muda conforme a fase do processo."/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="cartao" Padding="20,17">
+                            <StackPanel Spacing="7">
+                                <TextBlock Text="GUARDAR ARQUIVOS" FontSize="10.5"
+                                           LetterSpacing="0.5"
+                                           Foreground="{StaticResource TextoApagado}"/>
+                                <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                                           Foreground="{StaticResource TextoFraco}"
+                                           Text="CNH, procuração assinada, CRLV, comprovantes e o comprovante de protocolo entram na v2 (RF-42 e RF-43). Dependem do armazenamento na nuvem, decidido em 30/09."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+
+                <!-- Aba Histórico (maquete F5): a linha do tempo do cliente. Os eventos
+                     são deduzidos das datas que as tabelas já guardam. Quem fez e qual
+                     campo mudou dependem da tabela de eventos e do login, que não existem. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" IsVisible="{Binding AbaHistorico}">
+                    <StackPanel Margin="24,18,24,24" Spacing="14">
+
+                        <Border Classes="cartao" IsVisible="{Binding !SemHistorico}">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="titulocartao" Text="LINHA DO TEMPO DO CLIENTE"/>
+
+                                <ItemsControl ItemsSource="{Binding Historico}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:EventoDaFichaViewModel">
+                                            <Grid ColumnDefinitions="140,Auto,*" Margin="0,0,0,2">
+
+                                                <TextBlock Grid.Column="0" Text="{Binding Quando}"
+                                                           FontSize="11.5" Margin="0,2,14,0"
+                                                           VerticalAlignment="Top"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+
+                                                <!-- O ponto e a linha que desce: é o fio que
+                                                     liga um dia ao outro. -->
+                                                <Grid Grid.Column="1" Margin="0,0,14,0"
+                                                      RowDefinitions="Auto,*">
+                                                    <Ellipse Grid.Row="0" Width="9" Height="9"
+                                                             Margin="0,5,0,0"
+                                                             VerticalAlignment="Top"
+                                                             Fill="{Binding CorDoPonto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    <Rectangle Grid.Row="1" Width="1"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,3,0,0"
+                                                               Fill="{StaticResource BordaClara}"/>
+                                                </Grid>
+
+                                                <StackPanel Grid.Column="2" Spacing="2"
+                                                            Margin="0,0,0,14">
+                                                    <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                                               FontWeight="SemiBold"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <TextBlock Text="{Binding Detalhe}" FontSize="11.5"
+                                                               TextWrapping="Wrap" LineHeight="17"
+                                                               IsVisible="{Binding TemDetalhe}"
+                                                               Foreground="{StaticResource TextoFraco}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="cartao" IsVisible="{Binding SemHistorico}" Padding="24,28">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Text="Nada aconteceu com este cliente ainda." FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock FontSize="11.5" HorizontalAlignment="Center"
+                                           TextWrapping="Wrap" MaxWidth="420"
+                                           TextAlignment="Center"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="A linha do tempo se enche sozinha: contratação, pagamento, despesa, protocolo, resultado e etapa concluída entram aqui conforme acontecem."/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="18"
+                                   Foreground="{StaticResource TextoApagado}"
+                                   Text="Quem fez cada coisa, e a correção de um dado do cadastro, dependem da tabela de eventos e do login — ainda por fazer."/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <TextBlock IsVisible="{Binding CarregandoHistorico}"
+                           Text="Carregando o histórico..."
                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                           FontSize="13" Foreground="{StaticResource TextoApagado}"/>
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
 
                 <TextBlock Text="Carregando..." IsVisible="{Binding Carregando}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1503,6 +1619,12 @@
         <ContentControl Grid.Column="0" Grid.ColumnSpan="2"
                         Content="{Binding Formulario}"
                         IsVisible="{Binding Formulario, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+
+        <!-- A procuração, por cima da ficha inteira. Fica aqui, e não dentro da aba,
+             porque a aba Documentos ainda vai receber os anexos. -->
+        <ContentControl Grid.Column="0" Grid.ColumnSpan="2"
+                        Content="{Binding ProcuracaoAberta}"
+                        IsVisible="{Binding ProcuracaoAberta, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
 
         <!-- ============ CONFIRMAÇÃO ============
              Uma só para arquivar, desvincular e apagar: quem monta a pergunta é o

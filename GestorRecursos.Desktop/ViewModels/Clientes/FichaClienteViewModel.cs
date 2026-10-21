@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GestorRecursos.Core.Data;
+using GestorRecursos.Core.Documentos;
 using GestorRecursos.Core.Models;
 using GestorRecursos.Desktop.Servicos;
 
@@ -80,6 +81,8 @@ public partial class FichaClienteViewModel : ViewModelBase
     private readonly ClienteDAO _clientes = new();
     private readonly ContratacaoDAO _contratacoes = new();
     private readonly PagamentoDAO _pagamentos = new();
+    private readonly EscritorioDAO _escritorios = new();
+    private readonly HistoricoDAO _historicos = new();
     private readonly Action? _aoVoltar;
     private readonly Action? _aoNovoCliente;
     private readonly Action<GrupoCadastro>? _aoEditar;
@@ -103,8 +106,8 @@ public partial class FichaClienteViewModel : ViewModelBase
         new("Veículos e multas", AbaFicha.Veiculos, pronta: true),
         new("Serviços", AbaFicha.Servicos, pronta: true),
         new("Financeiro", AbaFicha.Financeiro, pronta: true),
-        new("Documentos", AbaFicha.Documentos, pronta: false),
-        new("Histórico", AbaFicha.Historico, pronta: false)
+        new("Documentos", AbaFicha.Documentos, pronta: true),
+        new("Histórico", AbaFicha.Historico, pronta: true)
     ];
 
     /// <summary>Os outros clientes, para trocar sem sair da ficha.</summary>
@@ -179,10 +182,8 @@ public partial class FichaClienteViewModel : ViewModelBase
     public bool AbaVeiculos => AbaAtual == AbaFicha.Veiculos;
     public bool AbaServicos => AbaAtual == AbaFicha.Servicos;
     public bool AbaFinanceiro => AbaAtual == AbaFicha.Financeiro;
-
-    public bool AbaEmConstrucao =>
-        AbaAtual is not (AbaFicha.Dados or AbaFicha.Veiculos or AbaFicha.Servicos
-                      or AbaFicha.Financeiro);
+    public bool AbaDocumentos => AbaAtual == AbaFicha.Documentos;
+    public bool AbaHistorico => AbaAtual == AbaFicha.Historico;
 
     /// <summary>Os cartões da aba Veículos e multas.</summary>
     public ObservableCollection<VeiculoComMultasViewModel> VeiculosEMultas { get; } = [];
@@ -194,6 +195,11 @@ public partial class FichaClienteViewModel : ViewModelBase
     public ObservableCollection<LancamentoDaFichaViewModel> Lancamentos { get; } = [];
 
     public bool SemLancamentos => !CarregandoFinanceiro && Lancamentos.Count == 0;
+
+    /// <summary>A linha do tempo da aba Histórico, do mais recente para o mais antigo.</summary>
+    public ObservableCollection<EventoDaFichaViewModel> Historico { get; } = [];
+
+    public bool SemHistorico => !CarregandoHistorico && _historicoCarregado && Historico.Count == 0;
 
     // As listas completas ficam de lado; o que a tela mostra é o recorte do filtro.
     // Filtrar em memória evita uma ida ao banco a cada clique em sub-aba.
@@ -234,10 +240,28 @@ public partial class FichaClienteViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool CarregandoFinanceiro { get; set; }
 
+    /// <summary>A procuração aberta por cima da ficha. Nula quando não há nenhuma.</summary>
+    [ObservableProperty]
+    public partial ProcuracaoViewModel? ProcuracaoAberta { get; set; }
+
+    [ObservableProperty]
+    public partial bool CarregandoHistorico { get; set; }
+
     /// <summary>Evita ir ao banco de novo a cada vez que a aba é reaberta.</summary>
     private bool _veiculosCarregados;
     private bool _servicosCarregados;
     private bool _financeiroCarregado;
+    private bool _historicoCarregado;
+
+    /// <summary>O cliente inteiro, guardado para a aba Documentos montar a procuração.</summary>
+    /// <remarks>
+    /// A ficha exibe campos formatados; o documento precisa dos valores como estão no
+    /// banco. Reler o cliente só para gerar o papel seria uma ida à nuvem já feita.
+    /// </remarks>
+    private Cliente? _cliente;
+
+    /// <summary>A outorgada. Uma linha só no banco, e a mesma para todos os clientes.</summary>
+    private Escritorio? _escritorio;
 
     public bool SemVeiculos => !CarregandoVeiculos && _veiculosCarregados && VeiculosEMultas.Count == 0;
     public bool SemServicos => !CarregandoServicos && _servicosCarregados && Servicos.Count == 0;
@@ -347,6 +371,10 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await CarregarFinanceiro();
         }
+        else if (AbaAtual == AbaFicha.Historico && !_historicoCarregado)
+        {
+            await CarregarHistorico();
+        }
     }
 
     /// <summary>Faz as abas pesadas esquecerem o que buscaram.</summary>
@@ -362,6 +390,12 @@ public partial class FichaClienteViewModel : ViewModelBase
         _financeiroCarregado = false;
         _todosLancamentos.Clear();
         Lancamentos.Clear();
+
+        _historicoCarregado = false;
+        Historico.Clear();
+
+        // A procuração é de um cliente só: trocar de ficha fecha a que estiver aberta.
+        ProcuracaoAberta = null;
     }
 
     /// <summary>Só o destaque da aba. Separado de <see cref="TrocarAba"/> para quem
@@ -543,6 +577,86 @@ public partial class FichaClienteViewModel : ViewModelBase
             OnPropertyChanged(nameof(SemLancamentos));
         }
     }
+
+    /// <summary>Enche a aba Histórico: a linha do tempo do cliente.</summary>
+    /// <remarks>
+    /// Os eventos são deduzidos das datas que as tabelas já guardam, numa consulta só.
+    /// Por isso a aba mostra o que foi feito, e não quem fez nem qual campo mudou: para
+    /// isso faltam a tabela de eventos e o login, que ainda não existem.
+    /// </remarks>
+    private async Task CarregarHistorico()
+    {
+        CarregandoHistorico = true;
+
+        try
+        {
+            var eventos = await _historicos.ListarAsync(ClienteId);
+
+            Historico.Clear();
+            foreach (var evento in eventos)
+            {
+                Historico.Add(new EventoDaFichaViewModel(evento));
+            }
+
+            _historicoCarregado = true;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível carregar o histórico: {excecao.Message}";
+        }
+        finally
+        {
+            CarregandoHistorico = false;
+            OnPropertyChanged(nameof(SemHistorico));
+        }
+    }
+
+    /// <summary>Abre a procuração por cima da ficha, montada na hora.</summary>
+    /// <remarks>
+    /// Nada é guardado: o PDF sai do cadastro de hoje, e uma cópia gravada viraria uma
+    /// segunda versão do mesmo papel. Gerar de novo custa menos que manter as duas.
+    /// </remarks>
+    [RelayCommand]
+    private async Task AbrirProcuracao()
+    {
+        if (_cliente is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // A outorgada é a mesma para todos os clientes: busca uma vez por sessão.
+            _escritorio ??= await _escritorios.BuscarAsync();
+
+            var procuracao = new ProcuracaoViewModel(
+                _cliente,
+                _escritorio,
+                aoFechar: () => ProcuracaoAberta = null,
+                aoCorrigir: parte =>
+                {
+                    ProcuracaoAberta = null;
+                    Editar(TraduzirGrupo(parte));
+                });
+
+            ProcuracaoAberta = procuracao;
+            await procuracao.PrepararAsync();
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível abrir a procuração: {excecao.Message}";
+        }
+    }
+
+    // A Core diz onde o dado é digitado; a tela sabe o nome do grupo no cadastro.
+    // Dado do escritório não se edita por aqui: cai nos dados pessoais, que é onde ela
+    // começa a procurar, e a lista de faltas já nomeia o que é.
+    private static GrupoCadastro TraduzirGrupo(ParteDoCadastro parte) => parte switch
+    {
+        ParteDoCadastro.ContatoEndereco => GrupoCadastro.ContatoEndereco,
+        ParteDoCadastro.Cnh => GrupoCadastro.Cnh,
+        _ => GrupoCadastro.DadosPessoais
+    };
 
     /// <summary>Troca o recorte da aba Serviços.</summary>
     [RelayCommand]
@@ -791,6 +905,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     private void Preencher(FichaCliente ficha)
     {
         var cliente = ficha.Cliente;
+        _cliente = cliente;
 
         Nome = cliente.Nome;
         Identificacao = MontarIdentificacao(cliente);
@@ -1174,12 +1289,14 @@ public partial class FichaClienteViewModel : ViewModelBase
         OnPropertyChanged(nameof(AbaVeiculos));
         OnPropertyChanged(nameof(AbaServicos));
         OnPropertyChanged(nameof(AbaFinanceiro));
-        OnPropertyChanged(nameof(AbaEmConstrucao));
+        OnPropertyChanged(nameof(AbaDocumentos));
+        OnPropertyChanged(nameof(AbaHistorico));
     }
 
     partial void OnCarregandoVeiculosChanged(bool valor) => OnPropertyChanged(nameof(SemVeiculos));
     partial void OnCarregandoServicosChanged(bool valor) => OnPropertyChanged(nameof(SemServicos));
     partial void OnCarregandoFinanceiroChanged(bool valor) => OnPropertyChanged(nameof(SemLancamentos));
+    partial void OnCarregandoHistoricoChanged(bool valor) => OnPropertyChanged(nameof(SemHistorico));
 
     private static string MontarIdentificacao(Cliente cliente)
     {

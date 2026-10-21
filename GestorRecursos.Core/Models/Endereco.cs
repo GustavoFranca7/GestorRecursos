@@ -21,7 +21,13 @@ public class Endereco
         if (!string.IsNullOrWhiteSpace(Numero)) partes.Add($"nº {Numero}");
         if (!string.IsNullOrWhiteSpace(Complemento)) partes.Add(Complemento);
         if (!string.IsNullOrWhiteSpace(Bairro)) partes.Add($"bairro {Bairro}");
-        if (!string.IsNullOrWhiteSpace(Cep)) partes.Add($"CEP {Cep}");
+
+        // O banco guarda só os dígitos; num documento assinado, o CEP vai pontuado.
+        if (!string.IsNullOrWhiteSpace(Cep))
+        {
+            var digitos = Validacao.Normalizacao.SomenteDigitos(Cep);
+            partes.Add($"CEP {(digitos.Length == 8 ? $"{digitos[..5]}-{digitos[5..]}" : Cep)}");
+        }
 
         partes.Add($"{Cidade} - {Estado}");
         return string.Join(", ", partes);

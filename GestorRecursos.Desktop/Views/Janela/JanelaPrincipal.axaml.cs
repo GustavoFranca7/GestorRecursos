@@ -11,5 +11,8 @@ public partial class JanelaPrincipal : Window
 
         // A área de transferência pertence à janela; os ViewModels copiam por aqui.
         AreaDeTransferencia.Registrar(this);
+
+        // Mesmo motivo para a caixa de "salvar como" dos documentos gerados.
+        Arquivos.Registrar(this);
     }
 }

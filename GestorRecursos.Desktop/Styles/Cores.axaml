@@ -61,6 +61,7 @@
     <SolidColorBrush x:Key="AlertaBorda" Color="#F3C9CD"/>
     <SolidColorBrush x:Key="Aviso" Color="#C87A2A"/>
     <SolidColorBrush x:Key="AvisoClaro" Color="#FFF1E3"/>
+    <SolidColorBrush x:Key="AvisoBorda" Color="#F0D7B6"/>
     <SolidColorBrush x:Key="Roxo" Color="#854CBF"/>
     <SolidColorBrush x:Key="RoxoClaro" Color="#F0E7FA"/>
 
