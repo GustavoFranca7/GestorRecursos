@@ -1307,56 +1307,102 @@
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
 
-                                            <!-- Os números da contratação -->
+                                            <!-- Os números: como se chegou ao preço, e o que falta receber.
+                                                 Duas perguntas diferentes, por isso dois riscos. -->
                                             <Border Background="{StaticResource CartaoSuave}"
                                                     BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
                                                     CornerRadius="{StaticResource RaioCartao}" Padding="15,12">
-                                                <StackPanel Spacing="10">
-                                                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
-                                                        <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,30,0"
-                                                                    IsVisible="{Binding TemDesconto}">
-                                                            <TextBlock Text="{Binding Tabela}" FontSize="14"
+                                                <StackPanel Width="330" HorizontalAlignment="Left">
+
+                                                    <!-- O caminho até o preço. Sai inteiro quando não houve
+                                                         desconto nem despesa: sozinha, a linha de serviços
+                                                         repetiria o contratado. -->
+                                                    <StackPanel IsVisible="{Binding TemAjustes}">
+                                                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                                            <TextBlock Text="Serviços" FontSize="12.5"
                                                                        Foreground="{StaticResource TextoFraco}"/>
-                                                            <TextBlock Text="TABELA" FontSize="9.5" LetterSpacing="0.5"
-                                                                       Foreground="{StaticResource TextoApagado}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,30,0"
-                                                                    IsVisible="{Binding TemDesconto}">
-                                                            <TextBlock Text="{Binding Desconto}" FontSize="14"
-                                                                       Foreground="{StaticResource TextoFraco}"/>
-                                                            <TextBlock Text="DESCONTO" FontSize="9.5" LetterSpacing="0.5"
-                                                                       Foreground="{StaticResource TextoApagado}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="2" Spacing="2" Margin="0,0,30,0">
-                                                            <TextBlock Text="{Binding Contratado}" FontSize="14"
-                                                                       FontWeight="SemiBold"
+                                                            <TextBlock Grid.Column="1" Text="{Binding Tabela}"
+                                                                       FontSize="12.5" FontWeight="SemiBold"
                                                                        Foreground="{StaticResource Texto}"/>
-                                                            <TextBlock Text="CONTRATADO" FontSize="9.5" LetterSpacing="0.5"
-                                                                       Foreground="{StaticResource TextoApagado}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="3" Spacing="2" Margin="0,0,30,0">
-                                                            <TextBlock Text="{Binding Pago}" FontSize="14"
-                                                                       FontWeight="SemiBold"
+                                                        </Grid>
+
+                                                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8"
+                                                              IsVisible="{Binding TemDesconto}">
+                                                            <TextBlock Text="Desconto" FontSize="12.5"
+                                                                       Foreground="{StaticResource TextoFraco}"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding DescontoResumo}"
+                                                                       FontSize="12.5" FontWeight="SemiBold"
                                                                        Foreground="{StaticResource Sucesso}"/>
-                                                            <TextBlock Text="JÁ PAGO" FontSize="9.5" LetterSpacing="0.5"
-                                                                       Foreground="{StaticResource TextoApagado}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="4" Spacing="2">
-                                                            <TextBlock Text="{Binding EmAberto}" FontSize="14"
-                                                                       FontWeight="SemiBold"
+                                                        </Grid>
+
+                                                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8"
+                                                              IsVisible="{Binding TemDespesas}">
+                                                            <TextBlock Text="Despesas" FontSize="12.5"
+                                                                       Foreground="{StaticResource TextoFraco}"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding DespesasResumo}"
+                                                                       FontSize="12.5" FontWeight="SemiBold"
                                                                        Foreground="{StaticResource Alerta}"/>
-                                                            <TextBlock Text="EM ABERTO" FontSize="9.5" LetterSpacing="0.5"
-                                                                       Foreground="{StaticResource TextoApagado}"/>
-                                                        </StackPanel>
+                                                        </Grid>
+
+                                                        <Border Height="1" Margin="0,0,0,8"
+                                                                Background="{StaticResource Borda}"/>
+                                                    </StackPanel>
+
+                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                                        <TextBlock Text="Contratado" FontSize="12.5"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Contratado}"
+                                                                   FontSize="12.5" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Texto}"/>
                                                     </Grid>
 
-                                                    <ProgressBar Minimum="0" Maximum="100"
-                                                                 Value="{Binding Percentual}"
-                                                                 Height="6" CornerRadius="3"
-                                                                 Background="{StaticResource Fundo}"
-                                                                 Foreground="{StaticResource Sucesso}"/>
+                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                                        <TextBlock Text="Já pago" FontSize="12.5"
+                                                                   Foreground="{StaticResource TextoFraco}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding PagoResumo}"
+                                                                   FontSize="12.5" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Sucesso}"/>
+                                                    </Grid>
+
+                                                    <Border Height="1" Margin="0,0,0,8"
+                                                            Background="{StaticResource Borda}"/>
+
+                                                    <!-- Quitada mostra a palavra, não um zero: zero se lê como
+                                                         campo vazio. -->
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <TextBlock Text="Em aberto" FontSize="12.5"
+                                                                   VerticalAlignment="Bottom" Margin="0,0,0,3"
+                                                                   Foreground="{StaticResource TextoFraco}"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Fecho}"
+                                                                   FontSize="22" FontWeight="Bold"
+                                                                   Foreground="{Binding CorFecho, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    </Grid>
                                                 </StackPanel>
                                             </Border>
+
+                                            <!-- Despesas: saem do caixa do escritório, não do que o cliente deve -->
+                                            <StackPanel Spacing="8" IsVisible="{Binding TemDespesas}">
+                                                <TextBlock Text="DESPESAS" FontSize="10.5" LetterSpacing="0.5"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+
+                                                <ItemsControl ItemsSource="{Binding Despesas}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:DespesaDaFichaViewModel">
+                                                            <Grid ColumnDefinitions="Auto,Auto,*" Margin="0,0,0,6">
+                                                                <TextBlock Grid.Column="0" Text="{Binding Quando}"
+                                                                           FontSize="12" Width="90"
+                                                                           Foreground="{StaticResource TextoFraco}"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Valor}"
+                                                                           FontSize="12.5" Width="110"
+                                                                           Foreground="{StaticResource Alerta}"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding Tipo}"
+                                                                           FontSize="12"
+                                                                           Foreground="{StaticResource Texto}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
 
                                             <!-- Pagamentos lançados -->
                                             <StackPanel Spacing="8" IsVisible="{Binding TemPagamentos}">
@@ -1401,34 +1447,6 @@
                                             <TextBlock IsVisible="{Binding !TemPagamentos}" FontSize="12"
                                                        Text="Nenhum pagamento lançado nesta contratação."
                                                        Foreground="{StaticResource TextoApagado}"/>
-
-                                            <!-- Despesas: entram no resultado, não no que o cliente deve -->
-                                            <StackPanel Spacing="8" IsVisible="{Binding TemDespesas}">
-                                                <TextBlock Text="DESPESAS" FontSize="10.5" LetterSpacing="0.5"
-                                                           Foreground="{StaticResource TextoApagado}"/>
-
-                                                <ItemsControl ItemsSource="{Binding Despesas}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:DespesaDaFichaViewModel">
-                                                            <Grid ColumnDefinitions="Auto,Auto,*" Margin="0,0,0,6">
-                                                                <TextBlock Grid.Column="0" Text="{Binding Quando}"
-                                                                           FontSize="12" Width="90"
-                                                                           Foreground="{StaticResource TextoFraco}"/>
-                                                                <TextBlock Grid.Column="1" Text="{Binding Valor}"
-                                                                           FontSize="12.5" Width="110"
-                                                                           Foreground="{StaticResource Alerta}"/>
-                                                                <TextBlock Grid.Column="2" Text="{Binding Tipo}"
-                                                                           FontSize="12"
-                                                                           Foreground="{StaticResource Texto}"/>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-
-                                                <TextBlock FontSize="11.5"
-                                                           Foreground="{StaticResource TextoFraco}"
-                                                           Text="{Binding Resultado, StringFormat='Resultado da contratação: {0}'}"/>
-                                            </StackPanel>
 
                                             <TextBlock Text="{Binding Observacoes}" FontSize="11.5"
                                                        TextWrapping="Wrap"

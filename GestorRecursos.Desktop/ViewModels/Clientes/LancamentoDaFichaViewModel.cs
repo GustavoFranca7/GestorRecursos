@@ -103,9 +103,6 @@ public class LancamentoDaFichaViewModel
         }
 
         DespesasTexto = Formato.Dinheiro(TotalDespesas);
-
-        // O resultado é o que sobra para o escritório: o combinado menos o que ele gastou.
-        Resultado = Formato.Dinheiro(dados.ValorFinal - TotalDespesas);
     }
 
     public Contratacao Dados { get; }
@@ -119,8 +116,12 @@ public class LancamentoDaFichaViewModel
     public string Pago { get; }
     public string EmAberto { get; }
     public string DespesasTexto { get; }
-    public string Resultado { get; }
     public string? Observacoes { get; }
+
+    // O sinal diz o que a linha faz com o total: sem ele a coluna não se lê.
+    public string DescontoResumo => $"− {Desconto}";
+    public string DespesasResumo => $"+ {DespesasTexto}";
+    public string PagoResumo => $"− {Pago}";
 
     public ObservableCollection<ServicoDoLancamentoViewModel> Servicos { get; } = [];
     public ObservableCollection<PagamentoDaFichaViewModel> Pagamentos { get; } = [];
@@ -131,6 +132,14 @@ public class LancamentoDaFichaViewModel
 
     public bool TemServicos => Servicos.Count > 0;
     public bool TemDesconto => Dados.Desconto > 0;
+
+    /// <summary>Houve algo entre o valor de tabela e o combinado.</summary>
+    /// <remarks>
+    /// Sozinha, a linha de serviços repetiria o contratado: só vale mostrar o
+    /// caminho quando o desconto ou a despesa o mudaram.
+    /// </remarks>
+    public bool TemAjustes => TemDesconto || TemDespesas;
+
     public bool TemPagamentos => Pagamentos.Count > 0;
     public bool TemDespesas => Despesas.Count > 0;
     public bool TemObservacoes => !string.IsNullOrWhiteSpace(Observacoes);
@@ -138,14 +147,14 @@ public class LancamentoDaFichaViewModel
     public bool Quitado => Dados.Quitado;
     public bool Devendo => !Dados.Quitado;
 
+    /// <summary>Quitada mostra a palavra: um zero se lê como campo vazio.</summary>
+    public string Fecho => Quitado ? "Quitado" : EmAberto;
+    public string CorFecho => Quitado ? "Sucesso" : "Alerta";
+
     public string Selo => Quitado ? "quitado" : "em aberto";
     public string FundoSelo => Quitado ? "SucessoClaro" : "AlertaClaro";
     public string CorSelo => Quitado ? "Sucesso" : "Alerta";
 
-    /// <summary>Quanto do contratado já entrou, de 0 a 100.</summary>
-    public int Percentual => Dados.ValorFinal <= 0
-        ? 100
-        : (int)System.Math.Round(Dados.TotalPago / Dados.ValorFinal * 100);
 
     public string ResumoPagamentos => Pagamentos.Count == 1
         ? "1 pagamento"
