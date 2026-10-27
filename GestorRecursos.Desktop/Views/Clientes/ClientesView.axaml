@@ -13,5 +13,7 @@
         <ContentControl Content="{Binding Conteudo}"/>
         <ContentControl Content="{Binding Cadastro}"
                         IsVisible="{Binding Cadastro, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+        <ContentControl Content="{Binding Importacao}"
+                        IsVisible="{Binding Importacao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
     </Panel>
 </UserControl>

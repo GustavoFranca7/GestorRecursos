@@ -46,6 +46,33 @@ namespace GestorRecursos.Core.Validacao
             return telefone.Length == 11 && telefone[2] == '9';
         }
 
+        // Confere o CPF pelos dois digitos verificadores.
+        //
+        // Importa mais do que parece: quando o CPF vem de leitura automatica, e o unico
+        // campo que denuncia a propria leitura errada. Trocar um 0 por O derruba a conta.
+        public static bool CpfValido(string? cpf)
+        {
+            string d = SomenteDigitos(cpf);
+            if (d.Length != 11) return false;
+
+            // 111.111.111-11 e os outros repetidos passam na conta, mas nao existem.
+            if (d.All(c => c == d[0])) return false;
+
+            foreach (int corte in new[] { 9, 10 })
+            {
+                int soma = 0;
+                for (int i = 0; i < corte; i++)
+                {
+                    soma += (d[i] - '0') * (corte + 1 - i);
+                }
+
+                int esperado = (soma * 10 % 11) % 10;
+                if (esperado != d[corte] - '0') return false;
+            }
+
+            return true;
+        }
+
         // So letras, em maiusculo: "sc" vira "SC".
         public static string Uf(string? texto)
         {

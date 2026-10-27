@@ -93,15 +93,18 @@ public partial class ListaClientesViewModel : ViewModelBase
 
     private readonly Action<int>? _aoAbrirFicha;
     private readonly Action? _aoNovoCliente;
+    private readonly Action? _aoImportar;
 
     public ListaClientesViewModel(
         bool modoArquivo = false,
         Action<int>? aoAbrirFicha = null,
-        Action? aoNovoCliente = null)
+        Action? aoNovoCliente = null,
+        Action? aoImportar = null)
     {
         ModoArquivo = modoArquivo;
         _aoAbrirFicha = aoAbrirFicha;
         _aoNovoCliente = aoNovoCliente;
+        _aoImportar = aoImportar;
 
         if (modoArquivo)
         {
@@ -212,6 +215,13 @@ public partial class ListaClientesViewModel : ViewModelBase
     /// <summary>O "+ Novo cliente" da própria tela, que só a casca sabe abrir.</summary>
     [RelayCommand]
     private void NovoCliente() => _aoNovoCliente?.Invoke();
+
+    /// <summary>A importação em lote, ao lado do cadastro: as duas criam cliente.</summary>
+    [RelayCommand]
+    private void Importar() => _aoImportar?.Invoke();
+
+    /// <summary>No arquivo não se cadastra nem se importa ninguém.</summary>
+    public bool MostrarImportar => !ModoArquivo && _aoImportar is not null;
 
     public async Task Buscar(string termo)
     {

@@ -41,6 +41,23 @@ public static class Arquivos
         return escolhido?.TryGetLocalPath();
     }
 
+    /// <summary>Pergunta qual pasta ler. Devolve nulo quando desiste.</summary>
+    public static async Task<string?> EscolherPastaAsync(string titulo)
+    {
+        if (_janela?.StorageProvider is not { } armazenamento)
+        {
+            return null;
+        }
+
+        var escolhidas = await armazenamento.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = titulo,
+            AllowMultiple = false
+        });
+
+        return escolhidas.Count > 0 ? escolhidas[0].TryGetLocalPath() : null;
+    }
+
     /// <summary>Abre o arquivo no programa que o sistema usa para o tipo.</summary>
     /// <remarks>
     /// Falha em silêncio de propósito: o arquivo já foi gravado, e não abrir o leitor de

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using GestorRecursos.Core.Data;
 
@@ -16,6 +17,10 @@ public partial class ClientesViewModel : ViewModelBase
     /// <summary>Cadastro aberto por cima da lista. Nulo quando não há nenhum.</summary>
     [ObservableProperty]
     public partial NovoClienteViewModel? Cadastro { get; set; }
+
+    /// <summary>Importação em lote, aberta por cima da lista. Nula quando não há nenhuma.</summary>
+    [ObservableProperty]
+    public partial ImportacaoViewModel? Importacao { get; set; }
 
     public ClientesViewModel()
     {
@@ -50,8 +55,24 @@ public partial class ClientesViewModel : ViewModelBase
         AbrirFicha(clienteId, criarServico);
     }
 
+    /// <summary>Abre a importação de procurações sobre a listagem.</summary>
+    /// <remarks>
+    /// Mora aqui, e não em Configurações, porque o resultado é cliente: quem importa
+    /// quer ver na mesma tela o que entrou. A lista se refaz a cada lote gravado.
+    /// </remarks>
+    private void AbrirImportacao() =>
+        Importacao = new ImportacaoViewModel(
+            aoFechar: () => Importacao = null,
+            aoImportar: _ =>
+            {
+                if (Conteudo is ListaClientesViewModel) Conteudo = NovaLista();
+                return Task.CompletedTask;
+            });
+
     private ListaClientesViewModel NovaLista() =>
-        new(aoAbrirFicha: id => AbrirFicha(id), aoNovoCliente: AbrirCadastro);
+        new(aoAbrirFicha: id => AbrirFicha(id),
+            aoNovoCliente: AbrirCadastro,
+            aoImportar: AbrirImportacao);
 
     private void AbrirFicha(int clienteId, bool criarServico = false) =>
         Conteudo = new FichaClienteViewModel(

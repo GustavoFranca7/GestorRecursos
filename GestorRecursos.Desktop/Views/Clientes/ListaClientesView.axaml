@@ -104,10 +104,12 @@
         <!-- A busca vale nesta tela e em mais nenhuma, então mora nela. As ações só
              aparecem na listagem do dia a dia; no arquivo não se cadastra ninguém. -->
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
 
-                <!-- Largura fixa: sem ela o campo encolhe quando o termo digitado é curto -->
-                <Panel Grid.Column="0" Width="620" HorizontalAlignment="Left">
+                <!-- Largura fixa: sem ela o campo encolhe quando o termo digitado é curto.
+                     Estreitou quando o Importar entrou: a largura antiga empurrava os
+                     filtros para debaixo dos botões de ação. -->
+                <Panel Grid.Column="0" Width="460" HorizontalAlignment="Left">
                     <TextBox Classes="busca" Text="{Binding TermoBusca}"
                              PlaceholderText="{Binding DicaDeBusca}">
                         <!-- Enter busca: ninguém procura uma placa indo até a lupa com o mouse -->
@@ -146,7 +148,12 @@
 
                 <Button Grid.Column="2" Classes="neutro" Content="Exportar" Margin="14,0,0,0"
                         IsVisible="{Binding MostrarCabecalho}"/>
-                <Button Grid.Column="3" Classes="primario" Content="+ Novo cliente" Margin="8,0,0,0"
+                <!-- Ao lado do cadastro porque faz a mesma coisa, só que de muitos de uma vez -->
+                <Button Grid.Column="3" Classes="neutro" Content="Importar" Margin="8,0,0,0"
+                        ToolTip.Tip="Criar cadastros a partir de procurações já emitidas"
+                        IsVisible="{Binding MostrarImportar}"
+                        Command="{Binding ImportarCommand}"/>
+                <Button Grid.Column="4" Classes="primario" Content="+ Novo cliente" Margin="8,0,0,0"
                         IsVisible="{Binding MostrarCabecalho}"
                         Command="{Binding NovoClienteCommand}"/>
             </Grid>

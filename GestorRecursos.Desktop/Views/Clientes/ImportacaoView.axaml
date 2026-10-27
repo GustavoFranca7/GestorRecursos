@@ -1,0 +1,270 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.ImportacaoView"
+             x:DataType="vm:ImportacaoViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.campo">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FAFCFC"/>
+        </Style>
+        <Style Selector="TextBox.campo:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style Selector="StackPanel.campo">
+            <Setter Property="Margin" Value="0,0,10,10"/>
+        </Style>
+        <Style Selector="TextBlock.rot">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Margin" Value="0,0,0,3"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="#66102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                Padding="0" Width="1000" MaxHeight="720" Margin="24"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 14 40 0 #30102A2C">
+
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <StackPanel Grid.Row="0" Spacing="12" Margin="28,24,28,16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Importar cadastros de procurações" FontSize="16"
+                                       FontWeight="SemiBold" Foreground="{StaticResource Texto}"/>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" MaxWidth="620"
+                                       HorizontalAlignment="Left"
+                                       Foreground="{StaticResource TextoApagado}"
+                                       Text="Lê as procurações já emitidas de uma pasta e propõe o cadastro de cada cliente. Os dados podem ser corrigidos aqui mesmo, antes de gravar."/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Classes="primario" Content="Escolher pasta"
+                                VerticalAlignment="Top" Margin="14,0,0,0"
+                                IsEnabled="{Binding !Ocupado}"
+                                Command="{Binding EscolherPastaCommand}"/>
+                    </Grid>
+
+                    <TextBlock Text="{Binding Pasta}" FontSize="11.5"
+                               IsVisible="{Binding Pasta, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource TextoFraco}"/>
+
+                    <TextBlock Text="{Binding Contagem}" FontSize="12"
+                               IsVisible="{Binding TemLinhas}"
+                               Foreground="{StaticResource TextoFraco}"/>
+
+                    <TextBlock IsVisible="{Binding Lendo}" FontSize="13"
+                               Text="Lendo os documentos..."
+                               Foreground="{StaticResource TextoFraco}"/>
+
+                    <Border IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                            Background="{StaticResource AlertaClaro}"
+                            BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                            CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                        <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Alerta}"/>
+                    </Border>
+
+                    <Border IsVisible="{Binding Aviso, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                            Background="{StaticResource PrimariaClara}"
+                            BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                            CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                        <TextBlock Text="{Binding Aviso}" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource PrimariaEscura}"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- A margem à direita afasta as linhas da barra de rolagem -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding TemLinhas}" Margin="28,0,12,0">
+                    <ItemsControl ItemsSource="{Binding Linhas}" Margin="0,0,16,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LinhaImportacaoViewModel">
+                                <Border BorderBrush="{StaticResource BordaClara}"
+                                        BorderThickness="0,0,0,1" Padding="0,12">
+                                    <StackPanel Spacing="10">
+
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+
+                                            <CheckBox Grid.Column="0" VerticalAlignment="Top"
+                                                      Margin="0,2,10,0"
+                                                      IsChecked="{Binding Marcado}"
+                                                      IsEnabled="{Binding PodeMarcar}"/>
+
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                                    <TextBlock Text="{Binding Nome}" FontSize="13"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <TextBlock Text="{Binding Cpf}" FontSize="12"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{StaticResource TextoFraco}"/>
+                                                </StackPanel>
+
+                                                <TextBlock Text="{Binding Observacoes}" FontSize="11.5"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding TemObservacoes}"
+                                                           Foreground="{StaticResource Aviso}"/>
+
+                                                <TextBlock Text="{Binding Arquivo}" FontSize="11"
+                                                           Foreground="{StaticResource TextoFraco}"/>
+
+                                                <TextBlock Text="{Binding Resultado}" FontSize="11.5"
+                                                           IsVisible="{Binding Resultado, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{Binding CorResultado, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="2" Classes="atalhocartao"
+                                                    Content="{Binding TextoAbrir}"
+                                                    VerticalAlignment="Top" Margin="12,0"
+                                                    IsVisible="{Binding PodeEditar}"
+                                                    Command="{Binding AlternarCommand}"/>
+
+                                            <Border Grid.Column="3" VerticalAlignment="Top"
+                                                    Margin="0,2,0,0" Padding="9,3" Height="22"
+                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                    Background="{Binding FundoSelo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                <TextBlock Text="{Binding Situacao}" FontSize="11"
+                                                           Foreground="{Binding CorSelo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- O formulário de correção, aberto sob a linha -->
+                                        <Border IsVisible="{Binding Aberto}"
+                                                Background="{StaticResource CartaoSuave}"
+                                                BorderBrush="{StaticResource BordaClara}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource RaioCartao}"
+                                                Padding="16,14,16,4" Margin="30,0,0,4">
+                                            <StackPanel Spacing="4">
+
+                                                <WrapPanel>
+                                                    <StackPanel Classes="campo" Width="286">
+                                                        <TextBlock Classes="rot" Text="NOME"/>
+                                                        <TextBox Classes="campo" Text="{Binding Nome}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="140">
+                                                        <TextBlock Classes="rot" Text="CPF"/>
+                                                        <TextBox Classes="campo" Text="{Binding Cpf}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="140">
+                                                        <TextBlock Classes="rot" Text="WHATSAPP"/>
+                                                        <TextBox Classes="campo" Text="{Binding Whatsapp}"
+                                                                 PlaceholderText="(47) 90000-0000"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="248">
+                                                        <TextBlock Classes="rot" Text="E-MAIL"/>
+                                                        <TextBox Classes="campo" Text="{Binding Email}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Classes="campo" Width="150">
+                                                        <TextBlock Classes="rot" Text="RG"/>
+                                                        <TextBox Classes="campo" Text="{Binding Rg}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="126">
+                                                        <TextBlock Classes="rot" Text="ÓRGÃO"/>
+                                                        <TextBox Classes="campo" Text="{Binding RgOrgao}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="150">
+                                                        <TextBlock Classes="rot" Text="CNH"/>
+                                                        <TextBox Classes="campo" Text="{Binding CnhNumero}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="150">
+                                                        <TextBlock Classes="rot" Text="NACIONALIDADE"/>
+                                                        <TextBox Classes="campo" Text="{Binding Nacionalidade}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="150">
+                                                        <TextBlock Classes="rot" Text="ESTADO CIVIL"/>
+                                                        <TextBox Classes="campo" Text="{Binding EstadoCivil}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Classes="campo" Width="212">
+                                                        <TextBlock Classes="rot" Text="PROFISSÃO"/>
+                                                        <TextBox Classes="campo" Text="{Binding Profissao}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="126">
+                                                        <TextBlock Classes="rot" Text="CEP"/>
+                                                        <TextBox Classes="campo" Text="{Binding Cep}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="280">
+                                                        <TextBlock Classes="rot" Text="LOGRADOURO"/>
+                                                        <TextBox Classes="campo" Text="{Binding Logradouro}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="96">
+                                                        <TextBlock Classes="rot" Text="NÚMERO"/>
+                                                        <TextBox Classes="campo" Text="{Binding Numero}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Classes="campo" Width="200">
+                                                        <TextBlock Classes="rot" Text="COMPLEMENTO"/>
+                                                        <TextBox Classes="campo" Text="{Binding Complemento}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="200">
+                                                        <TextBlock Classes="rot" Text="BAIRRO"/>
+                                                        <TextBox Classes="campo" Text="{Binding Bairro}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="230">
+                                                        <TextBlock Classes="rot" Text="CIDADE"/>
+                                                        <TextBox Classes="campo" Text="{Binding Cidade}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Classes="campo" Width="74">
+                                                        <TextBlock Classes="rot" Text="UF"/>
+                                                        <TextBox Classes="campo" Text="{Binding Uf}" MaxLength="2"/>
+                                                    </StackPanel>
+                                                </WrapPanel>
+
+                                                <!-- Confere o digitado contra o que o papel diz -->
+                                                <TextBlock FontSize="11" TextWrapping="Wrap"
+                                                           Margin="0,0,0,10"
+                                                           IsVisible="{Binding TemEnderecoNoDocumento}"
+                                                           Foreground="{StaticResource TextoFraco}">
+                                                    <Run Text="Endereço no documento:"/>
+                                                    <Run Text="{Binding EnderecoNoDocumento}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="28,16,28,24">
+                    <Button Grid.Column="0" Classes="atalhocartao" Content="marcar / desmarcar todos"
+                            IsVisible="{Binding TemLinhas}"
+                            Command="{Binding InverterMarcacaoCommand}"/>
+
+                    <Button Grid.Column="2" Classes="neutro" Content="Fechar" Margin="0,0,8,0"
+                            IsEnabled="{Binding !Importando}"
+                            Command="{Binding FecharCommand}"/>
+
+                    <Button Grid.Column="3" Classes="primario"
+                            IsVisible="{Binding TemLinhas}"
+                            IsEnabled="{Binding !Ocupado}"
+                            Command="{Binding ImportarCommand}">
+                        <TextBlock>
+                            <Run Text="Importar"/>
+                            <Run Text="{Binding Marcadas}"/>
+                            <Run Text="cadastro(s)"/>
+                        </TextBlock>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>
