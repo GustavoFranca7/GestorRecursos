@@ -67,6 +67,14 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] public partial string? Aviso { get; set; }
     [ObservableProperty] public partial bool Ocupado { get; set; }
 
+    /// <summary>Nome do ambiente, quando há um a anunciar. Nulo esconde o selo.</summary>
+    public string? Ambiente => GestorRecursos.Core.Configuracoes.Ambiente;
+    public bool ForaDeProducao => Ambiente is not null;
+
+    /// <summary>Vermelho avisa; âmbar apenas informa.</summary>
+    public string FundoDoAmbiente => GestorRecursos.Core.Configuracoes.AmbienteDelicado ? "AlertaClaro" : "AvisoClaro";
+    public string CorDoAmbiente => GestorRecursos.Core.Configuracoes.AmbienteDelicado ? "Alerta" : "Aviso";
+
     public bool NoEntrar => Passo == PassoLogin.Entrar;
     public bool NoPedirCodigo => Passo == PassoLogin.PedirCodigo;
     public bool NoTrocarSenha => Passo == PassoLogin.TrocarSenha;

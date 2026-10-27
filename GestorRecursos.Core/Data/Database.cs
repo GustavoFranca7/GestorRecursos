@@ -32,6 +32,7 @@ public static class Database
         try
         {
             await conexao.OpenAsync(cancelamento);
+            await ApontarEsquemaAsync(conexao, cancelamento);
             return conexao;
         }
         catch
@@ -40,6 +41,41 @@ public static class Database
             await conexao.DisposeAsync();
             throw;
         }
+    }
+
+    /// <summary>Diz ao banco em que esquema procurar as tabelas sem dono escrito.</summary>
+    /// <remarks>
+    /// Nas estações, o usuário do banco não é o dono do esquema: ele só lê e grava, e não
+    /// pode alterar nem apagar estrutura. Como ele não tem tabela própria, um
+    /// <c>FROM CLIENTES</c> não acharia nada.
+    ///
+    /// Isto resolve sem tocar numa linha de SQL do sistema, e sem encher o outro esquema
+    /// de sinônimos — que, além de serem dezenas, exigiriam um privilégio amplo
+    /// (<c>CREATE ANY SYNONYM</c>) só para criá-los.
+    ///
+    /// Em desenvolvimento a chave fica vazia e nada acontece: quem conecta já é o dono.
+    /// </remarks>
+    private static async Task ApontarEsquemaAsync(
+        OracleConnection conexao,
+        CancellationToken cancelamento)
+    {
+        var esquema = Configuracao["Oracle:Esquema"];
+        if (string.IsNullOrWhiteSpace(esquema))
+        {
+            return;
+        }
+
+        // Nome de objeto não entra por parâmetro; por isso só passam letras, números e
+        // sublinhado — o resto nem chega a virar comando.
+        if (!esquema.All(c => char.IsAsciiLetterOrDigit(c) || c == '_'))
+        {
+            throw new InvalidOperationException(
+                $"O esquema configurado tem caractere inválido: {esquema}");
+        }
+
+        await using var cmd = conexao.CreateCommand();
+        cmd.CommandText = $"ALTER SESSION SET CURRENT_SCHEMA = {esquema.ToUpperInvariant()}";
+        await cmd.ExecuteNonQueryAsync(cancelamento);
     }
 
     /// <summary>

@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1500" d:DesignHeight="950"
         x:Class="GestorRecursos.Desktop.Views.JanelaPrincipal"
         x:DataType="vm:JanelaPrincipalViewModel"
-        Title="Gestor de Recursos"
+        Title="Gestor de Recursos" Icon="/Assets/Icone.ico"
         Width="1500" Height="950" MinWidth="1100" MinHeight="700"
         Background="{StaticResource Fundo}"
         WindowStartupLocation="CenterScreen">
@@ -253,9 +253,23 @@
                 <Grid ColumnDefinitions="*,Auto">
 
                     <!-- Onde a pessoa está: é o título da tela, que saiu de dentro dela -->
-                    <TextBlock Grid.Column="0" Text="{Binding TituloSecao}"
-                               FontSize="30" FontWeight="SemiBold" VerticalAlignment="Center"
-                               Foreground="{StaticResource Texto}"/>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TituloSecao}"
+                                   FontSize="30" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{StaticResource Texto}"/>
+
+                        <!-- Produção não se anuncia. O selo só existe fora dela, e o
+                             engano caro é o contrário: achar que se está no teste. -->
+                        <Border IsVisible="{Binding ForaDeProducao}" VerticalAlignment="Center"
+                                Background="{Binding FundoDoAmbiente, Converter={x:Static vm:Conversores.Pincel}}"
+                                BorderThickness="0"
+                                CornerRadius="{StaticResource RaioSelo}" Padding="11,4">
+                            <TextBlock Text="{Binding Ambiente}" FontSize="11.5"
+                                       FontWeight="Bold" LetterSpacing="0.8"
+                                       Foreground="{Binding CorDoAmbiente, Converter={x:Static vm:Conversores.Pincel}}"/>
+                        </Border>
+                    </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                         <Border Width="29" Height="29" CornerRadius="15" Background="{StaticResource Primaria}">

@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="340"
         x:Class="GestorRecursos.Desktop.Views.JanelaHash"
         x:DataType="vm:GeradorDeHashViewModel"
-        Title="Gerar hash de senha"
+        Title="Gerar hash de senha" Icon="/Assets/Icone.ico"
         Width="560" Height="360" CanResize="False"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Fundo}">

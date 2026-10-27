@@ -76,6 +76,14 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
     [ObservableProperty]
     public partial PrimeiroAcessoViewModel? PrimeiroAcesso { get; set; }
 
+    /// <summary>Nome do ambiente, quando há um a anunciar. Nulo esconde o selo.</summary>
+    public string? Ambiente => GestorRecursos.Core.Configuracoes.Ambiente;
+    public bool ForaDeProducao => Ambiente is not null;
+
+    /// <summary>Vermelho avisa; âmbar apenas informa.</summary>
+    public string FundoDoAmbiente => GestorRecursos.Core.Configuracoes.AmbienteDelicado ? "AlertaClaro" : "AvisoClaro";
+    public string CorDoAmbiente => GestorRecursos.Core.Configuracoes.AmbienteDelicado ? "Alerta" : "Aviso";
+
     /// <summary>Quem está no sistema, como aparece na barra de cima.</summary>
     public string UsuarioInicial => Sessao.Inicial;
     public string UsuarioNome => Sessao.Nome;

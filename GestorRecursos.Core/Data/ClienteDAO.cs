@@ -230,7 +230,9 @@ public class ClienteDAO
 
                 if (arquivado != "S")
                 {
-                    await transacao.RollbackAsync(cancelamento);
+                    // Sem rollback aqui: quem lança cai no catch, que desfaz. Desfazer
+                    // duas vezes dá ORA-50045 na transação já fechada, e esse erro
+                    // substitui a mensagem acima por algo que ninguém entende.
                     throw new InvalidOperationException(
                         "Só é possível excluir um cliente que já esteja arquivado.");
                 }
