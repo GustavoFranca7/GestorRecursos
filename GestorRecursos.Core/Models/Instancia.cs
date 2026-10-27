@@ -24,6 +24,13 @@ public class Instancia
 
     public bool Protocolado => DataProtocolo.HasValue;
 
+    /// <summary>A fase caiu sem julgamento: o processo continua na instância seguinte.</summary>
+    public bool Anulada => Resultado == ResultadoInstancia.Anulado;
+
+    /// <summary>Esta fase abre a próxima: perdeu o julgamento, ou foi anulada.</summary>
+    public bool AbreProximaFase =>
+        Resultado is ResultadoInstancia.Indeferido or ResultadoInstancia.Anulado;
+
     /// <summary>Dias que faltam para o prazo. Negativo quer dizer prazo vencido.</summary>
     public int? DiasParaPrazo =>
         PrazoProtocolo.HasValue ? (PrazoProtocolo.Value.Date - DateTime.Today).Days : null;
@@ -42,6 +49,7 @@ public class Instancia
     {
         ResultadoInstancia.Deferido => SituacaoInstancia.Deferido,
         ResultadoInstancia.Indeferido => SituacaoInstancia.Indeferido,
+        ResultadoInstancia.Anulado => SituacaoInstancia.Anulado,
         _ when DataProtocolo.HasValue => SituacaoInstancia.AguardandoJulgamento,
         _ => Fase switch
         {

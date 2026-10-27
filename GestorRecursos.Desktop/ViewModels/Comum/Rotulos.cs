@@ -36,6 +36,7 @@ public static class Rotulos
 
         "DESISTENCIA" => "desistência",
         "PRAZO_PERDIDO" => "prazo perdido",
+        "ANULADO" => "anulada",
         _ => (situacao ?? string.Empty).ToLowerInvariant().Replace('_', ' ')
     };
 
@@ -45,7 +46,7 @@ public static class Rotulos
     /// protocolo vencida não é urgência nenhuma, é trabalho concluído.
     /// </remarks>
     public static bool Encerrada(string? situacao) =>
-        situacao is "DEFERIDO" or "INDEFERIDO" or "CANCELADO" or "DESISTENCIA";
+        situacao is "DEFERIDO" or "INDEFERIDO" or "CANCELADO" or "DESISTENCIA" or "ANULADO";
 
     /// <summary>Como o dinheiro entrou, já com as parcelas quando elas importam.</summary>
     public static string Forma(Core.Models.FormaPagamento forma, int parcelas)

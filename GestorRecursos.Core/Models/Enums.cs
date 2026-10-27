@@ -86,13 +86,25 @@ public enum SituacaoInstancia
     [ValorBanco("INDEFERIDO")] Indeferido,
     [ValorBanco("CANCELADO")] Cancelado,
     [ValorBanco("DESISTENCIA")] Desistencia,
-    [ValorBanco("PRAZO_PERDIDO")] PrazoPerdido
+    [ValorBanco("PRAZO_PERDIDO")] PrazoPerdido,
+
+    /// <summary>A fase não chegou a ser julgada: foi anulada e o processo seguiu.</summary>
+    [ValorBanco("ANULADO")] Anulado
 }
 
 public enum ResultadoInstancia
 {
     [ValorBanco("DEFERIDO")] Deferido,
-    [ValorBanco("INDEFERIDO")] Indeferido
+    [ValorBanco("INDEFERIDO")] Indeferido,
+
+    /// <summary>A fase caiu sem julgamento e o processo pulou para a seguinte.</summary>
+    /// <remarks>
+    /// Acontece quando o órgão anula a fase — a autuação some e o caso vai direto à JARI.
+    /// Não é vitória nem derrota: por isso abre a próxima instância, como o indeferido, e
+    /// não encerra o serviço, como o deferido. Também não exige protocolo nem data: a fase
+    /// pode cair antes de qualquer peça ter sido apresentada.
+    /// </remarks>
+    [ValorBanco("ANULADO")] Anulado
 }
 
 public enum FormaPagamento

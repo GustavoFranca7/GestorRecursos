@@ -1145,6 +1145,13 @@
                                                                             IsVisible="{Binding PodeJulgar}"
                                                                             Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).RegistrarResultadoCommand}"
                                                                             CommandParameter="{Binding}"/>
+                                                                    <Button Classes="neutro" FontSize="11.5"
+                                                                            Padding="11,6"
+                                                                            Content="Anular fase"
+                                                                            ToolTip.Tip="A fase caiu sem ser julgada e o processo segue na seguinte"
+                                                                            IsVisible="{Binding PodeAnular}"
+                                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).RegistrarResultadoCommand}"
+                                                                            CommandParameter="{Binding}"/>
                                                                 </StackPanel>
                                                             </StackPanel>
                                                         </Border>

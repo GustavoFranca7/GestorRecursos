@@ -54,9 +54,14 @@ public class FaseViewModel
         }
 
         // Os botões só aparecem na fase que está realmente aberta.
+        //
+        // Anular vale também antes do protocolo: é justamente o caso de a fase cair sem
+        // que nada tenha sido apresentado — a autuação some e o processo vai direto à
+        // JARI. Julgar, não: sem peça protocolada não há o que o órgão decidisse.
         var viva = !Cancelada && !Julgada && !servicoCancelado;
         PodeProtocolar = viva && !Protocolada;
         PodeJulgar = viva && Protocolada;
+        PodeAnular = viva && !Protocolada;
     }
 
     /// <summary>O serviço dono desta fase, para os comandos saberem de onde vem o clique.</summary>
@@ -103,7 +108,11 @@ public class FaseViewModel
 
     public bool PodeProtocolar { get; }
     public bool PodeJulgar { get; }
-    public bool TemBotao => PodeProtocolar || PodeJulgar;
+
+    /// <summary>A fase caiu sem chegar a ser protocolada.</summary>
+    public bool PodeAnular { get; }
+
+    public bool TemBotao => PodeProtocolar || PodeJulgar || PodeAnular;
 
     private static string ExplicacaoDaEspera(FaseInstancia fase) => fase switch
     {
@@ -119,6 +128,10 @@ public class FaseViewModel
     {
         SituacaoInstancia.Deferido => ("SucessoClaro", "Sucesso"),
         SituacaoInstancia.Indeferido => ("AlertaClaro", "Alerta"),
+
+        // Anulada não é derrota: o processo continua. Cor de aviso, não de alarme.
+        SituacaoInstancia.Anulado => ("AvisoClaro", "Aviso"),
+
         SituacaoInstancia.PrazoPerdido => ("AlertaClaro", "AlertaEscuro"),
         SituacaoInstancia.Cancelado or SituacaoInstancia.Desistencia => ("Fundo", "TextoApagado"),
         SituacaoInstancia.Protocolado or SituacaoInstancia.AguardandoJulgamento => ("RoxoClaro", "Roxo"),

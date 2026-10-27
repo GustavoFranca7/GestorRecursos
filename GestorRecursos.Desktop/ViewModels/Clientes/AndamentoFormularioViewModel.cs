@@ -30,6 +30,7 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
     private readonly Action? _aoSalvar;
     private readonly int _instanciaId;
     private readonly FaseInstancia _fase;
+    private readonly bool _protocolada;
 
     public AndamentoFormularioViewModel(
         AcaoAndamento acao,
@@ -41,6 +42,11 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
         Acao = acao;
         _instanciaId = fase.Id;
         _fase = fase.Fase;
+        _protocolada = fase.Protocolada;
+
+        // Fase que nunca foi protocolada só pode ter caído: não houve peça para julgar.
+        // Oferecer "deferido" ali abriria a porta para um estado que não existe no papel.
+        if (!_protocolada) Resultado = "Anulado";
         _aoCancelar = aoCancelar;
         _aoSalvar = aoSalvar;
 
@@ -56,7 +62,11 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
 
     public AcaoAndamento Acao { get; }
 
-    public IReadOnlyList<string> Resultados { get; } = ["Deferido", "Indeferido"];
+    /// <summary>Sem protocolo, o único desfecho possível é a fase ter sido anulada.</summary>
+    public IReadOnlyList<string> Resultados =>
+        _protocolada ? ["Deferido", "Indeferido", "Anulado"] : ["Anulado"];
+
+    public bool Anulando => Resultado == "Anulado";
 
     /// <summary>"JARI · RECURSO DE MULTA GRAVÍSSIMA · AIT ...": de qual fase se fala.</summary>
     public string Referencia { get; }
@@ -76,26 +86,39 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
     public bool NoProtocolo => Acao == AcaoAndamento.Protocolo;
     public bool NoResultado => Acao == AcaoAndamento.Resultado;
 
-    public string Titulo => NoProtocolo ? "Registrar protocolo" : "Registrar resultado";
+    public string Titulo => NoProtocolo
+        ? "Registrar protocolo"
+        : _protocolada ? "Registrar resultado" : "Anular esta fase";
 
     public string Instrucao => NoProtocolo
         ? "Protocolado é o que tira esta fase do alarme de prazo."
-        : "O que o órgão decidiu, e quando a decisão foi publicada.";
+        : _protocolada
+            ? "O que o órgão decidiu, e quando a decisão foi publicada."
+            : "A fase caiu sem ser julgada. O processo segue na instância seguinte.";
 
-    public string RotuloData => NoProtocolo ? "Data do protocolo *" : "Data do resultado *";
-    public string TextoSalvar => NoProtocolo ? "Registrar protocolo" : "Registrar resultado";
+    public string RotuloData => NoProtocolo
+        ? "Data do protocolo *"
+        : Anulando ? "Data da anulação" : "Data do resultado *";
 
-    /// <summary>Indeferido abre a fase seguinte — e ela precisa de um prazo para vigiar.</summary>
+    public string TextoSalvar => NoProtocolo
+        ? "Registrar protocolo"
+        : Anulando ? "Anular e seguir" : "Registrar resultado";
+
+    /// <summary>Indeferido e anulado abrem a fase seguinte, que precisa de prazo para vigiar.</summary>
     public bool AbreProximaFase => NoResultado
-        && Resultado == "Indeferido"
+        && Resultado is "Indeferido" or "Anulado"
         && _fase != FaseInstancia.Cetran;
 
-    public string TextoProximaFase => _fase == FaseInstancia.Autuacao
-        ? "Indeferida a autuação, a JARI abre em seguida."
-        : "Indeferida a JARI, o CETRAN abre em seguida.";
+    public string TextoProximaFase => (_fase, Anulando) switch
+    {
+        (FaseInstancia.Autuacao, true) => "Anulada a autuação, a JARI abre em seguida.",
+        (FaseInstancia.Autuacao, false) => "Indeferida a autuação, a JARI abre em seguida.",
+        (_, true) => "Anulada a JARI, o CETRAN abre em seguida.",
+        _ => "Indeferida a JARI, o CETRAN abre em seguida."
+    };
 
     public bool FimDaLinha => NoResultado
-        && Resultado == "Indeferido"
+        && Resultado is "Indeferido" or "Anulado"
         && _fase == FaseInstancia.Cetran;
 
     public bool TemErro => Erro is not null;
@@ -116,18 +139,23 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
 
         try
         {
-            var data = Formato.LerData(Data)!.Value;
+            var data = Formato.LerData(Data);
 
             if (NoProtocolo)
             {
                 await _instancias.RegistrarProtocoloAsync(
-                    _instanciaId, data, Protocolo.Trim(), Limpar(Destinatario));
+                    _instanciaId, data!.Value, Protocolo.Trim(), Limpar(Destinatario));
             }
             else
             {
                 await _instancias.RegistrarResultadoAsync(
                     _instanciaId,
-                    Resultado == "Deferido" ? ResultadoInstancia.Deferido : ResultadoInstancia.Indeferido,
+                    Resultado switch
+                    {
+                        "Deferido" => ResultadoInstancia.Deferido,
+                        "Anulado" => ResultadoInstancia.Anulado,
+                        _ => ResultadoInstancia.Indeferido
+                    },
                     data,
                     AbreProximaFase ? Formato.LerData(PrazoProximaFase) : null);
             }
@@ -148,7 +176,11 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
     {
         ErroData = ErroProtocolo = Erro = null;
 
-        if (Formato.LerData(Data) is null)
+        // Anular não exige data: a fase pode cair antes de existir qualquer peça, e então
+        // não há decisão publicada de onde tirar uma. Digitada errada, ainda é erro.
+        var dataOpcional = NoResultado && Anulando;
+
+        if (Formato.LerData(Data) is null && !(dataOpcional && Data.Trim().Length == 0))
         {
             ErroData = "Data inválida. Use dd/mm/aaaa.";
         }
@@ -188,7 +220,11 @@ public partial class AndamentoFormularioViewModel : ViewModelBase
 
     partial void OnResultadoChanged(string? valor)
     {
+        OnPropertyChanged(nameof(Anulando));
         OnPropertyChanged(nameof(AbreProximaFase));
         OnPropertyChanged(nameof(FimDaLinha));
+        OnPropertyChanged(nameof(RotuloData));
+        OnPropertyChanged(nameof(TextoSalvar));
+        OnPropertyChanged(nameof(TextoProximaFase));
     }
 }

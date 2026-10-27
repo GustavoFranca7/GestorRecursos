@@ -491,7 +491,11 @@ public partial class FichaClienteViewModel : ViewModelBase
             aoSalvar: Recarregar);
     }
 
-    /// <summary>Registra o julgamento. Indeferido abre a fase seguinte sozinho.</summary>
+    /// <summary>Registra o julgamento, ou anula a fase. Os dois abrem a seguinte sozinhos.</summary>
+    /// <remarks>
+    /// Serve aos dois botões: o formulário se ajusta pela fase que recebe. Protocolada,
+    /// pergunta o que o órgão decidiu; não protocolada, só resta ter sido anulada.
+    /// </remarks>
     [RelayCommand]
     private void RegistrarResultado(FaseViewModel? fase)
     {

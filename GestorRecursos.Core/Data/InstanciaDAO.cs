@@ -132,13 +132,13 @@ public class InstanciaDAO
 
         try
         {
-            var indeferiuAnterior = false;
+            var anteriorAbriuEsta = false;
 
             foreach (var fase in fases.OrderBy(f => f.Fase))
             {
-                // A fase entra se já existe, se tem algo preenchido, ou se a anterior
-                // indeferiu — nesse caso ela precisa existir mesmo vazia.
-                var precisa = fase.Id > 0 || fase.TemConteudo || indeferiuAnterior;
+                // A fase entra se já existe, se tem algo preenchido, ou se a anterior a
+                // abriu — indeferida ou anulada — e aí ela precisa existir mesmo vazia.
+                var precisa = fase.Id > 0 || fase.TemConteudo || anteriorAbriuEsta;
                 if (!precisa)
                 {
                     continue;
@@ -167,7 +167,7 @@ public class InstanciaDAO
                     await InserirAsync(conexao, transacao, fase, cancelamento);
                 }
 
-                indeferiuAnterior = fase.Resultado == ResultadoInstancia.Indeferido;
+                anteriorAbriuEsta = fase.AbreProximaFase;
             }
 
             await transacao.CommitAsync(cancelamento);
@@ -228,16 +228,20 @@ public class InstanciaDAO
         }
     }
 
-    /// <summary>Registra o resultado e, quando indeferido, já abre a fase seguinte.</summary>
+    /// <summary>Registra o resultado e, quando o processo continua, já abre a fase seguinte.</summary>
     /// <remarks>
     /// O valor cobrado inclui as três instâncias, então subir de fase não é
     /// decisão comercial: é a continuação natural do serviço. Fazer isso na mesma
     /// transação evita o caso de o resultado ser gravado e a próxima fase não.
+    ///
+    /// Indeferido e anulado abrem a próxima; deferido encerra. A data é opcional porque a
+    /// fase anulada pode cair sem que nada tenha sido protocolado — não há julgamento, nem
+    /// publicação, nem data que se possa exigir.
     /// </remarks>
     public async Task<bool> RegistrarResultadoAsync(
         int instanciaId,
         ResultadoInstancia resultado,
-        DateTime dataResultado,
+        DateTime? dataResultado,
         DateTime? prazoProximaFase = null,
         CancellationToken cancelamento = default)
     {
@@ -277,18 +281,23 @@ public class InstanciaDAO
 
             await using (var cmd = conexao.Comando(sqlAtual, transacao))
             {
-                cmd.Param("dataResultado", dataResultado.Date)
+                cmd.Param("dataResultado", dataResultado?.Date)
                    .Param("resultado", resultado.Texto())
-                   .Param("situacao", resultado == ResultadoInstancia.Deferido
-                        ? SituacaoInstancia.Deferido.Texto()
-                        : SituacaoInstancia.Indeferido.Texto())
+                   .Param("situacao", resultado switch
+                    {
+                        ResultadoInstancia.Deferido => SituacaoInstancia.Deferido.Texto(),
+                        ResultadoInstancia.Anulado => SituacaoInstancia.Anulado.Texto(),
+                        _ => SituacaoInstancia.Indeferido.Texto()
+                    })
                    .Param("id", instanciaId);
 
                 await cmd.ExecuteNonQueryAsync(cancelamento);
             }
 
             var proxima = ProximaFase(faseAtual);
-            if (resultado == ResultadoInstancia.Indeferido && proxima is not null)
+            var continua = resultado is ResultadoInstancia.Indeferido or ResultadoInstancia.Anulado;
+
+            if (continua && proxima is not null)
             {
                 await InserirAsync(conexao, transacao, new Instancia
                 {

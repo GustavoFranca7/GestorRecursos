@@ -40,6 +40,7 @@ public partial class FaseEditavelViewModel : ObservableObject
         {
             ResultadoInstancia.Deferido => "Deferido",
             ResultadoInstancia.Indeferido => "Indeferido",
+            ResultadoInstancia.Anulado => "Anulado",
             _ => null
         };
     }
@@ -48,7 +49,7 @@ public partial class FaseEditavelViewModel : ObservableObject
     public int Id { get; }
     public string Nome { get; }
 
-    public IReadOnlyList<string> Resultados { get; } = ["Deferido", "Indeferido"];
+    public IReadOnlyList<string> Resultados { get; } = ["Deferido", "Indeferido", "Anulado"];
 
     [ObservableProperty] public partial string Prazo { get; set; }
     [ObservableProperty] public partial string Protocolo { get; set; }
@@ -70,6 +71,9 @@ public partial class FaseEditavelViewModel : ObservableObject
     public bool Indeferida => Resultado == "Indeferido";
     public bool Deferida => Resultado == "Deferido";
 
+    /// <summary>Anulada abre a fase seguinte, como a indeferida.</summary>
+    public bool Anulada => Resultado == "Anulado";
+
     /// <summary>O que vai para o banco, com a situação deduzida do preenchimento.</summary>
     public Instancia Montar() => new()
     {
@@ -84,6 +88,7 @@ public partial class FaseEditavelViewModel : ObservableObject
         {
             "Deferido" => ResultadoInstancia.Deferido,
             "Indeferido" => ResultadoInstancia.Indeferido,
+            "Anulado" => ResultadoInstancia.Anulado,
             _ => null
         }
     };
@@ -102,7 +107,9 @@ public partial class FaseEditavelViewModel : ObservableObject
             }
         }
 
-        if (Resultado is not null && Formato.LerData(Julgado) is null)
+        // Anulada não tem data a exigir: a fase pode cair antes de qualquer peça existir,
+        // e aí não houve decisão publicada de onde tirar uma.
+        if (Resultado is not null && !Anulada && Formato.LerData(Julgado) is null)
         {
             return $"{Nome}: informe a data do resultado.";
         }
@@ -124,6 +131,7 @@ public partial class FaseEditavelViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(Indeferida));
         OnPropertyChanged(nameof(Deferida));
+        OnPropertyChanged(nameof(Anulada));
         _aoMudar();
     }
 
@@ -310,8 +318,9 @@ public partial class ServicoFormularioViewModel : ViewModelBase
 
     /// <summary>Fecha as fases que uma decisão anterior tornou impossíveis.</summary>
     /// <remarks>
-    /// Deferido encerra o recurso: não há JARI depois de ganhar na autuação. E a fase
-    /// seguinte só abre quando a anterior indefere — é essa a regra do processo.
+    /// Deferido encerra o recurso: não há JARI depois de ganhar na autuação. A fase
+    /// seguinte abre quando a anterior indefere — ou quando ela é anulada, que é o caso de
+    /// a fase cair sem julgamento e o processo seguir assim mesmo.
     /// </remarks>
     private void RevisarProgressao()
     {
@@ -323,10 +332,10 @@ public partial class ServicoFormularioViewModel : ViewModelBase
             fase.Bloqueada = encerrouAntes || !abriu;
             fase.Motivo = encerrouAntes
                 ? "O recurso foi deferido antes desta fase."
-                : abriu ? string.Empty : "Abre quando a fase anterior indeferir.";
+                : abriu ? string.Empty : "Abre quando a fase anterior indeferir ou for anulada.";
 
             encerrouAntes = encerrouAntes || fase.Deferida;
-            abriu = fase.Indeferida;
+            abriu = fase.Indeferida || fase.Anulada;
         }
     }
 
