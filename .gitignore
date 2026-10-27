@@ -486,3 +486,7 @@ appsettings.json
 
 # Dados reais do escritorio (CPF e RG): nao versionar
 Database/03-DadosEscritorio.sql
+
+# Instalador: a carga tem a senha do banco e a wallet; a saida tem as duas dentro.
+Instalador/carga/
+Instalador/saida/

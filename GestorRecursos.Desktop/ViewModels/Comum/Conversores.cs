@@ -22,6 +22,15 @@ public static class Conversores
         new FuncValueConverter<bool, Geometry?>(retraido =>
             Recurso<Geometry>(retraido ? "IconeMenuHamburguer" : "IconeSetaEsquerda"));
 
+    /// <summary>O que esconde a senha. Caractere nulo mostra o que foi digitado.</summary>
+    public static readonly IValueConverter MascaraDaSenha =
+        new FuncValueConverter<bool, char>(visivel => visivel ? '\0' : '●');
+
+    /// <summary>O olho do campo de senha: riscado enquanto a senha está à mostra.</summary>
+    public static readonly IValueConverter DesenhoDoOlho =
+        new FuncValueConverter<bool, Geometry?>(visivel =>
+            Recurso<Geometry>(visivel ? "IconeOlhoFechado" : "IconeOlho"));
+
     /// <summary>Busca uma cor do tema pelo nome guardado no ViewModel.</summary>
     /// <remarks>
     /// É o que permite ao selo dizer "AlertaClaro" em vez de carregar um hexadecimal:

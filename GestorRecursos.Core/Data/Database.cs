@@ -7,18 +7,18 @@ namespace GestorRecursos.Core.Data;
 // Camada Core / Data: tudo que conversa diretamente com o Oracle.
 public static class Database
 {
-    // Configuração lida de fora do código, para a senha não ir para o Git.
-    // Cada fonte sobrescreve a anterior: arquivo -> cofre local -> ambiente.
-    private static readonly IConfiguration Configuracao = new ConfigurationBuilder()
-        .SetBasePath(AppContext.BaseDirectory)
-        .AddJsonFile("appsettings.json", optional: true)
-        .AddUserSecrets(typeof(Database).Assembly, optional: true)
-        .AddEnvironmentVariables()
-        .Build();
+    // A lista de fontes mora em Configuracoes: duas listas divergiriam na ordem,
+    // que é o que decide qual valor vence.
+    private static IConfiguration Configuracao => Configuracoes.Atual;
 
     // Montada uma vez: a configuração da wallet é estática no driver e não pode
     // ser aplicada a cada conexão.
-    private static readonly string StringConexao = PrepararConexao();
+    //
+    // Preguiçosa de propósito. Em campo inicializado direto, a falta de configuração
+    // estourava dentro do construtor estático, e o que chegava à tela era
+    // "The type initializer for 'Database' threw an exception" — a mensagem útil ficava
+    // escondida na InnerException. Assim o erro sobe com o texto que explica o problema.
+    private static readonly Lazy<string> StringConexao = new(PrepararConexao);
 
     /// <summary>Abre uma conexão já pronta para uso.</summary>
     /// <remarks>
@@ -28,7 +28,7 @@ public static class Database
     /// </remarks>
     public static async Task<OracleConnection> AbrirAsync(CancellationToken cancelamento = default)
     {
-        var conexao = new OracleConnection(StringConexao);
+        var conexao = new OracleConnection(StringConexao.Value);
         try
         {
             await conexao.OpenAsync(cancelamento);
@@ -55,11 +55,15 @@ public static class Database
     /// </remarks>
     private static string PrepararConexao()
     {
+        // A mensagem serve a duas pessoas: quem só abriu o programa e quem vai consertar.
+        // A primeira frase é para ela; o resto, para quem instalou.
         var bruta = Configuracao.GetConnectionString("Oracle")
             ?? throw new InvalidOperationException(
-                "A connection string 'Oracle' não foi configurada.\n" +
-                "Na pasta do projeto GestorRecursos.Core, execute:\n" +
-                "  dotnet user-secrets set \"ConnectionStrings:Oracle\" \"User Id=...;Password=...;Data Source=...\"");
+                "O programa não encontrou a configuração do banco de dados. "
+                + "Se o sistema acabou de ser instalado, avise quem fez a instalação.\n\n"
+                + "Para quem instala: defina a connection string 'Oracle' em "
+                + $"appsettings.json (na pasta {AppContext.BaseDirectory}), nos User Secrets "
+                + "ou na variável de ambiente ConnectionStrings__Oracle.");
 
         var limpa = new StringBuilder();
         string? tnsAdmin = Configuracao["Oracle:TnsAdmin"];
@@ -90,6 +94,12 @@ public static class Database
             }
         }
 
+        // Caminho relativo conta a partir da pasta do programa, e não de onde ele foi
+        // chamado. É o que permite o instalador gravar "wallet" e funcionar em qualquer
+        // pasta de instalação — um atalho do menu Iniciar não garante o diretório atual.
+        tnsAdmin = CaminhoDoPrograma(tnsAdmin);
+        walletLocation = CaminhoDoPrograma(walletLocation);
+
         // A wallet fica na mesma pasta do tnsnames.ora, salvo configuração explícita.
         walletLocation ??= tnsAdmin;
 
@@ -108,4 +118,9 @@ public static class Database
 
         return limpa.ToString();
     }
+
+    private static string? CaminhoDoPrograma(string? caminho) =>
+        string.IsNullOrWhiteSpace(caminho) || Path.IsPathRooted(caminho)
+            ? caminho
+            : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, caminho));
 }

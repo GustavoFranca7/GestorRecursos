@@ -1500,12 +1500,12 @@
                                                VerticalAlignment="Center" FontSize="11.5"
                                                TextWrapping="Wrap"
                                                Foreground="{StaticResource TextoApagado}"
-                                               Text="Preenchida com os dados do cliente e do escritório. O arquivo não fica guardado: gera de novo quando precisar."/>
+                                               Text="Preenchida com os dados do cliente e do escritório. O arquivo não é armazenado: pode ser gerado novamente a qualquer momento."/>
                                 </Grid>
 
                                 <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="18"
                                            Foreground="{StaticResource TextoApagado}"
-                                           Text="A defesa prévia e os recursos de JARI e CETRAN entram na v2: o texto de cada peça muda conforme a fase do processo."/>
+                                           Text="A geração da defesa prévia e dos recursos de JARI e CETRAN ainda não está disponível."/>
                             </StackPanel>
                         </Border>
 
@@ -1516,7 +1516,7 @@
                                            Foreground="{StaticResource TextoApagado}"/>
                                 <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
                                            Foreground="{StaticResource TextoFraco}"
-                                           Text="CNH, procuração assinada, CRLV, comprovantes e o comprovante de protocolo entram na v2 (RF-42 e RF-43). Dependem do armazenamento na nuvem, decidido em 30/09."/>
+                                           Text="O armazenamento de arquivos do cliente — CNH, procuração assinada, CRLV, comprovantes e comprovante de protocolo — ainda não está disponível."/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -1590,7 +1590,7 @@
 
                         <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="18"
                                    Foreground="{StaticResource TextoApagado}"
-                                   Text="Quem fez cada coisa, e a correção de um dado do cadastro, dependem da tabela de eventos e do login — ainda por fazer."/>
+                                   Text="A linha do tempo reúne o que foi registrado no sistema. A identificação do autor de cada registro ainda não está disponível."/>
                     </StackPanel>
                 </ScrollViewer>
 

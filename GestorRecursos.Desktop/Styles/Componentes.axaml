@@ -234,4 +234,36 @@
         <Setter Property="Background" Value="{StaticResource PrimariaEscura}"/>
         <Setter Property="BorderBrush" Value="{StaticResource PrimariaEscura}"/>
     </Style>
+
+    <!-- Botão de ação. Moradia aqui, e não na JanelaPrincipal: desde a tela de login
+         ele serve duas janelas, e duas cópias acabariam divergindo no canto ou no peso. -->
+    <Style Selector="Button.primario">
+        <Setter Property="Background" Value="{StaticResource Primaria}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Padding" Value="16,9"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.primario:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaEscura}"/>
+    </Style>
+
+    <Style Selector="Button.neutro">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+        <Setter Property="Padding" Value="16,9"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.neutro:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+    </Style>
+
 </Styles>

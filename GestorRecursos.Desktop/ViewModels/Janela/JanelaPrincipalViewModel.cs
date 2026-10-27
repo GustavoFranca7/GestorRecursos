@@ -57,10 +57,41 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
 
     private int _ultimaCopia;
 
-    public JanelaPrincipalViewModel()
+    private readonly System.Action? _aoSair;
+
+    public JanelaPrincipalViewModel(System.Action? aoSair = null)
     {
+        _aoSair = aoSair;
         AreaDeTransferencia.Copiou += AvisarCopia;
         Navegar(SecaoApp.Clientes);
+
+        // Entrou com a senha que o administrador criou: antes de usar o sistema, troca.
+        if (Sessao.Usuario is { PrimeiroAcesso: true } quem)
+        {
+            PrimeiroAcesso = new PrimeiroAcessoViewModel(quem, () => PrimeiroAcesso = null);
+        }
+    }
+
+    /// <summary>A troca obrigatória da senha, por cima de tudo. Nula quando já foi feita.</summary>
+    [ObservableProperty]
+    public partial PrimeiroAcessoViewModel? PrimeiroAcesso { get; set; }
+
+    /// <summary>Quem está no sistema, como aparece na barra de cima.</summary>
+    public string UsuarioInicial => Sessao.Inicial;
+    public string UsuarioNome => Sessao.Nome;
+    public string UsuarioLogin => Sessao.Usuario is { } quem ? $"@{quem.Login}" : string.Empty;
+
+    /// <summary>Volta para a tela de entrada.</summary>
+    /// <remarks>
+    /// A sessão não sobrevive à saída: entrar de novo pede a senha. Num sistema com dado
+    /// de cliente, "sair" que não esquece quem era não é sair.
+    /// </remarks>
+    [RelayCommand]
+    private void Sair()
+    {
+        AreaDeTransferencia.Copiou -= AvisarCopia;
+        Sessao.Sair();
+        _aoSair?.Invoke();
     }
 
     /// <summary>Mostra o que foi copiado por alguns segundos, venha de qual tela vier.</summary>
@@ -100,6 +131,7 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
         {
             SecaoApp.Clientes => new ClientesViewModel(),
             SecaoApp.Arquivados => new ArquivadosViewModel(),
+            SecaoApp.Configuracoes => new ConfiguracoesViewModel(),
             _ => null
         };
     }

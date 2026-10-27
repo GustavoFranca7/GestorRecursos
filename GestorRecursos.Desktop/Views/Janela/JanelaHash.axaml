@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="340"
+        x:Class="GestorRecursos.Desktop.Views.JanelaHash"
+        x:DataType="vm:GeradorDeHashViewModel"
+        Title="Gerar hash de senha"
+        Width="560" Height="360" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Fundo}">
+
+    <StackPanel Margin="28" Spacing="16">
+
+        <StackPanel Spacing="5">
+            <TextBlock Text="Gerar hash de senha" FontSize="19" FontWeight="Bold"
+                       Foreground="{StaticResource Texto}"/>
+            <TextBlock FontSize="12.5" TextWrapping="Wrap" LineHeight="18"
+                       Foreground="{StaticResource TextoFraco}"
+                       Text="Para criar um acesso pelo banco. Gere o hash da senha inicial e cole no INSERT da tabela USUARIOS, em SENHA_HASH."/>
+        </StackPanel>
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Senha inicial" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource Texto}"/>
+            <TextBox Text="{Binding Senha}" FontSize="13.5" Padding="12,10"
+                     CornerRadius="{StaticResource RaioBotao}"
+                     Watermark="A senha que a pessoa vai receber"/>
+        </StackPanel>
+
+        <Button Classes="primario" Content="Gerar"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Command="{Binding GerarCommand}" IsDefault="True"/>
+
+        <StackPanel Spacing="6" IsVisible="{Binding TemHash}">
+            <TextBlock Text="SENHA_HASH" FontSize="10.5" LetterSpacing="0.5"
+                       Foreground="{StaticResource TextoApagado}"/>
+            <TextBox Text="{Binding Hash}" IsReadOnly="True" FontSize="11.5"
+                     FontFamily="Consolas" TextWrapping="Wrap"
+                     Padding="12,10" CornerRadius="{StaticResource RaioBotao}"/>
+            <Button Classes="neutro" Content="Copiar" HorizontalAlignment="Right"
+                    Command="{Binding CopiarCommand}" CommandParameter="{Binding Hash}"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

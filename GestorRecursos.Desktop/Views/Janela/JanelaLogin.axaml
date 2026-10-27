@@ -1,0 +1,207 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        x:Class="GestorRecursos.Desktop.Views.JanelaLogin"
+        x:DataType="vm:LoginViewModel"
+        Title="Gestor de Recursos"
+        Width="900" Height="600"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Fundo}">
+
+    <Window.Styles>
+        <!-- O campo da tela de login: maior que o do cadastro, porque aqui há dois
+             campos na tela inteira e eles são o assunto. -->
+        <Style Selector="TextBox.login">
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FAFCFC"/>
+        </Style>
+        <Style Selector="TextBox.login:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+
+        <!-- "Esqueci a senha" e "Voltar": texto clicável, sem cara de botão -->
+        <Style Selector="Button.elo">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Primaria}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.elo:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+
+        <!-- O olho, dentro do campo de senha -->
+        <Style Selector="Button.olho">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.olho:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Margin="28" CornerRadius="{StaticResource RaioCartao}" ClipToBounds="True"
+            Background="{StaticResource Cartao}"
+            BorderBrush="{StaticResource Borda}" BorderThickness="1"
+            BoxShadow="0 14 40 0 #26102A2C">
+
+        <Grid ColumnDefinitions="400,*">
+
+            <!-- O FORMULÁRIO -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="40,0" VerticalAlignment="Center" Spacing="18">
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="{Binding Titulo}" FontSize="22" FontWeight="Bold"
+                                   Foreground="{StaticResource Texto}"/>
+                        <TextBlock Text="{Binding Subtitulo}" FontSize="12.5"
+                                   TextWrapping="Wrap" LineHeight="18"
+                                   Foreground="{StaticResource TextoFraco}"/>
+                    </StackPanel>
+
+                    <!-- Entrar -->
+                    <StackPanel Spacing="14" IsVisible="{Binding NoEntrar}">
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Usuário"/>
+                            <TextBox Classes="login" Text="{Binding Login}"
+                                     Watermark="Seu nome de usuário"/>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Senha"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0" Grid.ColumnSpan="2" Classes="login"
+                                         Text="{Binding Senha}" Padding="12,10,44,10"
+                                         PasswordChar="{Binding SenhaVisivel, Converter={x:Static vm:Conversores.MascaraDaSenha}}"
+                                         Watermark="Sua senha"/>
+                                <Button Grid.Column="1" Classes="olho"
+                                        VerticalAlignment="Center" Margin="0,0,4,0"
+                                        ToolTip.Tip="Mostrar ou esconder a senha"
+                                        Command="{Binding AlternarSenhaCommand}">
+                                    <Path Width="17" Height="17" Stretch="Uniform"
+                                          Fill="{StaticResource TextoFraco}"
+                                          Data="{Binding SenhaVisivel, Converter={x:Static vm:Conversores.DesenhoDoOlho}}"/>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+
+                        <Button Classes="elo" Content="Esqueci a senha"
+                                HorizontalAlignment="Right"
+                                Command="{Binding EsqueciSenhaCommand}"/>
+
+                        <Button Classes="primario" Content="Entrar"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsEnabled="{Binding !Ocupado}"
+                                Command="{Binding EntrarCommand}" IsDefault="True"/>
+                    </StackPanel>
+
+                    <!-- Pedir o código -->
+                    <StackPanel Spacing="14" IsVisible="{Binding NoPedirCodigo}">
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Usuário"/>
+                            <TextBox Classes="login" Text="{Binding Login}"
+                                     Watermark="Seu nome de usuário"/>
+                        </StackPanel>
+
+                        <Button Classes="primario" Content="Enviar código"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsEnabled="{Binding !Ocupado}"
+                                Command="{Binding EnviarCodigoCommand}" IsDefault="True"/>
+                    </StackPanel>
+
+                    <!-- Trocar a senha -->
+                    <StackPanel Spacing="14" IsVisible="{Binding NoTrocarSenha}">
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Código recebido"/>
+                            <TextBox Classes="login" Text="{Binding Codigo}" MaxLength="6"
+                                     FontSize="18" LetterSpacing="4"
+                                     Watermark="000000"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Senha nova"/>
+                            <TextBox Classes="login" Text="{Binding SenhaNova}" PasswordChar="●"
+                                     Watermark="Pelo menos 6 caracteres"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Repita a senha nova"/>
+                            <TextBox Classes="login" Text="{Binding SenhaConfirma}" PasswordChar="●"/>
+                        </StackPanel>
+
+                        <Button Classes="primario" Content="Trocar senha"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsEnabled="{Binding !Ocupado}"
+                                Command="{Binding ConfirmarTrocaCommand}" IsDefault="True"/>
+                    </StackPanel>
+
+                    <Button Classes="elo" Content="← Voltar para a entrada"
+                            HorizontalAlignment="Center"
+                            IsVisible="{Binding PodeVoltar}"
+                            Command="{Binding VoltarCommand}"/>
+
+                    <!-- Recado bom: código enviado, senha trocada -->
+                    <Border IsVisible="{Binding Aviso, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                            Background="{StaticResource PrimariaClara}"
+                            BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                            CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                        <TextBlock Text="{Binding Aviso}" FontSize="12" TextWrapping="Wrap"
+                                   LineHeight="18"
+                                   Foreground="{StaticResource PrimariaEscura}"/>
+                    </Border>
+
+                    <Border IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                            Background="{StaticResource AlertaClaro}"
+                            BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                            CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                        <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap"
+                                   LineHeight="18"
+                                   Foreground="{StaticResource Alerta}"/>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- O PAINEL -->
+            <!-- A referência usa uma arte colorida. Aqui ela vira a própria paleta do
+                 sistema: a tela de entrada é o primeiro contato com a marca. -->
+            <Border Grid.Column="1" Margin="0,14,14,14"
+                    CornerRadius="{StaticResource RaioCartao}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#0F4A4C" Offset="0"/>
+                        <GradientStop Color="#008782" Offset="0.45"/>
+                        <GradientStop Color="#00AAA5" Offset="0.78"/>
+                        <GradientStop Color="#78FAE6" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <StackPanel VerticalAlignment="Bottom" Margin="34,0,34,34" Spacing="7">
+                    <TextBlock Text="Gestor de Recursos" FontSize="25" FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock Text="DESPACHANTE" FontSize="11" LetterSpacing="2.5"
+                               Foreground="#AEF4E8"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

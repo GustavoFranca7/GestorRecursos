@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="GestorRecursos.Desktop.Views.PrimeiroAcessoView"
+             x:DataType="vm:PrimeiroAcessoViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entradalogin">
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FAFCFC"/>
+        </Style>
+        <Style Selector="TextBox.entradalogin:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+        <Style Selector="Button.olho">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.olho:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Fundo mais fechado que o das outras sobreposições: aqui não há como desistir,
+         e o sistema atrás é contexto, não uma opção de clique. -->
+    <Border Background="#99102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                Padding="30,26" Width="430"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 16 44 0 #38102A2C">
+
+            <StackPanel Spacing="17">
+
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding Titulo}" FontSize="20" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock FontSize="12.5" TextWrapping="Wrap" LineHeight="18"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="Este acesso ainda usa a senha definida por quem o criou. Defina uma senha pessoal e um endereço de e-mail para recuperação."/>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Classes="rotulo" Text="Sua nova senha"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Grid.Column="0" Grid.ColumnSpan="2" Classes="entradalogin"
+                                 Text="{Binding Senha}" Padding="12,10,44,10"
+                                 PasswordChar="{Binding SenhaVisivel, Converter={x:Static vm:Conversores.MascaraDaSenha}}"
+                                 Watermark="Pelo menos 6 caracteres"/>
+                        <Button Grid.Column="1" Classes="olho"
+                                VerticalAlignment="Center" Margin="0,0,4,0"
+                                ToolTip.Tip="Mostrar ou esconder a senha"
+                                Command="{Binding AlternarSenhaCommand}">
+                            <Path Width="17" Height="17" Stretch="Uniform"
+                                  Fill="{StaticResource TextoFraco}"
+                                  Data="{Binding SenhaVisivel, Converter={x:Static vm:Conversores.DesenhoDoOlho}}"/>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Classes="rotulo" Text="Repita a senha"/>
+                    <TextBox Classes="entradalogin" Text="{Binding SenhaConfirma}"
+                             PasswordChar="{Binding SenhaVisivel, Converter={x:Static vm:Conversores.MascaraDaSenha}}"/>
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Classes="rotulo" Text="E-mail de recuperação"/>
+                    <TextBox Classes="entradalogin" Text="{Binding Email}"
+                             Watermark="seu@email.com"/>
+                    <TextBlock FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                               LineHeight="16"
+                               Foreground="{StaticResource TextoApagado}"
+                               Text="O código de recuperação de senha será enviado para este endereço."/>
+                </StackPanel>
+
+                <Border IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                        Background="{StaticResource AlertaClaro}"
+                        BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                    <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap"
+                               LineHeight="18"
+                               Foreground="{StaticResource Alerta}"/>
+                </Border>
+
+                <!-- Um botão só: não há "agora não" -->
+                <Button Classes="primario" Content="Salvar e começar"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        IsEnabled="{Binding !Ocupado}"
+                        Command="{Binding ConcluirCommand}" IsDefault="True"/>
+            </StackPanel>
+        </Border>
+    </Border>
+</UserControl>

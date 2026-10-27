@@ -178,36 +178,6 @@
             <Setter Property="Background" Value="{StaticResource MenuAlavancaClique}"/>
         </Style>
 
-        <!-- Botões da barra de cima -->
-        <Style Selector="Button.primario">
-            <Setter Property="Background" Value="{StaticResource Primaria}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
-            <Setter Property="Padding" Value="16,9"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.primario:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource PrimariaEscura}"/>
-        </Style>
-
-        <Style Selector="Button.neutro">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
-            <Setter Property="Padding" Value="16,9"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.neutro:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
-        </Style>
-
     </Window.Styles>
 
     <Grid ColumnDefinitions="Auto,*">
@@ -289,15 +259,21 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                         <Border Width="29" Height="29" CornerRadius="15" Background="{StaticResource Primaria}">
-                            <TextBlock Text="R" Foreground="White" FontWeight="Bold" FontSize="12"
+                            <TextBlock Text="{Binding UsuarioInicial}" Foreground="White"
+                                       FontWeight="Bold" FontSize="12"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Despachante" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock Text="{Binding UsuarioNome}" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Texto}"/>
-                            <TextBlock Text="Despachante" FontSize="10.5"
+                            <TextBlock Text="{Binding UsuarioLogin}" FontSize="10.5"
                                        Foreground="{StaticResource TextoFraco}"/>
                         </StackPanel>
+
+                        <Button Classes="neutro" Content="Sair" FontSize="12" Padding="12,6"
+                                VerticalAlignment="Center" Margin="6,0,0,0"
+                                ToolTip.Tip="Volta para a tela de entrada"
+                                Command="{Binding SairCommand}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -330,5 +306,11 @@
                 </Border>
             </Panel>
         </Grid>
+
+        <!-- A troca obrigatória da senha inicial, por cima das duas colunas. Cobre o
+             menu de propósito: enquanto não trocar, não há para onde navegar. -->
+        <ContentControl Grid.Column="0" Grid.ColumnSpan="2"
+                        Content="{Binding PrimeiroAcesso}"
+                        IsVisible="{Binding PrimeiroAcesso, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
     </Grid>
 </Window>
