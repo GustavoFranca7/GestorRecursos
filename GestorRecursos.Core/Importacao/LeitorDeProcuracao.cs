@@ -316,7 +316,7 @@ public static class LeitorDeProcuracao
     {
         if (string.IsNullOrWhiteSpace(cliente.Rg)) yield return "Sem RG no documento.";
         if (string.IsNullOrWhiteSpace(cliente.Email)) yield return "Sem e-mail no documento.";
-        if (string.IsNullOrWhiteSpace(cliente.CnhNumero)) yield return "Sem número de CNH no documento.";
+        if (string.IsNullOrWhiteSpace(cliente.CnhNumero)) yield return "Sem nº de registro da CNH no documento.";
         if (string.IsNullOrWhiteSpace(cliente.Profissao)) yield return "Sem profissão no documento.";
     }
 

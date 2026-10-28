@@ -294,7 +294,7 @@
                             <TextBlock Classes="secao" Text="CNH"/>
                             <Grid ColumnDefinitions="*,16,*">
                                 <StackPanel Grid.Column="0" Margin="0,0,0,18">
-                                    <TextBlock Classes="rotulo" Text="Número"/>
+                                    <TextBlock Classes="rotulo" Text="Nº Registro"/>
                                     <TextBox Classes="entrada" Text="{Binding CnhNumero}" servicos:Mascara.Padrao="numero:11" Watermark="00000000000"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Margin="0,0,0,18">
@@ -304,6 +304,11 @@
                                               PlaceholderText="Selecione"/>
                                 </StackPanel>
                             </Grid>
+                            <!-- O "Registro" saiu da tela em 28/10: era um segundo campo de 11
+                                 dígitos, idêntico ao de cima, e na prática do escritório
+                                 recebia o mesmo número. A coluna continua no banco e o valor
+                                 já digitado continua lá — o ViewModel segue carregando e
+                                 regravando, para editar um cliente não apagar o que existe. -->
                             <Grid ColumnDefinitions="*,16,*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="rotulo" Text="Validade"/>
@@ -312,10 +317,6 @@
                                              Watermark="dd/mm/aaaa"/>
                                     <TextBlock Classes="erroCampo" Text="{Binding ErroValidade}"
                                                IsVisible="{Binding ErroValidade, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Classes="rotulo" Text="Registro"/>
-                                    <TextBox Classes="entrada" Text="{Binding CnhRegistro}" servicos:Mascara.Padrao="numero:11" Watermark="00000000000"/>
                                 </StackPanel>
                             </Grid>
                             <Border Background="{StaticResource PrimariaClara}"

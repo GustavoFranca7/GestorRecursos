@@ -124,6 +124,15 @@ public partial class NovoClienteViewModel : ViewModelBase
     [ObservableProperty] public partial string CnhNumero { get; set; } = string.Empty;
     [ObservableProperty] public partial string? CnhCategoria { get; set; }
     [ObservableProperty] public partial string CnhValidade { get; set; } = string.Empty;
+
+    /// <summary>Fora da tela desde 28/10, mas ainda carregado e regravado.</summary>
+    /// <remarks>
+    /// O campo saiu do formulário porque era um segundo número de 11 dígitos, idêntico ao
+    /// de cima, que na prática recebia o mesmo valor. A coluna continua no banco, e esta
+    /// propriedade continua fazendo a ida e volta para que editar um cliente antigo não
+    /// apague o que já estava gravado. Não é código morto: apagá-la zeraria o dado na
+    /// primeira edição de cada cliente.
+    /// </remarks>
     [ObservableProperty] public partial string CnhRegistro { get; set; } = string.Empty;
 
     // ---------- observações ----------

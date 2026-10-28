@@ -68,7 +68,7 @@ public static class Procuracao
         Exigir(cliente.Profissao, "profissão", ParteDoCadastro.DadosPessoais);
         Exigir(cliente.Rg, "RG", ParteDoCadastro.DadosPessoais);
         Exigir(cliente.Email, "e-mail", ParteDoCadastro.ContatoEndereco);
-        Exigir(cliente.CnhNumero, "número da CNH", ParteDoCadastro.Cnh);
+        Exigir(cliente.CnhNumero, "nº de registro da CNH", ParteDoCadastro.Cnh);
 
         // RF-05: sem endereço não há procuração nem protocolo.
         if (cliente.Endereco is null || Vazio(cliente.Endereco.Logradouro))

@@ -165,7 +165,7 @@ public partial class LinhaImportacaoViewModel : ObservableObject
 
             if (string.IsNullOrWhiteSpace(Rg)) faltas.Add("Sem RG — a procuração usa.");
             if (string.IsNullOrWhiteSpace(Email)) faltas.Add("Sem e-mail — a procuração usa.");
-            if (string.IsNullOrWhiteSpace(CnhNumero)) faltas.Add("Sem CNH — a procuração usa.");
+            if (string.IsNullOrWhiteSpace(CnhNumero)) faltas.Add("Sem nº de registro da CNH — a procuração usa.");
             if (string.IsNullOrWhiteSpace(Profissao)) faltas.Add("Sem profissão — a procuração usa.");
 
             return faltas;

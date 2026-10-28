@@ -180,7 +180,7 @@
                                                         <TextBox Classes="campo" Text="{Binding RgOrgao}"/>
                                                     </StackPanel>
                                                     <StackPanel Classes="campo" Width="150">
-                                                        <TextBlock Classes="rot" Text="CNH"/>
+                                                        <TextBlock Classes="rot" Text="Nº REGISTRO CNH"/>
                                                         <TextBox Classes="campo" Text="{Binding CnhNumero}"/>
                                                     </StackPanel>
                                                     <StackPanel Classes="campo" Width="150">

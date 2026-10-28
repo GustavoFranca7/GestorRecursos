@@ -931,11 +931,12 @@ public partial class FichaClienteViewModel : ViewModelBase
         ContatoEndereco.Add(new CampoFicha("Cidade", MontarCidade(cliente.Endereco)));
         ContatoEndereco.Add(new CampoFicha("CEP", Formato.Cep(cliente.Endereco?.Cep)));
 
+        // O "Registro" saiu da ficha junto com o campo do formulário: era o mesmo número
+        // do de cima. A coluna continua no banco, só não se mostra mais.
         DadosCnh.Clear();
-        DadosCnh.Add(new CampoFicha("Número", cliente.CnhNumero));
+        DadosCnh.Add(new CampoFicha("Nº Registro", cliente.CnhNumero));
         DadosCnh.Add(new CampoFicha("Categoria", cliente.CnhCategoria));
         DadosCnh.Add(new CampoFicha("Validade", Formato.Data(cliente.CnhValidade)));
-        DadosCnh.Add(new CampoFicha("Registro", cliente.CnhRegistro));
 
         Veiculos.Clear();
         foreach (var veiculo in ficha.Veiculos)
