@@ -39,10 +39,10 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
     public partial bool MenuRetraido { get; set; }
 
     [ObservableProperty]
-    public partial SecaoApp SecaoAtual { get; set; } = SecaoApp.Clientes;
+    public partial SecaoApp SecaoAtual { get; set; } = SecaoApp.Dashboard;
 
     [ObservableProperty]
-    public partial string TituloSecao { get; set; } = "Clientes";
+    public partial string TituloSecao { get; set; } = "Dashboard";
 
     /// <summary>ViewModel da tela que está aberta. Nulo enquanto a seção não existe.</summary>
     [ObservableProperty]
@@ -63,7 +63,9 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
     {
         _aoSair = aoSair;
         AreaDeTransferencia.Copiou += AvisarCopia;
-        Navegar(SecaoApp.Clientes);
+
+        // Abre na visão do dia: é a pergunta da segunda de manhã — o que vence e quem deve.
+        Navegar(SecaoApp.Dashboard);
 
         // Entrou com a senha que o administrador criou: antes de usar o sistema, troca.
         if (Sessao.Usuario is { PrimeiroAcesso: true } quem)
@@ -137,10 +139,26 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
         // Lista nova a cada visita: voltar para Clientes traz o que está no banco agora.
         Conteudo = secao switch
         {
+            SecaoApp.Dashboard => new DashboardViewModel(aoAbrirCliente: AbrirClienteDoPainel),
             SecaoApp.Clientes => new ClientesViewModel(),
             SecaoApp.Arquivados => new ArquivadosViewModel(),
             SecaoApp.Configuracoes => new ConfiguracoesViewModel(),
             _ => null
         };
+    }
+
+    /// <summary>Leva uma linha do painel à ficha do cliente, trocando de seção no caminho.</summary>
+    /// <remarks>
+    /// O painel não sabe abrir ficha — quem sabe é a seção Clientes. Por isso ele avisa a
+    /// janela, que navega e só então pede a ficha.
+    /// </remarks>
+    private void AbrirClienteDoPainel(int clienteId)
+    {
+        Navegar(SecaoApp.Clientes);
+
+        if (Conteudo is ClientesViewModel clientes)
+        {
+            clientes.AbrirFichaDe(clienteId);
+        }
     }
 }

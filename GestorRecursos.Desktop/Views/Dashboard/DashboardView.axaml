@@ -1,0 +1,362 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <!-- ATENÇÃO: as larguras das colunas de prazo aparecem duas vezes, no cabeçalho e na
+         linha, e precisam ser iguais — "104,2*,2.1*,1.5*,1.3*,40". Cada Grid precisa da
+         sua própria lista de colunas; não dá para declarar num recurso. -->
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.cabecalho">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.6"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="TextBlock.tituloLista">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Número grande dos cartões de contagem -->
+        <Style Selector="TextBlock.contagem">
+            <Setter Property="FontSize" Value="27"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LineHeight" Value="31"/>
+        </Style>
+
+        <Style Selector="TextBlock.rotuloCartao">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+
+        <Style Selector="Border.cartao">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="16,13"/>
+        </Style>
+
+        <Style Selector="Border.linha">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+
+        <Style Selector="TextBlock.vazio">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,34,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*" Margin="24,20,24,16">
+
+        <!-- ============ O DIA E OS NÚMEROS ============ -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+            <StackPanel Grid.Column="0" Spacing="1">
+                <TextBlock Text="O dia" FontSize="19" FontWeight="SemiBold"
+                           Foreground="{StaticResource Texto}"/>
+                <TextBlock Text="{Binding DataDeHoje}" FontSize="12.5"
+                           Foreground="{StaticResource TextoFraco}"/>
+            </StackPanel>
+
+            <Button Grid.Column="1" Classes="neutro" Content="Atualizar"
+                    VerticalAlignment="Center"
+                    IsEnabled="{Binding !Carregando}"
+                    ToolTip.Tip="Buscar os prazos e as cobranças de novo"
+                    Command="{Binding CarregarCommand}"/>
+        </Grid>
+
+        <!-- Quatro contagens: o que já passou, o que é hoje, o que vem e o que falta
+             receber. São os números da RF-46 a RF-48 que a visão do dia precisa. -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Margin="0,0,0,16">
+            <Border Grid.Column="0" Classes="cartao" Margin="0,0,5,0">
+                <StackPanel Spacing="2">
+                    <TextBlock Classes="contagem" Text="{Binding Vencidos}"
+                               Foreground="{StaticResource Alerta}"/>
+                    <TextBlock Classes="rotuloCartao" Text="prazos vencidos"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Classes="cartao" Margin="5,0">
+                <StackPanel Spacing="2">
+                    <TextBlock Classes="contagem" Text="{Binding Hoje}"
+                               Foreground="{StaticResource Aviso}"/>
+                    <TextBlock Classes="rotuloCartao" Text="vencem hoje"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Classes="cartao" Margin="5,0">
+                <StackPanel Spacing="2">
+                    <TextBlock Classes="contagem" Text="{Binding NaSemana}"
+                               Foreground="{StaticResource Primaria}"/>
+                    <TextBlock Classes="rotuloCartao" Text="nos próximos 7 dias"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3" Classes="cartao" Margin="5,0,0,0">
+                <StackPanel Spacing="2">
+                    <TextBlock Classes="contagem" Text="{Binding TotalEmAberto}"
+                               FontSize="21" LineHeight="31"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock Classes="rotuloCartao" Text="a receber"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============ AS DUAS LISTAS ============ -->
+        <!-- Lado a lado porque são as duas perguntas da manhã, e descer a tela para ver a
+             segunda faria dela a lista de sempre esquecer. -->
+        <Grid Grid.Row="2" ColumnDefinitions="1.75*,1*">
+
+            <!-- PRAZOS -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*" Margin="0,0,9,0">
+
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
+                    <TextBlock Grid.Column="0" Classes="tituloLista" Text="Prazos a protocolar"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
+                                Margin="14,0,0,0" VerticalAlignment="Center">
+                        <Button Classes="aba" Content="Até 7 dias"
+                                Classes.escolhida="{Binding FiltroSemana}"
+                                Command="{Binding TrocarFiltroCommand}"
+                                CommandParameter="{x:Static vm:FiltroPrazos.Semana}"/>
+                        <Button Classes="aba" Content="Vencidos"
+                                Classes.escolhida="{Binding FiltroVencidos}"
+                                Command="{Binding TrocarFiltroCommand}"
+                                CommandParameter="{x:Static vm:FiltroPrazos.Vencidos}"/>
+                        <Button Classes="aba" Content="Todos"
+                                Classes.escolhida="{Binding FiltroTodos}"
+                                Command="{Binding TrocarFiltroCommand}"
+                                CommandParameter="{x:Static vm:FiltroPrazos.Todos}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" ColumnDefinitions="104,2*,2.1*,1.5*,1.3*,40"
+                      Margin="14,0,14,8" Height="20">
+                    <TextBlock Grid.Column="0" Classes="cabecalho" Text="PRAZO"/>
+                    <TextBlock Grid.Column="1" Classes="cabecalho" Text="CLIENTE"/>
+                    <TextBlock Grid.Column="2" Classes="cabecalho" Text="RECURSO"/>
+                    <TextBlock Grid.Column="3" Classes="cabecalho" Text="ÓRGÃO"/>
+                    <TextBlock Grid.Column="4" Classes="cabecalho" Text="SITUAÇÃO"/>
+                </Grid>
+
+                <Panel Grid.Row="2">
+                    <!-- A barra de rolagem fica afastada da lista pela margem do ItemsControl:
+                         encostada nos cartões, parecia parte deles. -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Prazos}" Margin="0,0,12,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LinhaPrazoViewModel">
+                                    <Border Classes="linha">
+                                        <Grid ColumnDefinitions="4,*">
+                                            <!-- Faixa de urgência: prazo estourando aparece de longe -->
+                                            <Border Grid.Column="0" Background="{StaticResource Alerta}"
+                                                    IsVisible="{Binding Urgente}"/>
+
+                                            <Grid Grid.Column="1" ColumnDefinitions="104,2*,2.1*,1.5*,1.3*,40"
+                                                  Margin="10,11,10,11">
+
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="3">
+                                                    <TextBlock Text="{Binding DataTexto}" FontSize="13"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <Border DataContext="{Binding SeloFase}"
+                                                            CornerRadius="{StaticResource RaioSelo}"
+                                                            Padding="7,2" HorizontalAlignment="Left"
+                                                            Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                        <TextBlock Text="{Binding Texto}" FontSize="10.5"
+                                                                   Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <Button Classes="copiavel" Content="{Binding Nome}"
+                                                            FontSize="13.5" FontWeight="SemiBold"
+                                                            Foreground="{StaticResource Texto}"
+                                                            ToolTip.Tip="Clique para copiar o nome"
+                                                            Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Nome}"/>
+                                                    <Button Classes="copiavel secundario"
+                                                            Content="{Binding WhatsappFormatado}"
+                                                            ToolTip.Tip="Clique para copiar o WhatsApp"
+                                                            Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding WhatsappFormatado}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                                                    <TextBlock Text="{Binding Servico}" FontSize="12.5"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <!-- Placa e AIT: sem eles a linha não diz de qual recurso se trata -->
+                                                    <ItemsControl ItemsSource="{Binding Referencias}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="x:String">
+                                                                <Button Classes="copiavel seloplaca"
+                                                                        Content="{Binding}" Margin="0,1,5,1"
+                                                                        ToolTip.Tip="Clique para copiar"
+                                                                        Command="{Binding $parent[UserControl].((vm:DashboardViewModel)DataContext).CopiarCommand}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+
+                                                <TextBlock Grid.Column="3" Text="{Binding Orgao}"
+                                                           FontSize="12" VerticalAlignment="Center"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{StaticResource TextoFraco}"/>
+
+                                                <Border Grid.Column="4" DataContext="{Binding SeloPrazo}"
+                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                        Padding="9,3" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                </Border>
+
+                                                <Button Grid.Column="5" Classes="acao"
+                                                        VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                        ToolTip.Tip="Abrir a ficha do cliente"
+                                                        Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).AbrirClienteCommand}"
+                                                        CommandParameter="{Binding ClienteId}">
+                                                    <Viewbox Width="14" Height="14">
+                                                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                              Data="{StaticResource IconePasta}"/>
+                                                    </Viewbox>
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Classes="vazio" Text="{Binding MensagemSemPrazos}"
+                               VerticalAlignment="Top" IsVisible="{Binding SemPrazos}"/>
+                </Panel>
+            </Grid>
+
+            <!-- COBRANÇAS -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" Margin="9,0,0,0">
+
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10" Height="32">
+                    <TextBlock Grid.Column="0" Classes="tituloLista" Text="A cobrar"/>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="{Binding QuantasCobrancas, StringFormat='{}{0} em aberto'}"/>
+                </Grid>
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,40" Margin="14,0,14,8" Height="20">
+                    <TextBlock Grid.Column="0" Classes="cabecalho" Text="CLIENTE"/>
+                    <TextBlock Grid.Column="1" Classes="cabecalho" Text="EM ABERTO"/>
+                </Grid>
+
+                <Panel Grid.Row="2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Cobrancas}" Margin="0,0,12,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LinhaCobrancaViewModel">
+                                    <Border Classes="linha">
+                                        <Grid ColumnDefinitions="4,*">
+                                            <!-- Mais de um mês sem pagar: a mesma faixa do prazo estourado -->
+                                            <Border Grid.Column="0" Background="{StaticResource Alerta}"
+                                                    IsVisible="{Binding Atrasado}"/>
+
+                                            <Grid Grid.Column="1" ColumnDefinitions="*,Auto,40"
+                                                  Margin="10,11,10,11">
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <Button Classes="copiavel" Content="{Binding Nome}"
+                                                            FontSize="13.5" FontWeight="SemiBold"
+                                                            Foreground="{StaticResource Texto}"
+                                                            ToolTip.Tip="Clique para copiar o nome"
+                                                            Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Nome}"/>
+                                                    <Button Classes="copiavel secundario"
+                                                            Content="{Binding WhatsappFormatado}"
+                                                            ToolTip.Tip="Clique para copiar o WhatsApp"
+                                                            Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding WhatsappFormatado}"/>
+                                                    <!-- O que já entrou, para não cobrar o valor cheio de quem pagou parte -->
+                                                    <TextBlock Text="{Binding Pagamento}" FontSize="11"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right" Spacing="2">
+                                                    <TextBlock Text="{Binding EmAbertoTexto}" FontSize="13.5"
+                                                               FontWeight="SemiBold"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{StaticResource Alerta}"/>
+                                                    <TextBlock Text="{Binding DiasTexto}" FontSize="11"
+                                                               HorizontalAlignment="Right"
+                                                               Foreground="{StaticResource TextoFraco}"/>
+                                                </StackPanel>
+
+                                                <Button Grid.Column="2" Classes="acao"
+                                                        VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                        ToolTip.Tip="Abrir a ficha do cliente"
+                                                        Command="{Binding $parent[ItemsControl].((vm:DashboardViewModel)DataContext).AbrirClienteCommand}"
+                                                        CommandParameter="{Binding ClienteId}">
+                                                    <Viewbox Width="14" Height="14">
+                                                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                              Data="{StaticResource IconePasta}"/>
+                                                    </Viewbox>
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Classes="vazio" Text="Ninguém devendo. Tudo recebido."
+                               VerticalAlignment="Top" IsVisible="{Binding SemCobrancas}"/>
+                </Panel>
+            </Grid>
+        </Grid>
+
+        <!-- ============ CARREGANDO E ERRO, POR CIMA DAS DUAS LISTAS ============ -->
+        <TextBlock Grid.Row="2" Text="Carregando..." IsVisible="{Binding Carregando}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+        <Border Grid.Row="2" IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                Background="{StaticResource AlertaClaro}"
+                BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}" Padding="18,14"
+                HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+            <StackPanel Spacing="10">
+                <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                           Foreground="{StaticResource Alerta}"/>
+                <Button Classes="neutro" Content="Tentar de novo"
+                        HorizontalAlignment="Left"
+                        Command="{Binding CarregarCommand}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

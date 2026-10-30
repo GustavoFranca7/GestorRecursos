@@ -27,6 +27,9 @@ public partial class ClientesViewModel : ViewModelBase
         Conteudo = NovaLista();
     }
 
+    /// <summary>Abre a ficha de um cliente escolhido em outra seção, como o painel do dia.</summary>
+    public void AbrirFichaDe(int clienteId) => AbrirFicha(clienteId);
+
     /// <summary>Abre o cadastro sobre o que estiver na tela — listagem ou ficha.</summary>
     public void AbrirCadastro() =>
         Cadastro = new NovoClienteViewModel(

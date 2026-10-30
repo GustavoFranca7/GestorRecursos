@@ -82,6 +82,18 @@ public static class Formato
     public static string Data(System.DateTime? data) =>
         data?.ToString("dd/MM/yyyy", Brasil) ?? string.Empty;
 
+    /// <summary>"qui, 30/10" — para listas de prazo, onde o dia da semana é o que importa.</summary>
+    /// <remarks>
+    /// O ano sai de propósito: numa lista ordenada por data ele é ruído. O dia da semana
+    /// entra porque prazo que cai em sábado precisa ser protocolado na sexta.
+    /// </remarks>
+    public static string DiaCurto(System.DateTime data) =>
+        data.ToString("ddd, dd/MM", Brasil).Replace(".", string.Empty);
+
+    /// <summary>"quinta-feira, 30 de outubro de 2026" — o cabeçalho do painel.</summary>
+    public static string DiaPorExtenso(System.DateTime data) =>
+        data.ToString("dddd, d 'de' MMMM 'de' yyyy", Brasil);
+
     /// <summary>"10/10/2026" ou "10102026" viram data. Nulo quando não é data nenhuma.</summary>
     /// <remarks>
     /// Lê pelos dígitos porque é isso que a máscara de digitação entrega, com ou sem as
