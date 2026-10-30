@@ -23,7 +23,7 @@ public class ClienteDAO
     // Blocos comuns das consultas da lista. O prazo e o valor em aberto saem de
     // agregados por cliente: calculados antes, no WITH, para que um cliente com três
     // contratações e cinco instâncias continue valendo uma linha só na tela.
-    private const string ResumoApoio = """
+    private const string ResumoApoio = $"""
         WITH PRAZOS AS (
             SELECT CO.CLIENTE_ID,
                    MIN(I.PRAZO_PROTOCOLO) AS PRAZO,
@@ -33,7 +33,7 @@ public class ClienteDAO
               JOIN CONTRATACOES CO      ON CO.ID = IT.CONTRATACAO_ID
              WHERE I.DATA_PROTOCOLO IS NULL
                AND I.PRAZO_PROTOCOLO IS NOT NULL
-               AND I.SITUACAO NOT IN ('CANCELADO','DESISTENCIA','PRAZO_PERDIDO','DEFERIDO','INDEFERIDO')
+               AND I.SITUACAO NOT IN {SituacoesSql.InstanciaEncerrada}
              GROUP BY CO.CLIENTE_ID
         ),
         ABERTO AS (

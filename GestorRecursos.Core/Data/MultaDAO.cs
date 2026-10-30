@@ -178,11 +178,11 @@ public class MultaDAO
              WHERE ID = :id
             """;
 
-        const string sqlPrazo = """
+        const string sqlPrazo = $"""
             UPDATE INSTANCIAS SET PRAZO_PROTOCOLO = :prazoDefesa
              WHERE FASE = 'AUTUACAO'
                AND DATA_PROTOCOLO IS NULL
-               AND SITUACAO NOT IN ('DEFERIDO','INDEFERIDO','CANCELADO','DESISTENCIA','PRAZO_PERDIDO')
+               AND SITUACAO NOT IN {SituacoesSql.InstanciaEncerrada}
                AND ITEM_ID IN (SELECT ID FROM ITENS_CONTRATACAO
                                 WHERE MULTA_ID = :id AND SITUACAO <> 'CANCELADO')
             """;
