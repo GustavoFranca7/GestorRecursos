@@ -95,7 +95,9 @@ Enquanto não houver rotina automática, uma vez por semana:
 1. **Database actions → Data Load → Export** (ou *Data Pump*), exportando o schema `GESTOR`.
 2. Guardar o arquivo no computador **e** em nuvem pessoal (Drive, OneDrive).
 
-A Oracle também mantém backup automático dos últimos dias, mas esse é dela — o arquivo exportado é o que garante a recuperação em qualquer cenário.
+**No Always Free não existe restauração.** Conferido na documentação da Oracle em 29/10/2026: a instância gratuita não aceita backup manual, não aceita backup de longo prazo e **não aceita restaurar** — nem para um backup anterior, nem para um instante no tempo. Para ter isso, seria preciso virar instância paga.
+
+Ou seja: **o arquivo exportado não é a segunda linha de defesa, é a única.** Se a Oracle guarda algum backup interno, ele não está ao nosso alcance.
 
 ## 8. Nota sobre conectar sem wallet
 
