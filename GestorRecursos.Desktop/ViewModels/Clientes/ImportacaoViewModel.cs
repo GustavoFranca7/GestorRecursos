@@ -483,10 +483,12 @@ public partial class ImportacaoViewModel : ViewModelBase
                 }
             }
 
-            Aviso = gravados == escolhidas.Count
+            // O que não entrou já está escrito na própria linha, que continua na tela;
+            // aqui basta a confirmação, e ela some sozinha.
+            Notificacoes.Sucesso(gravados == escolhidas.Count
                 ? $"{gravados} cadastro(s) importado(s)."
                 : $"{gravados} de {escolhidas.Count} cadastro(s) importado(s). "
-                  + "Veja nas linhas o que não entrou.";
+                  + "Veja nas linhas o que não entrou.");
 
             if (gravados > 0) await _aoImportar(gravados);
         }

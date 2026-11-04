@@ -48,21 +48,19 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
     [ObservableProperty]
     public partial ViewModelBase? Conteudo { get; set; }
 
-    /// <summary>Aviso de "copiado", um só para o sistema inteiro.</summary>
-    [ObservableProperty]
-    public partial bool MostrandoCopiado { get; set; }
-
-    [ObservableProperty]
-    public partial string TextoCopiado { get; set; } = string.Empty;
-
-    private int _ultimaCopia;
+    /// <summary>Os avisos flutuantes do canto, um só lugar para o sistema inteiro.</summary>
+    /// <remarks>
+    /// Coleção, e não um aviso só: duas ações seguidas (copiar e logo salvar) empilham
+    /// em vez de uma atropelar a outra antes de ser lida.
+    /// </remarks>
+    public ObservableCollection<NotificacaoViewModel> Notificacoes { get; } = [];
 
     private readonly System.Action? _aoSair;
 
     public JanelaPrincipalViewModel(System.Action? aoSair = null)
     {
         _aoSair = aoSair;
-        AreaDeTransferencia.Copiou += AvisarCopia;
+        Servicos.Notificacoes.Chegou += Avisar;
 
         // Abre na visão do dia: é a pergunta da segunda de manhã — o que vence e quem deve.
         Navegar(SecaoApp.Dashboard);
@@ -99,25 +97,20 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
     [RelayCommand]
     private void Sair()
     {
-        AreaDeTransferencia.Copiou -= AvisarCopia;
+        Servicos.Notificacoes.Chegou -= Avisar;
         Sessao.Sair();
         _aoSair?.Invoke();
     }
 
-    /// <summary>Mostra o que foi copiado por alguns segundos, venha de qual tela vier.</summary>
-    private async void AvisarCopia(string texto)
+    /// <summary>Põe o aviso no canto e tira quando ele se apaga, venha de qual tela vier.</summary>
+    private async void Avisar(string texto, TomDaNotificacao tom)
     {
-        TextoCopiado = texto;
-        MostrandoCopiado = true;
+        var notificacao = new NotificacaoViewModel(texto, tom);
+        Notificacoes.Add(notificacao);
 
-        var marca = ++_ultimaCopia;
-        await Task.Delay(1800);
+        await notificacao.ViverAsync();
 
-        // Outra cópia no meio do caminho manda no aviso: esta já perdeu a vez.
-        if (marca == _ultimaCopia)
-        {
-            MostrandoCopiado = false;
-        }
+        Notificacoes.Remove(notificacao);
     }
 
     [RelayCommand]

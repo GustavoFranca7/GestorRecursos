@@ -68,6 +68,11 @@ A dependência aponta em um sentido só: as interfaces usam a `Core`, e a `Core`
 - Nos ViewModels, `[ObservableProperty]` e `[RelayCommand]` do CommunityToolkit.
 - Cores sempre pelos nomes definidos em `Styles/Cores.axaml`; nada de código hexadecimal solto no XAML.
 - Estilo que serve a mais de uma tela mora em `Styles/Componentes.axaml`, nunca copiado nas duas.
+- **Ação concluída avisa pela `Servicos.Notificacoes`**, nunca com uma tarja nova na tela. O
+  aviso aparece no canto inferior direito, fica 3 segundos e se apaga sozinho — vale para
+  copiar, salvar, importar, anexar, apagar e o que vier. Fica **na tela** só o que precisa
+  ser lido com calma, copiado ou corrigido: senha provisória, código de recuperação, lista
+  do que não entrou. Mensagem de erro também fica, até a pessoa resolver.
 
 ## Rodar e testar
 

@@ -302,22 +302,41 @@
                            FontSize="13" Foreground="{StaticResource TextoApagado}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-                <!-- Aviso de cópia, um só para o sistema: qualquer tela que copie um dado
-                     dá exatamente este retorno, e diz o valor para conferência. -->
-                <Border IsVisible="{Binding MostrandoCopiado}"
-                        Background="{StaticResource MenuFundo}"
-                        CornerRadius="{StaticResource RaioCartao}"
-                        Padding="14,9" Margin="0,0,24,20"
-                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Copiado:" FontSize="12"
-                                   Foreground="{StaticResource MenuTexto}"/>
-                        <TextBlock Text="{Binding TextoCopiado}" FontSize="12"
-                                   FontWeight="SemiBold" MaxWidth="340"
-                                   TextTrimming="CharacterEllipsis"
-                                   Foreground="White"/>
-                    </StackPanel>
-                </Border>
+                <!-- Os avisos do sistema, um lugar só: copiar um CPF, salvar um
+                     documento e importar cadastros dão o mesmo retorno, no mesmo canto.
+                     Não recebem clique (IsHitTestVisible) para nunca cobrirem um botão
+                     justo quando a pessoa vai usá-lo. -->
+                <ItemsControl ItemsSource="{Binding Notificacoes}"
+                              IsHitTestVisible="False"
+                              Margin="0,0,24,20"
+                              HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:NotificacaoViewModel">
+                            <!-- Nasce transparente e acende: é daí que a transição parte,
+                                 e é a mesma que o esmaecer de saída usa no fim. -->
+                            <Border Opacity="{Binding Opacidade}"
+                                    Background="{Binding Fundo, Converter={x:Static vm:Conversores.Pincel}}"
+                                    CornerRadius="{StaticResource RaioCartao}"
+                                    Padding="14,10" MaxWidth="400"
+                                    HorizontalAlignment="Right"
+                                    BoxShadow="0 6 20 0 #30102A2C">
+                                <Border.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.4"/>
+                                    </Transitions>
+                                </Border.Transitions>
+                                <TextBlock Text="{Binding Texto}" FontSize="12.5"
+                                           TextWrapping="Wrap" LineHeight="18"
+                                           Foreground="White"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Panel>
         </Grid>
 

@@ -16,16 +16,18 @@ public static class AreaDeTransferencia
 {
     private static TopLevel? _janela;
 
-    /// <summary>Avisa que algo foi copiado, para a janela mostrar o retorno.</summary>
-    /// <remarks>
-    /// O aviso é um só, da janela, e não de cada tela: assim copiar um CPF na listagem e
-    /// na ficha dá exatamente o mesmo retorno, sem duas implementações para divergir.
-    /// </remarks>
-    public static event Action<string>? Copiou;
-
     /// <summary>Chamado uma vez, quando a janela principal abre.</summary>
     public static void Registrar(TopLevel janela) => _janela = janela;
 
+    /// <summary>Copia e avisa.</summary>
+    /// <remarks>
+    /// O retorno sai pela <see cref="Notificacoes"/>, a mesma de salvar e importar:
+    /// copiar um CPF na listagem e na ficha dá exatamente o mesmo aviso, no mesmo canto
+    /// e pelo mesmo tempo, sem uma segunda implementação para divergir.
+    ///
+    /// O valor vai no texto de propósito: serve para conferir o que foi parar na área de
+    /// transferência antes de colar em outro lugar.
+    /// </remarks>
     public static async Task CopiarAsync(string? texto)
     {
         if (string.IsNullOrWhiteSpace(texto) || _janela?.Clipboard is not { } area)
@@ -34,6 +36,6 @@ public static class AreaDeTransferencia
         }
 
         await area.SetTextAsync(texto);
-        Copiou?.Invoke(texto);
+        Notificacoes.Informar($"Copiado: {texto}");
     }
 }
