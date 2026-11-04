@@ -14,7 +14,7 @@ namespace GestorRecursos.Desktop.ViewModels;
 /// <summary>Que parte dos prazos abertos a lista mostra.</summary>
 public enum FiltroPrazos
 {
-    /// <summary>Vencidos e os próximos sete dias: o que precisa de ação agora.</summary>
+    /// <summary>De hoje a sete dias. O vencido tem aba própria e não entra aqui.</summary>
     Semana,
 
     /// <summary>Só os que já passaram da data.</summary>
@@ -156,9 +156,11 @@ public partial class DashboardViewModel : ViewModelBase
 
     private void AplicarFiltro()
     {
+        // O mesmo corte do contador "nos proximos 7 dias", de propósito: aba e cartão
+        // mostrando números diferentes para a mesma pergunta é o que faz desconfiar da tela.
         var filtrados = Filtro switch
         {
-            FiltroPrazos.Semana => _todosOsPrazos.Where(p => p.Dias <= 7),
+            FiltroPrazos.Semana => _todosOsPrazos.Where(p => p.Dias is >= 0 and <= 7),
             FiltroPrazos.Vencidos => _todosOsPrazos.Where(p => p.Dias < 0),
             _ => _todosOsPrazos
         };
