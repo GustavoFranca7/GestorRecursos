@@ -73,10 +73,15 @@ $gatilho = New-ScheduledTaskTrigger `
     -DaysOfWeek $diasDoWindows[$Dia] `
     -At $Hora
 
+# StartWhenAvailable: domingo com o computador desligado nao perde a semana - a tarefa
+# roda assim que ele ligar. Restart: queda de internet no horario tambem nao perde, porque
+# o banco esta na nuvem e a falha costuma durar minutos.
 $opcoes = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -DontStopIfGoingOnBatteries `
     -AllowStartIfOnBatteries `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 15) `
     -ExecutionTimeLimit (New-TimeSpan -Hours 1)
 
 Register-ScheduledTask `
