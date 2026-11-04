@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -9,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using GestorRecursos.Core.Data;
 using GestorRecursos.Core.Documentos;
 using GestorRecursos.Core.Models;
+using GestorRecursos.Core.Validacao;
 using GestorRecursos.Desktop.Servicos;
 
 namespace GestorRecursos.Desktop.ViewModels;
@@ -83,6 +85,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     private readonly PagamentoDAO _pagamentos = new();
     private readonly EscritorioDAO _escritorios = new();
     private readonly HistoricoDAO _historicos = new();
+    private readonly ArquivoDAO _anexos = new();
     private readonly Action? _aoVoltar;
     private readonly Action? _aoNovoCliente;
     private readonly Action<GrupoCadastro>? _aoEditar;
@@ -201,6 +204,40 @@ public partial class FichaClienteViewModel : ViewModelBase
 
     public bool SemHistorico => !CarregandoHistorico && _historicoCarregado && Historico.Count == 0;
 
+    /// <summary>Os documentos anexados, na aba Documentos.</summary>
+    public ObservableCollection<AnexoDaFichaViewModel> Anexos { get; } = [];
+
+    public bool SemAnexos => !CarregandoAnexos && _anexosCarregados && Anexos.Count == 0;
+
+    /// <summary>Os tipos de documento que o anexo pode ser, na ordem em que aparecem.</summary>
+    /// <remarks>
+    /// A procuração vem primeiro porque é o documento que mais entra: é o que o cliente
+    /// assina e devolve.
+    /// </remarks>
+    public IReadOnlyList<string> TiposDeAnexo { get; } =
+        Enum.GetValues<TipoArquivo>().Select(Rotulos.TipoDeAnexo).ToList();
+
+    [ObservableProperty]
+    public partial string TipoDeAnexoEscolhido { get; set; } =
+        Rotulos.TipoDeAnexo(TipoArquivo.Procuracao);
+
+    [ObservableProperty]
+    public partial bool CarregandoAnexos { get; set; }
+
+    [ObservableProperty]
+    public partial bool Anexando { get; set; }
+
+    /// <summary>O que deu errado com o anexo. Nulo quando não há nada a dizer.</summary>
+    /// <remarks>
+    /// Separado de <see cref="Erro"/>, que é o erro da ficha inteira: um PDF recusado
+    /// não é motivo para a tela parecer quebrada. A mensagem aparece no cartão dos
+    /// anexos, ao lado do botão que a provocou.
+    /// </remarks>
+    [ObservableProperty]
+    public partial string? AvisoDoAnexo { get; set; }
+
+    public bool TemAvisoDoAnexo => !string.IsNullOrWhiteSpace(AvisoDoAnexo);
+
     // As listas completas ficam de lado; o que a tela mostra é o recorte do filtro.
     // Filtrar em memória evita uma ida ao banco a cada clique em sub-aba.
     private readonly List<ServicoDaFichaViewModel> _todosServicos = [];
@@ -252,6 +289,7 @@ public partial class FichaClienteViewModel : ViewModelBase
     private bool _servicosCarregados;
     private bool _financeiroCarregado;
     private bool _historicoCarregado;
+    private bool _anexosCarregados;
 
     /// <summary>O cliente inteiro, guardado para a aba Documentos montar a procuração.</summary>
     /// <remarks>
@@ -375,6 +413,10 @@ public partial class FichaClienteViewModel : ViewModelBase
         {
             await CarregarHistorico();
         }
+        else if (AbaAtual == AbaFicha.Documentos && !_anexosCarregados)
+        {
+            await CarregarAnexos();
+        }
     }
 
     /// <summary>Faz as abas pesadas esquecerem o que buscaram.</summary>
@@ -393,6 +435,10 @@ public partial class FichaClienteViewModel : ViewModelBase
 
         _historicoCarregado = false;
         Historico.Clear();
+
+        _anexosCarregados = false;
+        Anexos.Clear();
+        AvisoDoAnexo = null;
 
         // A procuração é de um cliente só: trocar de ficha fecha a que estiver aberta.
         ProcuracaoAberta = null;
@@ -614,6 +660,229 @@ public partial class FichaClienteViewModel : ViewModelBase
             OnPropertyChanged(nameof(SemHistorico));
         }
     }
+
+    /// <summary>Busca os anexos na primeira vez que a aba Documentos é aberta.</summary>
+    private async Task CarregarAnexos()
+    {
+        CarregandoAnexos = true;
+
+        try
+        {
+            var anexos = await _anexos.ListarDoClienteAsync(ClienteId);
+
+            Anexos.Clear();
+            foreach (var anexo in anexos)
+            {
+                Anexos.Add(new AnexoDaFichaViewModel(anexo));
+            }
+
+            _anexosCarregados = true;
+            AchaAba(AbaFicha.Documentos).Contador = Anexos.Count;
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível carregar os documentos: {excecao.Message}";
+        }
+        finally
+        {
+            CarregandoAnexos = false;
+            OnPropertyChanged(nameof(SemAnexos));
+        }
+    }
+
+    /// <summary>Escolhe um documento no disco e o guarda no banco.</summary>
+    /// <remarks>
+    /// A conferência vem antes de qualquer ida à rede: recusar um arquivo de 40 MB
+    /// depois de enviá-lo seria pagar o preço para então dizer não.
+    /// </remarks>
+    [RelayCommand]
+    private async Task Anexar()
+    {
+        AvisoDoAnexo = null;
+
+        try
+        {
+            var escolhido = await Arquivos.EscolherDocumentoAsync();
+
+            if (escolhido is null)
+            {
+                return;
+            }
+
+            var conferencia = DocumentoAnexo.Conferir(escolhido.Conteudo, escolhido.Nome);
+
+            if (!conferencia.Aceito)
+            {
+                AvisoDoAnexo = conferencia.Problema;
+                return;
+            }
+
+            Anexando = true;
+
+            var anexo = new Arquivo
+            {
+                ClienteId = ClienteId,
+                Tipo = TipoEscolhido(),
+                NomeArquivo = escolhido.Nome,
+                DataUpload = DateTime.Now
+            };
+
+            await _anexos.RegistrarAsync(anexo, escolhido.Conteudo);
+
+            // No topo: o último anexado é o que se quer ver, e a lista vem da mais
+            // recente para a mais antiga.
+            Anexos.Insert(0, new AnexoDaFichaViewModel(anexo));
+            AchaAba(AbaFicha.Documentos).Contador = Anexos.Count;
+            OnPropertyChanged(nameof(SemAnexos));
+
+            Notificacoes.Sucesso($"\"{anexo.NomeArquivo}\" foi guardado.");
+        }
+        catch (Exception excecao)
+        {
+            AvisoDoAnexo = $"Não foi possível guardar o documento: {excecao.Message}";
+        }
+        finally
+        {
+            Anexando = false;
+        }
+    }
+
+    /// <summary>Grava uma cópia do documento onde a pessoa escolher.</summary>
+    /// <remarks>
+    /// Diferente de abrir: abrir deixa o arquivo na pasta temporária, que o Windows
+    /// limpa. Baixar é para quem vai anexar num e-mail, levar num pendrive ou guardar —
+    /// e para isso o arquivo precisa ficar onde a pessoa souber achar.
+    ///
+    /// A pergunta de onde salvar vem antes da leitura do banco: desistir no seletor é
+    /// comum, e não há motivo para baixar 8 MB antes de saber se vão ser usados.
+    /// </remarks>
+    [RelayCommand]
+    private async Task BaixarAnexo(AnexoDaFichaViewModel? anexo)
+    {
+        if (anexo is null || anexo.Abrindo)
+        {
+            return;
+        }
+
+        AvisoDoAnexo = null;
+
+        var destino = await Arquivos.OndeSalvarAnexoAsync(anexo.Nome);
+        if (destino is null)
+        {
+            return;
+        }
+
+        anexo.Abrindo = true;
+
+        try
+        {
+            var conteudo = await _anexos.LerConteudoAsync(anexo.Id);
+
+            if (conteudo is null)
+            {
+                AvisoDoAnexo = "Este documento não está mais no banco. Atualize a ficha.";
+                return;
+            }
+
+            await File.WriteAllBytesAsync(destino, conteudo);
+
+            // Confirmação de ação concluída vai para o aviso flutuante, não para a
+            // tela. Sem o caminho inteiro: a pasta acabou de ser escolhida por quem
+            // leu, e um caminho longo transforma o aviso num parágrafo.
+            Notificacoes.Sucesso($"\"{Path.GetFileName(destino)}\" salvo.");
+        }
+        catch (Exception excecao)
+        {
+            AvisoDoAnexo = $"Não foi possível salvar o documento: {excecao.Message}";
+        }
+        finally
+        {
+            anexo.Abrindo = false;
+        }
+    }
+
+    /// <summary>Busca o documento no banco e abre no programa do sistema.</summary>
+    [RelayCommand]
+    private async Task AbrirAnexo(AnexoDaFichaViewModel? anexo)
+    {
+        if (anexo is null || anexo.Abrindo)
+        {
+            return;
+        }
+
+        AvisoDoAnexo = null;
+        anexo.Abrindo = true;
+
+        try
+        {
+            var conteudo = await _anexos.LerConteudoAsync(anexo.Id);
+
+            if (conteudo is null)
+            {
+                AvisoDoAnexo = "Este documento não está mais no banco. Atualize a ficha.";
+                return;
+            }
+
+            await Arquivos.AbrirConteudoAsync(anexo.Id, anexo.Nome, conteudo);
+        }
+        catch (Exception excecao)
+        {
+            AvisoDoAnexo = $"Não foi possível abrir o documento: {excecao.Message}";
+        }
+        finally
+        {
+            anexo.Abrindo = false;
+        }
+    }
+
+    /// <summary>Pergunta antes de apagar um anexo.</summary>
+    /// <remarks>
+    /// A pergunta é firme de propósito: o documento está no banco e em mais nenhum
+    /// lugar. Apagar aqui é apagar a única cópia que o escritório tem.
+    /// </remarks>
+    [RelayCommand]
+    private void PedirExclusaoAnexo(AnexoDaFichaViewModel? anexo)
+    {
+        if (anexo is null)
+        {
+            return;
+        }
+
+        Confirmacao = new ConfirmacaoViewModel(
+            titulo: "Apagar este documento?",
+            texto: $"\"{anexo.Nome}\" será removido do banco. Esta é a única cópia "
+                 + "guardada pelo sistema: se o arquivo original não existir mais no "
+                 + "computador, ele não poderá ser recuperado.",
+            botao: "Apagar documento",
+            aoConfirmar: () => ApagarAnexo(anexo),
+            aoCancelar: () => Confirmacao = null);
+    }
+
+    private async void ApagarAnexo(AnexoDaFichaViewModel anexo)
+    {
+        try
+        {
+            await _anexos.ApagarAsync(anexo.Id);
+
+            Confirmacao = null;
+            Anexos.Remove(anexo);
+            AchaAba(AbaFicha.Documentos).Contador = Anexos.Count;
+            OnPropertyChanged(nameof(SemAnexos));
+
+            Notificacoes.Informar($"\"{anexo.Nome}\" foi apagado.");
+        }
+        catch (Exception excecao)
+        {
+            Confirmacao = null;
+            AvisoDoAnexo = $"Não foi possível apagar o documento: {excecao.Message}";
+        }
+    }
+
+    // O ComboBox trabalha com o texto que aparece na tela; o banco guarda o valor do
+    // enum. A volta é feita aqui, pelo mesmo rótulo que montou a lista.
+    private TipoArquivo TipoEscolhido() =>
+        Enum.GetValues<TipoArquivo>()
+            .FirstOrDefault(t => Rotulos.TipoDeAnexo(t) == TipoDeAnexoEscolhido);
 
     /// <summary>Abre a procuração por cima da ficha, montada na hora.</summary>
     /// <remarks>
@@ -1302,6 +1571,8 @@ public partial class FichaClienteViewModel : ViewModelBase
     partial void OnCarregandoServicosChanged(bool valor) => OnPropertyChanged(nameof(SemServicos));
     partial void OnCarregandoFinanceiroChanged(bool valor) => OnPropertyChanged(nameof(SemLancamentos));
     partial void OnCarregandoHistoricoChanged(bool valor) => OnPropertyChanged(nameof(SemHistorico));
+    partial void OnCarregandoAnexosChanged(bool valor) => OnPropertyChanged(nameof(SemAnexos));
+    partial void OnAvisoDoAnexoChanged(string? valor) => OnPropertyChanged(nameof(TemAvisoDoAnexo));
 
     private static string MontarIdentificacao(Cliente cliente)
     {

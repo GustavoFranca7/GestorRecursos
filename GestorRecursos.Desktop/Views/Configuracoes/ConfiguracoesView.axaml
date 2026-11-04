@@ -138,6 +138,24 @@
 
                     <TextBlock IsVisible="{Binding Carregando}" Text="Carregando os acessos..."
                                FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+                    <!-- Os documentos ficam no banco, e o backup semanal só leva texto:
+                         sem esta exportação eles não têm cópia nenhuma fora da nuvem. -->
+                    <Border Classes="cartao">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                                <TextBlock Text="Documentos dos clientes" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="Grava em disco tudo o que foi anexado às fichas, em uma pasta por cliente. O backup semanal guarda só o texto do sistema — esta é a cópia dos documentos."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="primario" Content="Exportar"
+                                    VerticalAlignment="Center" Margin="14,0,0,0"
+                                    Command="{Binding ExportarDocumentosCommand}"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
@@ -147,6 +165,9 @@
 
         <ContentControl Content="{Binding Redefinicao}"
                         IsVisible="{Binding Redefinicao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+
+        <ContentControl Content="{Binding Exportacao}"
+                        IsVisible="{Binding Exportacao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
 
         <ContentControl Content="{Binding Confirmacao}"
                         IsVisible="{Binding Confirmacao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>

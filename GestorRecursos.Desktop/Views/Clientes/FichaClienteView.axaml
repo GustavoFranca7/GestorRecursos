@@ -1516,14 +1516,144 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Classes="cartao" Padding="20,17">
-                            <StackPanel Spacing="7">
-                                <TextBlock Text="GUARDAR ARQUIVOS" FontSize="10.5"
-                                           LetterSpacing="0.5"
-                                           Foreground="{StaticResource TextoApagado}"/>
-                                <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                        <!-- Arquivos do cliente (RF-42). O documento fica no banco, e nao
+                             num servico de fora: uma copia so, um backup so. -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="14">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="titulocartao"
+                                               Text="ARQUIVOS DO CLIENTE"/>
+                                    <TextBlock Grid.Column="1" FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource TextoApagado}"
+                                               Text="PDF ou Word, até 10 MB por arquivo"/>
+                                </Grid>
+
+                                <!-- O tipo antes do arquivo: escolher o documento e logo
+                                     depois dizer o que ele e inverteria a leitura da linha. -->
+                                <Grid ColumnDefinitions="240,Auto,*">
+                                    <ComboBox Grid.Column="0" FontSize="12.5"
+                                              HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding TiposDeAnexo}"
+                                              SelectedItem="{Binding TipoDeAnexoEscolhido}"/>
+
+                                    <Button Grid.Column="1" Classes="primario" Margin="12,0,0,0"
+                                            Content="Anexar documento"
+                                            IsEnabled="{Binding !Anexando}"
+                                            Command="{Binding AnexarCommand}"/>
+
+                                    <TextBlock Grid.Column="2" Margin="14,0,0,0" FontSize="11.5"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding Anexando}"
+                                               Foreground="{StaticResource TextoApagado}"
+                                               Text="Guardando o documento..."/>
+                                </Grid>
+
+                                <!-- O aviso mora aqui, junto do botao que o provocou, e nao
+                                     na barra de erro da ficha: um PDF recusado nao e falha
+                                     do cadastro inteiro. -->
+                                <Border IsVisible="{Binding TemAvisoDoAnexo}"
+                                        Background="{StaticResource AvisoClaro}"
+                                        CornerRadius="4" Padding="12,9">
+                                    <TextBlock Text="{Binding AvisoDoAnexo}" FontSize="12"
+                                               TextWrapping="Wrap" LineHeight="18"
+                                               Foreground="{StaticResource Texto}"/>
+                                </Border>
+
+
+                                <TextBlock FontSize="12" IsVisible="{Binding CarregandoAnexos}"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="Carregando os documentos..."/>
+
+                                <TextBlock FontSize="12" IsVisible="{Binding SemAnexos}"
+                                           TextWrapping="Wrap" LineHeight="18"
                                            Foreground="{StaticResource TextoFraco}"
-                                           Text="O armazenamento de arquivos do cliente — CNH, procuração assinada, CRLV, comprovantes e comprovante de protocolo — ainda não está disponível."/>
+                                           Text="Nenhum documento guardado ainda. A procuração assinada, a CNH e o CRLV entram por aqui. Fotos não são aceitas: use um aplicativo de digitalização para gerar um PDF."/>
+
+                                <ItemsControl ItemsSource="{Binding Anexos}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AnexoDaFichaViewModel">
+                                            <Border Padding="0,9"
+                                                    BorderThickness="0,0,0,1"
+                                                    BorderBrush="{StaticResource BordaClara}">
+                                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock Text="{Binding Nome}"
+                                                                   FontSize="12.5"
+                                                                   FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <TextBlock FontSize="11"
+                                                                   Foreground="{StaticResource TextoApagado}">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0} · {1} · {2}">
+                                                                    <Binding Path="Tipo"/>
+                                                                    <Binding Path="Tamanho"/>
+                                                                    <Binding Path="Quando"/>
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1" FontSize="11"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,10,0"
+                                                               IsVisible="{Binding Abrindo}"
+                                                               Foreground="{StaticResource TextoApagado}"
+                                                               Text="buscando..."/>
+
+                                                    <!-- Baixar antes de abrir: guardar o
+                                                         documento é o que se faz com ele
+                                                         mais vezes do que só olhar. -->
+                                                    <StackPanel Grid.Column="2"
+                                                                Orientation="Horizontal" Spacing="4"
+                                                                VerticalAlignment="Center">
+                                                        <Button Classes="acao"
+                                                                IsEnabled="{Binding !Abrindo}"
+                                                                ToolTip.Tip="Grava uma cópia onde você escolher"
+                                                                Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).BaixarAnexoCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <Viewbox Width="13" Height="13">
+                                                                <Path Fill="{StaticResource TextoFraco}"
+                                                                      Stretch="Uniform"
+                                                                      Data="{StaticResource IconeDownload}"/>
+                                                            </Viewbox>
+                                                        </Button>
+
+                                                        <Button Classes="acao"
+                                                                IsEnabled="{Binding !Abrindo}"
+                                                                ToolTip.Tip="Abre o documento no leitor do sistema"
+                                                                Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).AbrirAnexoCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <Viewbox Width="12" Height="12">
+                                                                <Path Fill="{StaticResource TextoFraco}"
+                                                                      Stretch="Uniform"
+                                                                      Data="{StaticResource IconeAbrirFora}"/>
+                                                            </Viewbox>
+                                                        </Button>
+                                                    </StackPanel>
+
+                                                    <!-- A mesma lixeira do resto do sistema,
+                                                         e não a palavra "apagar": o ícone
+                                                         destoa das outras ações e é o que
+                                                         segura o clique sem querer. -->
+                                                    <Button Grid.Column="3" Classes="acao perigosa"
+                                                            Margin="8,0,0,0"
+                                                            VerticalAlignment="Center"
+                                                            ToolTip.Tip="Apaga o documento do banco"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).PedirExclusaoAnexoCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Viewbox Width="13" Height="13">
+                                                            <Path Fill="{StaticResource TextoFraco}"
+                                                                  Stretch="Uniform"
+                                                                  Data="{StaticResource IconeExcluir}"/>
+                                                        </Viewbox>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </Border>
                     </StackPanel>

@@ -82,6 +82,9 @@ public partial class ConfiguracoesViewModel : ViewModelBase
     /// <summary>A redefinição de senha, aberta por cima da lista.</summary>
     [ObservableProperty] public partial ResetarSenhaViewModel? Redefinicao { get; set; }
 
+    /// <summary>A exportação dos documentos, aberta por cima da lista.</summary>
+    [ObservableProperty] public partial ExportarDocumentosViewModel? Exportacao { get; set; }
+
     /// <summary>Pergunta aberta por cima da tela. Nula quando não há nenhuma.</summary>
     [ObservableProperty] public partial ConfirmacaoViewModel? Confirmacao { get; set; }
 
@@ -184,6 +187,16 @@ public partial class ConfiguracoesViewModel : ViewModelBase
                         + "Informe a senha provisória ao titular do acesso.";
                 await Carregar();
             });
+    }
+
+    /// <summary>Abre a exportação em massa dos documentos anexados.</summary>
+    [RelayCommand]
+    private void ExportarDocumentos()
+    {
+        if (!PodeAdministrar) return;
+
+        Aviso = null;
+        Exportacao = new ExportarDocumentosViewModel(aoFechar: () => Exportacao = null);
     }
 
     private async Task Tentar(Func<Task> acao)

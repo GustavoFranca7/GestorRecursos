@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="GestorRecursos.Desktop.Views.ExportarDocumentosView"
+             x:DataType="vm:ExportarDocumentosViewModel">
+
+    <Border Background="#66102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                Padding="28,24" Width="520"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 14 40 0 #30102A2C">
+
+            <StackPanel Spacing="16">
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Exportar documentos" FontSize="18" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock FontSize="12.5" TextWrapping="Wrap" LineHeight="18"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="Grava em disco todos os documentos anexados às fichas, em uma pasta por cliente. Nada é apagado do sistema."/>
+                </StackPanel>
+
+                <!-- O que vai ser levado, medido antes de começar -->
+                <Border Background="{StaticResource CartaoSuave}"
+                        BorderBrush="{StaticResource BordaClara}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="14,12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Levantando os documentos..." FontSize="12.5"
+                                   IsVisible="{Binding Levantando}"
+                                   Foreground="{StaticResource TextoApagado}"/>
+                        <TextBlock Text="{Binding Resumo}" FontSize="13.5" FontWeight="SemiBold"
+                                   IsVisible="{Binding !Levantando}"
+                                   Foreground="{StaticResource Texto}"/>
+                        <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="16"
+                                   IsVisible="{Binding TemDocumentos}"
+                                   Foreground="{StaticResource TextoApagado}"
+                                   Text="Cada cliente vira uma pasta &quot;número - NOME&quot;, com uma subpasta por tipo de documento."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Por que isto existe: é a única cópia dos documentos fora do banco -->
+                <Border Background="{StaticResource AvisoClaro}"
+                        BorderBrush="{StaticResource AvisoBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10"
+                        IsVisible="{Binding TemDocumentos}">
+                    <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                               Foreground="{StaticResource Aviso}"
+                               Text="O backup semanal guarda apenas o texto do sistema: os documentos não estão nele. Esta pasta é a única cópia deles fora do banco — e carrega CPF, RG e endereço de cliente. Guarde em lugar de acesso restrito."/>
+                </Border>
+
+                <!-- Andamento -->
+                <StackPanel Spacing="7" IsVisible="{Binding Exportando}">
+                    <ProgressBar Minimum="0" Maximum="{Binding Total}" Value="{Binding Feitos}"
+                                 Height="8" CornerRadius="4"
+                                 Foreground="{StaticResource Primaria}"
+                                 Background="{StaticResource BordaClara}"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Atual}" FontSize="11.5"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{StaticResource TextoApagado}"/>
+                        <TextBlock Grid.Column="1" FontSize="11.5" Margin="10,0,0,0"
+                                   Foreground="{StaticResource TextoApagado}">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} de {1}">
+                                    <Binding Path="Feitos"/>
+                                    <Binding Path="Total"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Resultado. Interrompida não é sucesso: cor e texto diferentes. -->
+                <Border Background="{StaticResource SucessoClaro}"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10"
+                        IsVisible="{Binding TerminouInteira}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="{Binding Conclusao}" FontSize="12.5" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Sucesso}"/>
+                        <TextBlock Text="{Binding PastaGravada}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextoApagado}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource AvisoClaro}"
+                        BorderBrush="{StaticResource AvisoBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10"
+                        IsVisible="{Binding Interrompida}">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="{Binding Conclusao}" FontSize="12.5" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Aviso}"/>
+                        <TextBlock Text="{Binding PastaGravada}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextoApagado}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- O que não saiu fica nomeado, nunca só contado -->
+                <Border Background="{StaticResource AlertaClaro}"
+                        BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10"
+                        IsVisible="{Binding TemFalhas}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Estes documentos não saíram:" FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource Alerta}"/>
+                        <ItemsControl ItemsSource="{Binding Falhas}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" FontSize="11" TextWrapping="Wrap"
+                                               Foreground="{StaticResource Alerta}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border IsVisible="{Binding TemErro}"
+                        Background="{StaticResource AlertaClaro}"
+                        BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                    <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap"
+                               Foreground="{StaticResource Alerta}"/>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Classes="neutro" Content="Interromper"
+                            IsVisible="{Binding Exportando}"
+                            Command="{Binding InterromperCommand}"/>
+                    <Button Classes="neutro" Content="Abrir a pasta"
+                            IsVisible="{Binding Terminou}"
+                            Command="{Binding AbrirPastaCommand}"/>
+                    <Button Classes="neutro" Content="Fechar"
+                            IsVisible="{Binding !Exportando}"
+                            Command="{Binding FecharCommand}"/>
+                    <Button Classes="primario" Content="Escolher pasta e exportar"
+                            IsVisible="{Binding !Terminou}"
+                            IsEnabled="{Binding PodeComecar}"
+                            Command="{Binding ExportarCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Border>
+</UserControl>

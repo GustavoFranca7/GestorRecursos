@@ -5,10 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 namespace GestorRecursos.Desktop.ViewModels;
 
 /// <summary>Uma aba da área de arquivados.</summary>
-public partial class AbaArquivoViewModel(string titulo, TipoArquivo tipo, bool pronta) : ObservableObject
+public partial class AbaArquivoViewModel(string titulo, TipoArquivado tipo, bool pronta) : ObservableObject
 {
     public string Titulo { get; } = titulo;
-    public TipoArquivo Tipo { get; } = tipo;
+    public TipoArquivado Tipo { get; } = tipo;
 
     /// <summary>Aba cujo tipo ainda não tem tela. Fica à mostra, mas desligada.</summary>
     public bool Pronta { get; } = pronta;
@@ -18,7 +18,7 @@ public partial class AbaArquivoViewModel(string titulo, TipoArquivo tipo, bool p
 }
 
 /// <summary>O que pode estar arquivado.</summary>
-public enum TipoArquivo
+public enum TipoArquivado
 {
     Clientes,
     Veiculos,
@@ -35,9 +35,9 @@ public partial class ArquivadosViewModel : ViewModelBase
 {
     public ObservableCollection<AbaArquivoViewModel> Abas { get; } =
     [
-        new("Clientes", TipoArquivo.Clientes, pronta: true),
-        new("Veículos", TipoArquivo.Veiculos, pronta: false),
-        new("Processos", TipoArquivo.Processos, pronta: false)
+        new("Clientes", TipoArquivado.Clientes, pronta: true),
+        new("Veículos", TipoArquivado.Veiculos, pronta: false),
+        new("Processos", TipoArquivado.Processos, pronta: false)
     ];
 
     [ObservableProperty]
@@ -45,11 +45,11 @@ public partial class ArquivadosViewModel : ViewModelBase
 
     public ArquivadosViewModel()
     {
-        Abrir(TipoArquivo.Clientes);
+        Abrir(TipoArquivado.Clientes);
     }
 
     [RelayCommand]
-    private void Abrir(TipoArquivo tipo)
+    private void Abrir(TipoArquivado tipo)
     {
         foreach (var aba in Abas)
         {
@@ -58,7 +58,7 @@ public partial class ArquivadosViewModel : ViewModelBase
 
         Conteudo = tipo switch
         {
-            TipoArquivo.Clientes => new ListaClientesViewModel(modoArquivo: true),
+            TipoArquivado.Clientes => new ListaClientesViewModel(modoArquivo: true),
             _ => null
         };
     }

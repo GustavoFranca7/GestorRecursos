@@ -135,6 +135,23 @@ public enum Recorrencia
     [ValorBanco("MENSAL")] Mensal
 }
 
+/// <summary>O que um anexo é. Espelha o CK_ARQUIVOS_TIPO.</summary>
+/// <remarks>
+/// Serve para agrupar a lista de anexos da ficha e para a tela saber o que ainda
+/// falta pedir ao cliente. A ordem aqui é a ordem em que aparecem na tela.
+/// </remarks>
+public enum TipoArquivo
+{
+    [ValorBanco("PROCURACAO")] Procuracao,
+    [ValorBanco("CNH")] Cnh,
+    [ValorBanco("CRLV")] Crlv,
+    [ValorBanco("COMPROVANTE_ENDERECO")] ComprovanteDeEndereco,
+    [ValorBanco("NOTIFICACAO")] Notificacao,
+    [ValorBanco("COMPROVANTE_PROTOCOLO")] ComprovanteDeProtocolo,
+    [ValorBanco("COMPROVANTE_PAGAMENTO")] ComprovanteDePagamento,
+    [ValorBanco("OUTRO")] Outro
+}
+
 /// <summary>Traduz enum para o texto que o banco guarda, e de volta.</summary>
 public static class ValorBanco
 {

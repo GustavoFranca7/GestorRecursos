@@ -447,7 +447,12 @@ CREATE TABLE ARQUIVOS (
     INSTANCIA_ID   NUMBER,
     TIPO           VARCHAR2(30 CHAR)   NOT NULL,
     NOME_ARQUIVO   VARCHAR2(200 CHAR)  NOT NULL,
-    CAMINHO        VARCHAR2(400 CHAR)  NOT NULL,
+    -- O documento mora aqui dentro, e nao num servico de fora. Uma copia so, um
+    -- backup so, nenhuma credencial a mais - e o anexo nunca aponta para o vazio.
+    CONTEUDO       BLOB                NOT NULL,
+    -- O tamanho repetido fora do BLOB: a lista da ficha o mostra sem abrir o
+    -- documento, e o backup do texto (que nao leva BLOB) ainda diz o que faltou.
+    TAMANHO        NUMBER(10)          NOT NULL,
     DATA_UPLOAD    DATE                DEFAULT SYSDATE NOT NULL,
     CONSTRAINT PK_ARQUIVOS           PRIMARY KEY (ID),
     CONSTRAINT FK_ARQUIVOS_CLIENTE   FOREIGN KEY (CLIENTE_ID)
@@ -456,10 +461,13 @@ CREATE TABLE ARQUIVOS (
         REFERENCES INSTANCIAS (ID),
     CONSTRAINT CK_ARQUIVOS_TIPO      CHECK (TIPO IN (
         'CNH','PROCURACAO','CRLV','COMPROVANTE_ENDERECO',
-        'COMPROVANTE_PAGAMENTO','COMPROVANTE_PROTOCOLO','NOTIFICACAO','OUTRO'))
+        'COMPROVANTE_PAGAMENTO','COMPROVANTE_PROTOCOLO','NOTIFICACAO','OUTRO')),
+    -- O teto de 10 MB vale no banco, nao so na tela: a API e outra porta para a
+    -- mesma tabela, e o espaco da instancia e de 20 GB para tudo.
+    CONSTRAINT CK_ARQUIVOS_TAMANHO   CHECK (TAMANHO BETWEEN 1 AND 10485760)
 );
 
-COMMENT ON TABLE ARQUIVOS IS 'Anexos do cliente. CAMINHO guarda onde o arquivo esta, nao o arquivo.';
+COMMENT ON TABLE ARQUIVOS IS 'Anexos do cliente. CHAVE guarda o identificador do arquivo no servico de armazenamento, nao o arquivo.';
 
 
 -- Prazo, compromisso e tarefa planejada sao a mesma coisa para quem usa:

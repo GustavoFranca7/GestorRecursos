@@ -65,6 +65,19 @@ public static class Rotulos
         return parcelas > 1 ? $"{nome} em {parcelas}x" : nome;
     }
 
+    /// <summary>Que documento é o anexo.</summary>
+    public static string TipoDeAnexo(Core.Models.TipoArquivo tipo) => tipo switch
+    {
+        Core.Models.TipoArquivo.Procuracao => "Procuração assinada",
+        Core.Models.TipoArquivo.Cnh => "CNH",
+        Core.Models.TipoArquivo.Crlv => "CRLV",
+        Core.Models.TipoArquivo.ComprovanteDeEndereco => "Comprovante de endereço",
+        Core.Models.TipoArquivo.Notificacao => "Notificação de autuação",
+        Core.Models.TipoArquivo.ComprovanteDeProtocolo => "Comprovante de protocolo",
+        Core.Models.TipoArquivo.ComprovanteDePagamento => "Comprovante de pagamento",
+        _ => "Outro"
+    };
+
     /// <summary>O papel do cliente no veículo.</summary>
     public static string Vinculo(string? vinculo) => vinculo switch
     {
