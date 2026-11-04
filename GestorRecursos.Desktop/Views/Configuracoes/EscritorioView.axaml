@@ -1,0 +1,188 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:srv="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="GestorRecursos.Desktop.Views.EscritorioView"
+             x:DataType="vm:EscritorioViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entrada">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FAFCFC"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+        <Style Selector="TextBlock.grupo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="LetterSpacing" Value="1"/>
+            <Setter Property="Margin" Value="0,6,0,0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="#66102A2C">
+        <Border Background="{StaticResource Cartao}"
+                CornerRadius="{StaticResource RaioCartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                Padding="28,24" Width="640" MaxHeight="760"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 14 40 0 #30102A2C">
+
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
+                    <TextBlock Text="Dados do escritório" FontSize="18" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <!-- Tudo aqui sai impresso: errar um digito volta do orgao. -->
+                    <TextBlock FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="É o que aparece como outorgada na procuração e nos recursos. Confira antes de salvar: documento com dado errado volta do órgão."/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Spacing="12" Margin="0,16,0,0">
+                    <Border IsVisible="{Binding TemErro}"
+                            Background="{StaticResource AlertaClaro}"
+                            BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                            CornerRadius="{StaticResource RaioBotao}" Padding="13,10">
+                        <TextBlock Text="{Binding Erro}" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Alerta}"/>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Classes="neutro" Content="Cancelar"
+                                Command="{Binding CancelarCommand}"/>
+                        <Button Classes="primario" Content="Salvar"
+                                IsEnabled="{Binding !Salvando}"
+                                Command="{Binding ConfirmarCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12" Margin="0,0,10,0">
+
+                        <TextBlock Classes="grupo" Text="QUEM ASSINA"/>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Nome completo"/>
+                            <TextBox Classes="entrada" Text="{Binding Nome}"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Nacionalidade"/>
+                                <TextBox Classes="entrada" Text="{Binding Nacionalidade}"
+                                         Watermark="brasileira"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Estado civil"/>
+                                <TextBox Classes="entrada" Text="{Binding EstadoCivil}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Profissão"/>
+                                <TextBox Classes="entrada" Text="{Binding Profissao}"
+                                         Watermark="despachante documentalista"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Registro profissional"/>
+                                <TextBox Classes="entrada" Text="{Binding RegistroProfissional}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="CPF"/>
+                                <TextBox Classes="entrada" Text="{Binding Cpf}"
+                                         srv:Mascara.Padrao="cpf"
+                                         Watermark="000.000.000-00"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="E-mail"/>
+                                <TextBox Classes="entrada" Text="{Binding Email}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="RG"/>
+                                <TextBox Classes="entrada" Text="{Binding Rg}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Órgão emissor"/>
+                                <TextBox Classes="entrada" Text="{Binding RgOrgao}"
+                                         Watermark="SSP/SC"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Classes="grupo" Text="ENDEREÇO"/>
+
+                        <Grid ColumnDefinitions="*,12,120">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Logradouro"/>
+                                <TextBox Classes="entrada" Text="{Binding Logradouro}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Número"/>
+                                <TextBox Classes="entrada" Text="{Binding Numero}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,12,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Complemento"/>
+                                <TextBox Classes="entrada" Text="{Binding Complemento}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Bairro"/>
+                                <TextBox Classes="entrada" Text="{Binding Bairro}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="150,12,*,12,80">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="CEP"/>
+                                <TextBox Classes="entrada" Text="{Binding Cep}"
+                                         srv:Mascara.Padrao="cep"
+                                         Watermark="00000-000"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Cidade"/>
+                                <TextBox Classes="entrada" Text="{Binding Cidade}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Classes="rotulo" Text="UF"/>
+                                <TextBox Classes="entrada" Text="{Binding Uf}" MaxLength="2"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Cidade do rodapé dos documentos"/>
+                            <TextBox Classes="entrada" Text="{Binding CidadeAssinatura}"/>
+                            <!-- A data do rodape e sempre a da geracao; so a cidade e fixa. -->
+                            <TextBlock FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"
+                                       LineHeight="16"
+                                       Foreground="{StaticResource TextoApagado}"
+                                       Text="Aparece antes da data na assinatura, como em &quot;Itapema, 4 de novembro de 2026&quot;. A data é sempre a do dia em que o documento é gerado."/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Border>
+</UserControl>

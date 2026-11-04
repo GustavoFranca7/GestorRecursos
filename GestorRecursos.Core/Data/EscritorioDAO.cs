@@ -28,6 +28,63 @@ public class EscritorioDAO
         return await reader.ReadAsync(cancelamento) ? Ler(reader) : null;
     }
 
+    /// <summary>Grava os dados da despachante. A linha é uma só, travada em ID = 1.</summary>
+    /// <remarks>
+    /// MERGE, e não UPDATE: numa instalação cuja carga inicial não rodou, a tabela está
+    /// vazia, e um UPDATE "daria certo" sem gravar nada — a tela diria salvo e a
+    /// procuração continuaria saindo sem a outorgada.
+    /// </remarks>
+    public async Task AtualizarAsync(Escritorio escritorio, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            MERGE INTO ESCRITORIO alvo
+            USING (SELECT 1 AS ID FROM DUAL) origem
+               ON (alvo.ID = origem.ID)
+            WHEN MATCHED THEN UPDATE SET
+                 NOME = :nome, NACIONALIDADE = :nacionalidade, ESTADO_CIVIL = :estadoCivil,
+                 PROFISSAO = :profissao, RG = :rg, RG_ORGAO = :rgOrgao, CPF = :cpf,
+                 REGISTRO_PROFISSIONAL = :registro, EMAIL = :email,
+                 LOGRADOURO = :logradouro, NUMERO = :numero, COMPLEMENTO = :complemento,
+                 BAIRRO = :bairro, CEP = :cep, CIDADE = :cidade, UF = :uf,
+                 CIDADE_ASSINATURA = :cidadeAssinatura
+            WHEN NOT MATCHED THEN INSERT
+                 (ID, NOME, NACIONALIDADE, ESTADO_CIVIL, PROFISSAO, RG, RG_ORGAO, CPF,
+                  REGISTRO_PROFISSIONAL, EMAIL, LOGRADOURO, NUMERO, COMPLEMENTO, BAIRRO,
+                  CEP, CIDADE, UF, CIDADE_ASSINATURA)
+            VALUES (1, :nome, :nacionalidade, :estadoCivil, :profissao, :rg, :rgOrgao, :cpf,
+                    :registro, :email, :logradouro, :numero, :complemento, :bairro,
+                    :cep, :cidade, :uf, :cidadeAssinatura)
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+
+        cmd.Param("nome", escritorio.Nome.Trim())
+           .Param("nacionalidade", Limpo(escritorio.Nacionalidade))
+           .Param("estadoCivil", Limpo(escritorio.EstadoCivil))
+           .Param("profissao", Limpo(escritorio.Profissao))
+           .Param("rg", Limpo(escritorio.Rg))
+           .Param("rgOrgao", Limpo(escritorio.RgOrgao))
+           .Param("cpf", Limpo(escritorio.Cpf))
+           .Param("registro", Limpo(escritorio.RegistroProfissional))
+           .Param("email", Limpo(escritorio.Email))
+           .Param("logradouro", Limpo(escritorio.Logradouro))
+           .Param("numero", Limpo(escritorio.Numero))
+           .Param("complemento", Limpo(escritorio.Complemento))
+           .Param("bairro", Limpo(escritorio.Bairro))
+           .Param("cep", Limpo(escritorio.Cep))
+           .Param("cidade", Limpo(escritorio.Cidade))
+           .Param("uf", Limpo(escritorio.Uf))
+           .Param("cidadeAssinatura", Limpo(escritorio.CidadeAssinatura));
+
+        await cmd.ExecuteNonQueryAsync(cancelamento);
+    }
+
+    // Campo em branco vira nulo: o resto do sistema ja trata nulo como "nao informado",
+    // e uma string vazia faria a procuracao imprimir espaco onde deveria faltar dado.
+    private static string? Limpo(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+
     private static Escritorio Ler(OracleDataReader reader) => new()
     {
         Nome = reader.Texto(0),
