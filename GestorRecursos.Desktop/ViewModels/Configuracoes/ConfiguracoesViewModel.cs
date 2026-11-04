@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -58,12 +60,14 @@ public class LinhaUsuarioViewModel(Usuario dados)
 public partial class ConfiguracoesViewModel : ViewModelBase
 {
     private readonly UsuarioDAO _usuarios = new();
+    private readonly EscritorioDAO _escritorios = new();
 
     public ConfiguracoesViewModel()
     {
         if (PodeAdministrar)
         {
             _ = Carregar();
+            _ = CarregarEscritorio();
         }
     }
 
@@ -84,6 +88,20 @@ public partial class ConfiguracoesViewModel : ViewModelBase
 
     /// <summary>A exportação dos documentos, aberta por cima da lista.</summary>
     [ObservableProperty] public partial ExportarDocumentosViewModel? Exportacao { get; set; }
+
+    /// <summary>O formulário dos dados do escritório, aberto por cima da lista.</summary>
+    [ObservableProperty] public partial EscritorioViewModel? Escritorio { get; set; }
+
+    /// <summary>Os dados que já estão gravados, para o resumo do cartão.</summary>
+    [ObservableProperty] public partial Escritorio? DadosDoEscritorio { get; set; }
+
+    public string ResumoDoEscritorio => DadosDoEscritorio is { } e
+        ? string.Join(" · ", new[] { e.Nome, e.Cidade, e.Uf }.Where(p => !string.IsNullOrWhiteSpace(p)))
+        : "Ainda não preenchido. A procuração sai sem a outorgada enquanto estiver assim.";
+
+    /// <summary>O que mudou em cada versão, e qual está rodando.</summary>
+    public IReadOnlyList<NotaDaVersao> Versoes => NotasDaVersao.Todas;
+    public string VersaoAtual => $"Versão {NotasDaVersao.VersaoAtual}";
 
     /// <summary>Pergunta aberta por cima da tela. Nula quando não há nenhuma.</summary>
     [ObservableProperty] public partial ConfirmacaoViewModel? Confirmacao { get; set; }
@@ -187,6 +205,39 @@ public partial class ConfiguracoesViewModel : ViewModelBase
                         + "Informe a senha provisória ao titular do acesso.";
                 await Carregar();
             });
+    }
+
+    /// <summary>Abre o formulário dos dados da despachante que assina os documentos.</summary>
+    [RelayCommand]
+    private void EditarEscritorio()
+    {
+        if (!PodeAdministrar) return;
+
+        Aviso = null;
+        Escritorio = new EscritorioViewModel(
+            DadosDoEscritorio,
+            aoFechar: () => Escritorio = null,
+            aoSalvar: async () =>
+            {
+                Escritorio = null;
+                await CarregarEscritorio();
+            });
+    }
+
+    private async Task CarregarEscritorio()
+    {
+        try
+        {
+            DadosDoEscritorio = await _escritorios.BuscarAsync();
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível ler os dados do escritório: {excecao.Message}";
+        }
+        finally
+        {
+            OnPropertyChanged(nameof(ResumoDoEscritorio));
+        }
     }
 
     /// <summary>Abre a exportação em massa dos documentos anexados.</summary>

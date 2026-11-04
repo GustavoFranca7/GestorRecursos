@@ -27,16 +27,17 @@
             <StackPanel Margin="24,18,24,24" Spacing="14" MaxWidth="900"
                         HorizontalAlignment="Left">
 
-                <!-- Quem não administra vê Configurações, mas não esta aba -->
+                <!-- Quem não administra vê as notas da versão, logo abaixo, mas não os
+                     acessos nem os dados do escritório. -->
                 <Border Classes="cartao" IsVisible="{Binding !PodeAdministrar}" Padding="24,28">
                     <StackPanel Spacing="8" HorizontalAlignment="Center">
-                        <TextBlock Text="Nada para ajustar por aqui, por enquanto."
+                        <TextBlock Text="Nada para ajustar por aqui."
                                    FontSize="13" HorizontalAlignment="Center"
                                    Foreground="{StaticResource TextoFraco}"/>
                         <TextBlock FontSize="11.5" HorizontalAlignment="Center"
                                    TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
                                    Foreground="{StaticResource TextoApagado}"
-                                   Text="Os dados do escritório, que alimentam a procuração, entram nesta tela em breve."/>
+                                   Text="Os acessos e os dados do escritório são ajustados por um administrador. Abaixo, o que mudou em cada versão do sistema."/>
                     </StackPanel>
                 </Border>
 
@@ -139,6 +140,27 @@
                     <TextBlock IsVisible="{Binding Carregando}" Text="Carregando os acessos..."
                                FontSize="13" Foreground="{StaticResource TextoFraco}"/>
 
+                    <!-- Quem assina a procuração. Até a 1.2.0 isto só mudava por script,
+                         e qualquer correção de endereço dependia de quem programa. -->
+                    <Border Classes="cartao">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                                <TextBlock Text="Dados do escritório" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock Text="{Binding ResumoDoEscritorio}" FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="É o que sai como outorgada na procuração e nos recursos."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="primario" Content="Editar"
+                                    VerticalAlignment="Center" Margin="14,0,0,0"
+                                    Command="{Binding EditarEscritorioCommand}"/>
+                        </Grid>
+                    </Border>
+
                     <!-- Os documentos ficam no banco, e o backup semanal só leva texto:
                          sem esta exportação eles não têm cópia nenhuma fora da nuvem. -->
                     <Border Classes="cartao">
@@ -157,6 +179,84 @@
                         </Grid>
                     </Border>
                 </StackPanel>
+
+                <!-- Fora do bloco de administrador: saber o que mudou na propria tela
+                     nao e privilegio de ninguem. -->
+                <Border Classes="cartao">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="3">
+                                <TextBlock Text="Notas da versão" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock FontSize="11.5"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="O que mudou a cada atualização do sistema."/>
+                            </StackPanel>
+                            <Border Grid.Column="1" VerticalAlignment="Center"
+                                    Background="{StaticResource PrimariaClara}"
+                                    CornerRadius="{StaticResource RaioSelo}"
+                                    Padding="10,4">
+                                <TextBlock Text="{Binding VersaoAtual}" FontSize="11.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource PrimariaEscura}"/>
+                            </Border>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding Versoes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="14"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NotaDaVersao">
+                                    <Border Padding="0,12,0,0"
+                                            BorderThickness="0,1,0,0"
+                                            BorderBrush="{StaticResource BordaClara}">
+                                        <StackPanel Spacing="7">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Versao}" FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource Texto}"/>
+                                                <TextBlock Text="{Binding Data}" FontSize="11.5"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding Resumo}" FontSize="12.5"
+                                                       TextWrapping="Wrap" LineHeight="18"
+                                                       Foreground="{StaticResource TextoFraco}"/>
+
+                                            <ItemsControl ItemsSource="{Binding Mudancas}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="5"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:String">
+                                                        <Grid ColumnDefinitions="14,*">
+                                                            <TextBlock Grid.Column="0" Text="·"
+                                                                       FontSize="12.5"
+                                                                       Foreground="{StaticResource Primaria}"/>
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding}"
+                                                                       FontSize="12.5"
+                                                                       TextWrapping="Wrap"
+                                                                       LineHeight="18"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
@@ -168,6 +268,9 @@
 
         <ContentControl Content="{Binding Exportacao}"
                         IsVisible="{Binding Exportacao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+
+        <ContentControl Content="{Binding Escritorio}"
+                        IsVisible="{Binding Escritorio, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
 
         <ContentControl Content="{Binding Confirmacao}"
                         IsVisible="{Binding Confirmacao, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
