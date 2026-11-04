@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.ServicosView"
+             x:DataType="vm:ServicosViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.cartao">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="18,16"/>
+        </Style>
+        <Style Selector="TextBlock.titulocartao">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="LetterSpacing" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+        <Style Selector="TextBox.valor">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,18,24,24" Spacing="14" MaxWidth="900"
+                    HorizontalAlignment="Left">
+
+            <Border Classes="cartao">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="Tabela de preços" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Texto}"/>
+                        <!-- O que muda aqui e a referencia do dia, nao o historico: a
+                             contratacao guarda o valor fechado na epoca. -->
+                        <TextBlock FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                                   Foreground="{StaticResource TextoApagado}"
+                                   Text="O valor de referência de cada serviço. Reajustar aqui não mexe no que já foi contratado — cada contratação guarda o valor fechado na época."/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="neutro" Content="Atualizar"
+                            VerticalAlignment="Center" Margin="14,0,0,0"
+                            Command="{Binding CarregarCommand}"/>
+                </Grid>
+            </Border>
+
+            <TextBlock FontSize="13" IsVisible="{Binding Carregando}"
+                       Foreground="{StaticResource TextoFraco}"
+                       Text="Carregando a tabela de preços..."/>
+
+            <Border Classes="cartao"
+                    IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                    Background="{StaticResource AlertaClaro}"
+                    BorderBrush="{StaticResource AlertaBorda}">
+                <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                           Foreground="{StaticResource Alerta}"/>
+            </Border>
+
+            <TextBlock FontSize="13" IsVisible="{Binding SemServicos}"
+                       Foreground="{StaticResource TextoFraco}"
+                       Text="Nenhum serviço cadastrado."/>
+
+            <ItemsControl ItemsSource="{Binding Grupos}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="14"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GrupoDePrecosViewModel">
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="titulocartao" Text="{Binding Titulo}"/>
+
+                                <ItemsControl ItemsSource="{Binding Linhas}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LinhaPrecoViewModel">
+                                            <Border Padding="0,9"
+                                                    BorderThickness="0,0,0,1"
+                                                    BorderBrush="{StaticResource BordaClara}">
+                                                <StackPanel Spacing="7">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                                        <StackPanel Grid.Column="0" Spacing="2"
+                                                                    VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Nome}"
+                                                                       FontSize="13"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                            <TextBlock Text="{Binding Percurso}"
+                                                                       FontSize="11"
+                                                                       IsVisible="{Binding TemPercurso}"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                        </StackPanel>
+
+                                                        <!-- Leitura -->
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding ValorLegivel}"
+                                                                   IsVisible="{Binding !Editando}"
+                                                                   FontSize="13.5" FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="0,0,14,0"
+                                                                   Foreground="{StaticResource Texto}"/>
+
+                                                        <Button Grid.Column="2" Classes="atalhocartao"
+                                                                Content="editar"
+                                                                IsVisible="{Binding !Editando}"
+                                                                VerticalAlignment="Center"
+                                                                Command="{Binding EditarCommand}"/>
+
+                                                        <!-- Edição, na própria linha -->
+                                                        <TextBox Grid.Column="1" Classes="valor"
+                                                                 Text="{Binding ValorDigitado}"
+                                                                 IsVisible="{Binding Editando}"
+                                                                 VerticalAlignment="Center"
+                                                                 Margin="0,0,10,0"
+                                                                 Watermark="0,00"/>
+
+                                                        <StackPanel Grid.Column="2"
+                                                                    Orientation="Horizontal" Spacing="8"
+                                                                    IsVisible="{Binding Editando}"
+                                                                    VerticalAlignment="Center">
+                                                            <Button Classes="atalhocartao"
+                                                                    Content="cancelar"
+                                                                    Command="{Binding CancelarCommand}"/>
+                                                            <Button Classes="primario"
+                                                                    Content="Salvar"
+                                                                    IsEnabled="{Binding !Salvando}"
+                                                                    Command="{Binding SalvarCommand}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+
+                                                    <TextBlock Text="{Binding Erro}" FontSize="11.5"
+                                                               IsVisible="{Binding TemErro}"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{StaticResource Alerta}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

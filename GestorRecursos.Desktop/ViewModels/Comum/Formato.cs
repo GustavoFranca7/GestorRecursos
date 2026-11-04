@@ -63,6 +63,13 @@ public static class Formato
 
     public static string Dinheiro(decimal valor) => valor.ToString("C", Brasil);
 
+    /// <summary>"1250,00": o número como se digita, sem cifrão nem separador de milhar.</summary>
+    /// <remarks>
+    /// Para preencher campo de edição. O ponto de milhar atrapalha quem vai corrigir só
+    /// os centavos, e o cifrão voltaria a ser apagado na hora de ler.
+    /// </remarks>
+    public static string DinheiroSimples(decimal valor) => valor.ToString("0.00", Brasil);
+
     /// <summary>O caminho de volta: "R$ 1.250,00", "1250,00" ou "1250" viram número.</summary>
     /// <remarks>
     /// Ela digita o valor fechado de qualquer jeito, com ou sem R$. Recusar por causa do
