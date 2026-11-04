@@ -2,4 +2,5 @@
   <Project Path="GestorRecursos.Core/GestorRecursos.Core.csproj" />
   <Project Path="GestorRecursos.Api/GestorRecursos.Api.csproj" />
   <Project Path="GestorRecursos.Desktop/GestorRecursos.Desktop.csproj" />
+  <Project Path="GestorRecursos.Backup/GestorRecursos.Backup.csproj" />
 </Solution>

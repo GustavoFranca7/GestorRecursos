@@ -99,6 +99,10 @@ Enquanto não houver rotina automática, uma vez por semana:
 
 Ou seja: **o arquivo exportado não é a segunda linha de defesa, é a única.** Se a Oracle guarda algum backup interno, ele não está ao nosso alcance.
 
+> O desenho da rotina **automática** que vai substituir este passo a passo manual,
+> com os tamanhos medidos e o procedimento de restauração, está na documentação:
+> `Documentacao/1 Projeto/Rotina de backup.md`.
+
 ## 8. Nota sobre conectar sem wallet
 
 Com *Access type* = **Allow secure access from everywhere**, a Oracle deixa o mTLS obrigatório e o botão

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Executavel de linha de comando: quem chama e o Agendador de Tarefas do
+         Windows, nao uma pessoa. Sem janela, sem pergunta, codigo de saida
+         diferente de zero quando falha - e assim o agendador registra o erro. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GestorRecursos.Backup</AssemblyName>
+    <RootNamespace>GestorRecursos.Backup</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Nao traz pacote proprio: o driver do Oracle e a cadeia de configuracao
+         vem da Core, que e quem sabe conversar com o banco. -->
+    <ProjectReference Include="../GestorRecursos.Core/GestorRecursos.Core.csproj" />
+  </ItemGroup>
+
+</Project>
