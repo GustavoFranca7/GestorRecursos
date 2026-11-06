@@ -25,6 +25,22 @@
 --
 -- O GESTOR continua dono das tabelas e usuario de desenvolvimento.
 -- Nada do que ja existe muda.
+--
+-- =====================================================================
+-- ATENCAO: TABELA NOVA NASCE INVISIVEL PARA A ESTACAO
+--
+-- A parte 2 percorre as tabelas que existem NO DIA em que ela roda. Toda
+-- tabela criada depois comeca sem privilegio nenhum, e o programa a
+-- enxerga como inexistente - ORA-00942 - mesmo com a tabela criada e o
+-- script de criacao acusando sucesso.
+--
+-- Script que CRIA tabela precisa terminar com o GRANT dela. O modelo
+-- esta no passo 4 do 12-RegistroDoBackup.sql: libera os quatro direitos
+-- na tabela, mais SELECT na sequence da coluna IDENTITY, e nao faz nada
+-- quando o usuario ESTACAO nao existe (o caso do banco de teste).
+--
+-- Script que so ALTERA tabela existente nao precisa: o privilegio ja
+-- esta dado na tabela, e acompanha a coluna nova.
 -- =====================================================================
 
 

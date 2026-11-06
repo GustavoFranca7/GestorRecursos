@@ -60,6 +60,7 @@ A dependência aponta em um sentido só: as interfaces usam a `Core`, e a `Core`
 - Sempre **consultas parametrizadas** (`:nome`, `:cpf`...), nunca concatenação.
 - Gravações que envolvem mais de uma tabela vão em **transação**, com `Rollback` em caso de erro.
 - **Não rodar DDL no banco por conta própria.** Quando precisar de uma tabela ou coluna nova, escrever o script, explicar e deixar que o usuário execute.
+- **Script que cria tabela termina com o `GRANT` para o `ESTACAO`.** Em produção o programa conecta como `ESTACAO`, que não é o dono do esquema: tabela nova nasce invisível para ele e dá `ORA-00942` com a tabela criada. O modelo está no passo 4 do `Database/12-RegistroDoBackup.sql`. Script que só altera tabela existente não precisa.
 
 ## Convenções de código
 
