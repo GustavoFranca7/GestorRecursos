@@ -68,6 +68,7 @@ public partial class ConfiguracoesViewModel : ViewModelBase
         {
             _ = Carregar();
             _ = CarregarEscritorio();
+            _ = CarregarBackup();
         }
     }
 
@@ -98,6 +99,12 @@ public partial class ConfiguracoesViewModel : ViewModelBase
     public string ResumoDoEscritorio => DadosDoEscritorio is { } e
         ? string.Join(" · ", new[] { e.Nome, e.Cidade, e.Uf }.Where(p => !string.IsNullOrWhiteSpace(p)))
         : "Ainda não preenchido. A procuração sai sem a outorgada enquanto estiver assim.";
+
+    /// <summary>Como está a cópia de segurança. O painel só avisa quando atrasa; aqui
+    /// o estado aparece também quando está em dia, que é o que permite confiar no aviso.</summary>
+    [ObservableProperty] public partial EstadoDoBackupViewModel? Backup { get; set; }
+
+    private async Task CarregarBackup() => Backup = await EstadoDoBackupViewModel.LerAsync();
 
     /// <summary>O que mudou em cada versão, e qual está rodando.</summary>
     public IReadOnlyList<NotaDaVersao> Versoes => NotasDaVersao.Todas;

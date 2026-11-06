@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using GestorRecursos.Core;
+using GestorRecursos.Core.Data;
 using GestorRecursos.Core.Exportacao;
+using GestorRecursos.Core.Models;
 
 namespace GestorRecursos.Backup;
 
@@ -57,6 +59,8 @@ internal static class Program
 
             var documentos = await EspelharDocumentosAsync(pasta);
 
+            await RegistrarAsync(inicio, resumo, comprimido, documentos);
+
             // Linha vazia nao e enfeite: o Agendador acumula a saida de todas as
             // execucoes num log so, e sem separador elas viram um bloco ilegivel.
             Dizer($"Concluido em {(DateTime.Now - inicio).TotalSeconds:F1}s");
@@ -104,6 +108,44 @@ internal static class Program
         }
 
         return resultado;
+    }
+
+    /// <summary>Grava no banco que o backup rodou, para a tela poder avisar quando parar.</summary>
+    /// <remarks>
+    /// A tarefa agendada mora em um computador só; o sistema roda em outro. O banco é o
+    /// único lugar que os dois veem, então é por ele que o painel descobre há quantos
+    /// dias a cópia não acontece.
+    ///
+    /// Falha aqui não derruba o backup: o .zip já está gravado, e perder o registro é
+    /// perder o aviso, não a cópia. Vira uma linha no log — e a própria ausência de
+    /// registro acaba aparecendo como o aviso de "não roda há X dias".
+    /// </remarks>
+    private static async Task RegistrarAsync(
+        DateTime quando,
+        Resumo resumo,
+        long bytesDoZip,
+        ResultadoDoEspelho documentos)
+    {
+        try
+        {
+            await new BackupDAO().RegistrarAsync(new ExecucaoDoBackup
+            {
+                Quando = quando,
+                Maquina = Environment.MachineName,
+                Tabelas = resumo.Tabelas,
+                Linhas = resumo.Linhas,
+                Bytes = bytesDoZip,
+                DocumentosNovos = documentos.Novos,
+                Falhas = documentos.Falhas.Count
+            });
+        }
+        catch (Exception excecao)
+        {
+            // Mensagem explícita porque a causa provável é o 12-RegistroDoBackup.sql
+            // não ter rodado neste banco, e isso não se adivinha pelo ORA-00942.
+            Dizer($"  registro nao gravado: {Motivo(excecao)}");
+            Dizer("  (o backup esta gravado; sem o registro, a tela nao avisa se ele parar)");
+        }
     }
 
     /// <summary>Onde o arquivo vai parar: argumento, configuração, ou a pasta do programa.</summary>

@@ -178,6 +178,44 @@
                                     Command="{Binding ExportarDocumentosCommand}"/>
                         </Grid>
                     </Border>
+
+                    <!-- O backup roda no Agendador de Tarefas de outra máquina. Este cartão
+                         é o único lugar do sistema onde dá para ver se ele continua
+                         acontecendo — e mostra o estado também quando está em dia, de
+                         propósito: aviso em que só se vê a má notícia não se sabe se
+                         funciona. Quando atrasa, o cartão inteiro vira alerta e fica
+                         assim até ser resolvido. -->
+                    <Border Classes="cartao"
+                            IsVisible="{Binding Backup, Converter={x:Static ObjectConverters.IsNotNull}}"
+                            Background="{Binding Backup.FundoCartao, Converter={x:Static vm:Conversores.Pincel}}"
+                            BorderBrush="{Binding Backup.BordaCartao, Converter={x:Static vm:Conversores.Pincel}}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                                <TextBlock Text="Cópia de segurança" FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock Text="{Binding Backup.Resumo}" FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextoFraco}"/>
+                                <TextBlock IsVisible="{Binding Backup.Atrasado}"
+                                           Text="{Binding Backup.Texto}"
+                                           FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                                           Margin="0,2,0,0"
+                                           Foreground="{StaticResource AlertaEscuro}"/>
+                                <TextBlock IsVisible="{Binding !Backup.Atrasado}"
+                                           FontSize="11.5" TextWrapping="Wrap" LineHeight="17"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="Roda sozinha uma vez por semana, no computador que tem a tarefa agendada. Passados dez dias sem rodar, este cartão vira alerta."/>
+                            </StackPanel>
+                            <Border Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="14,0,0,0" Padding="9,3"
+                                    CornerRadius="{StaticResource RaioSelo}"
+                                    Background="{Binding Backup.FundoSelo, Converter={x:Static vm:Conversores.Pincel}}">
+                                <TextBlock Text="{Binding Backup.Selo}" FontSize="11"
+                                           Foreground="{Binding Backup.CorSelo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
                 </StackPanel>
 
                 <!-- Fora do bloco de administrador: saber o que mudou na propria tela
