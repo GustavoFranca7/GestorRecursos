@@ -1,0 +1,649 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.ProcessosView"
+             x:DataType="vm:ProcessosViewModel">
+
+    <!-- ATENÇÃO: as larguras de coluna aparecem duas vezes, no cabeçalho da tabela e na
+         linha, e precisam ser iguais — "2.2*,2.6*,1*,1.5*,1.3*,86". Cada Grid precisa da
+         sua própria lista de colunas, então não dá para declarar num recurso só. -->
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.cabecalho">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.6"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Border.contador">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="16,13"/>
+        </Style>
+        <Style Selector="TextBlock.numero">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.legenda">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+
+        <!-- O funil acende quando a barra está aberta: o botão diz em que estado está -->
+        <Style Selector="Button.funil">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.funil /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        </Style>
+        <Style Selector="Button.funil:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+        <Style Selector="Button.funil.aberto /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.funil Path">
+            <Setter Property="Fill" Value="{StaticResource TextoFraco}"/>
+        </Style>
+        <Style Selector="Button.funil.aberto Path">
+            <Setter Property="Fill" Value="White"/>
+        </Style>
+
+        <Style Selector="Border.barrafiltro">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+        <Style Selector="TextBlock.grupofiltro">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.6"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+        <Style Selector="TextBox.campodata">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Width" Value="104"/>
+        </Style>
+        <Style Selector="TextBox.campodata:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <!-- Largura vem de cada campo: os rótulos têm tamanhos bem diferentes -->
+        <Style Selector="ComboBox.filtro">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <!-- A seta do expandir: a mesma, deitada quando a linha está aberta -->
+        <Style Selector="Viewbox.seta">
+            <Setter Property="RenderTransform" Value="none"/>
+        </Style>
+        <Style Selector="Viewbox.seta.aberta">
+            <Setter Property="RenderTransform" Value="rotate(90deg)"/>
+        </Style>
+
+        <!-- Coluna de uma fase do recurso, dentro da linha aberta -->
+        <Style Selector="Border.fase">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="13,12"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+        </Style>
+        <Style Selector="Border.fase.atual">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Border.fase.urgente">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="Border.fase.vazia">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="TextBlock.nomefase">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="0.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+        <Style Selector="TextBlock.detalhefase">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style Selector="Button.etapa">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.etapa /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.etapa:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="TextBlock.cumprida">
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="24,20,24,16">
+
+            <!-- ============ OS QUATRO NÚMEROS ============ -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*" Margin="0,0,0,16">
+                <Border Grid.Column="0" Classes="contador" Margin="0,0,10,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="numero" Text="{Binding QuantosAbertos}"
+                                   Foreground="{StaticResource Texto}"/>
+                        <TextBlock Classes="legenda" Text="em aberto"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="contador" Margin="0,0,10,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="numero" Text="{Binding QuantosVencidos}"
+                                   Foreground="{StaticResource Alerta}"/>
+                        <TextBlock Classes="legenda" Text="com prazo vencido"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="contador" Margin="0,0,10,0">
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="numero" Text="{Binding QuantosAguardando}"
+                                   Foreground="{StaticResource Roxo}"/>
+                        <TextBlock Classes="legenda" Text="aguardando julgamento"/>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="contador">
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="numero" Text="{Binding QuantosEncerrados}"
+                                   Foreground="{StaticResource TextoFraco}"/>
+                        <TextBlock Classes="legenda" Text="encerrados"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ============ BUSCA E ABAS ============ -->
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14">
+
+                <Panel Grid.Column="0" Width="420" HorizontalAlignment="Left">
+                    <TextBox Classes="busca" Text="{Binding TermoBusca}"
+                             PlaceholderText="Buscar por cliente, CPF, AIT, placa ou protocolo"/>
+                    <!-- Limpar no lugar da lupa: a busca já acontece a cada tecla, então
+                         o que falta ali é o caminho de volta para a lista inteira. -->
+                    <Button Command="{Binding LimparBuscaCommand}" Background="Transparent"
+                            BorderThickness="0" Padding="8,0" Cursor="Hand"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            IsVisible="{Binding TemBusca}" ToolTip.Tip="Limpar a busca">
+                        <Viewbox Width="12" Height="12">
+                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                  Data="{StaticResource IconeFechar}"/>
+                        </Viewbox>
+                    </Button>
+                    <Viewbox Width="15" Height="15" HorizontalAlignment="Right"
+                             Margin="0,0,10,0" VerticalAlignment="Center"
+                             IsVisible="{Binding !TemBusca}">
+                        <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                              Data="{StaticResource IconeBusca}"/>
+                    </Viewbox>
+                </Panel>
+
+                <!-- O botão fica aceso enquanto a barra está aberta -->
+                <Button Grid.Column="1" Classes="funil" Margin="10,0,0,0"
+                        VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Classes.aberto="{Binding FiltrosAbertos}"
+                        Command="{Binding AlternarFiltrosCommand}"
+                        ToolTip.Tip="Mostrar ou esconder os filtros">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <Viewbox Width="13" Height="13" VerticalAlignment="Center">
+                            <Path Stretch="Uniform" Data="{StaticResource IconeFunil}"/>
+                        </Viewbox>
+                        <TextBlock Text="Filtros" FontSize="11.5" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Classes="neutro" Content="Atualizar"
+                        FontSize="11.5" Padding="12,7" VerticalAlignment="Center"
+                        Command="{Binding CarregarCommand}"/>
+            </Grid>
+
+            <!-- ============ A BARRA DE FILTROS ============ -->
+            <Border Grid.Row="2" Classes="barrafiltro" IsVisible="{Binding FiltrosAbertos}">
+                <StackPanel Spacing="12">
+
+                    <WrapPanel>
+                        <StackPanel Margin="0,0,24,10">
+                            <TextBlock Classes="grupofiltro" Text="SITUAÇÃO"/>
+                            <ComboBox Classes="filtro" Width="198"
+                                      ItemsSource="{Binding Situacoes}"
+                                      SelectedItem="{Binding SituacaoEscolhida}"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,24,10">
+                            <TextBlock Classes="grupofiltro" Text="INSTÂNCIA"/>
+                            <ComboBox Classes="filtro" Width="166"
+                                      ItemsSource="{Binding Instancias}"
+                                      SelectedItem="{Binding InstanciaEscolhida}"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,24,10">
+                            <TextBlock Classes="grupofiltro" Text="TIPO"/>
+                            <ComboBox Classes="filtro" Width="176"
+                                      ItemsSource="{Binding Tipos}"
+                                      SelectedItem="{Binding TipoEscolhido}"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Classes="grupofiltro" Text="ÓRGÃO"/>
+                            <ComboBox Classes="filtro" Width="248"
+                                      ItemsSource="{Binding Orgaos}"
+                                      SelectedItem="{Binding OrgaoEscolhido}"/>
+                        </StackPanel>
+                    </WrapPanel>
+
+                    <WrapPanel>
+                        <StackPanel Margin="0,0,30,10">
+                            <TextBlock Classes="grupofiltro" Text="PRAZO ENTRE"/>
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <TextBox Classes="campodata" Text="{Binding PrazoDe}"
+                                         servicos:Mascara.Padrao="data"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                                <TextBlock Text="e" FontSize="11.5" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextoApagado}"/>
+                                <TextBox Classes="campodata" Text="{Binding PrazoAte}"
+                                         servicos:Mascara.Padrao="data"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Classes="grupofiltro" Text="CONTRATADO ENTRE"/>
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <TextBox Classes="campodata" Text="{Binding ContratadoDe}"
+                                         servicos:Mascara.Padrao="data"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                                <TextBlock Text="e" FontSize="11.5" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextoApagado}"/>
+                                <TextBox Classes="campodata" Text="{Binding ContratadoAte}"
+                                         servicos:Mascara.Padrao="data"
+                                         PlaceholderText="dd/mm/aaaa"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </WrapPanel>
+
+                    <Button Classes="atalhocartao" Content="limpar filtros"
+                            HorizontalAlignment="Right"
+                            Command="{Binding LimparFiltrosCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ CABEÇALHO DA TABELA ============ -->
+            <Grid Grid.Row="3" ColumnDefinitions="2.2*,2.6*,1*,1.5*,1.3*,86"
+                  Margin="14,0,14,8">
+                <TextBlock Grid.Column="0" Classes="cabecalho" Text="CLIENTE"/>
+                <TextBlock Grid.Column="1" Classes="cabecalho" Text="PROCESSO"/>
+                <TextBlock Grid.Column="2" Classes="cabecalho" Text="FASE"/>
+                <TextBlock Grid.Column="3" Classes="cabecalho" Text="SITUAÇÃO"/>
+                <TextBlock Grid.Column="4" Classes="cabecalho" Text="PRAZO"/>
+            </Grid>
+
+            <!-- ============ A LISTA ============ -->
+            <Panel Grid.Row="4">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Linhas}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LinhaProcessoViewModel">
+                                <Border Background="{StaticResource Cartao}"
+                                        BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RaioCartao}"
+                                        Margin="0,0,0,7" ClipToBounds="True">
+                                    <Grid ColumnDefinitions="4,*">
+                                        <!-- Faixa de urgência: prazo estourando aparece de longe -->
+                                        <Border Grid.Column="0" Background="{StaticResource Alerta}"
+                                                IsVisible="{Binding Urgente}"/>
+
+                                        <StackPanel Grid.Column="1">
+
+                                            <Grid ColumnDefinitions="2.2*,2.6*,1*,1.5*,1.3*,86"
+                                                  Margin="10,11,10,11">
+
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center"
+                                                            Margin="0,0,10,0">
+                                                    <Button Classes="copiavel" Content="{Binding Nome}"
+                                                            FontSize="13" FontWeight="SemiBold"
+                                                            Foreground="{StaticResource Texto}"
+                                                            ToolTip.Tip="Clique para copiar o nome"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Nome}"/>
+                                                    <Button Classes="copiavel secundario"
+                                                            Content="{Binding CpfFormatado}"
+                                                            ToolTip.Tip="Clique para copiar o CPF"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding CpfFormatado}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                                            Margin="0,0,10,0" Spacing="3">
+                                                    <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <Button Classes="copiavel secundario"
+                                                                Content="{Binding Identificacao}"
+                                                                IsVisible="{Binding TemIdentificacao}"
+                                                                ToolTip.Tip="Clique para copiar"
+                                                                Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).CopiarCommand}"
+                                                                CommandParameter="{Binding Identificacao}"/>
+                                                        <Button Classes="copiavel seloplaca"
+                                                                Content="{Binding Placa}"
+                                                                IsVisible="{Binding TemPlaca}"
+                                                                ToolTip.Tip="Clique para copiar a placa"
+                                                                Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).CopiarCommand}"
+                                                                CommandParameter="{Binding Placa}"/>
+                                                    </StackPanel>
+                                                    <!-- Para onde a peça vai: é o que decide
+                                                         de quem é o protocolo do dia -->
+                                                    <TextBlock Text="{Binding Orgao}" FontSize="11"
+                                                               IsVisible="{Binding TemOrgao}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" DataContext="{Binding SeloFase}"
+                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                        Padding="9,3" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                </Border>
+
+                                                <Border Grid.Column="3" DataContext="{Binding SeloSituacao}"
+                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                        Padding="9,3" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                </Border>
+
+                                                <Border Grid.Column="4" DataContext="{Binding SeloPrazo}"
+                                                        CornerRadius="{StaticResource RaioSelo}"
+                                                        Padding="9,3" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                    <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                               Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                                            Spacing="6" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right">
+                                                    <Button Classes="acao"
+                                                            ToolTip.Tip="Ver o andamento deste processo"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).AlternarDetalheCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Viewbox Classes="seta" Width="12" Height="12"
+                                                                 Classes.aberta="{Binding Aberto}">
+                                                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                                  Data="{StaticResource IconeSetaDireita}"/>
+                                                        </Viewbox>
+                                                    </Button>
+                                                    <Button Classes="acao"
+                                                            ToolTip.Tip="Abrir a ficha do cliente"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).AbrirClienteCommand}"
+                                                            CommandParameter="{Binding ClienteId}">
+                                                        <Viewbox Width="14" Height="14">
+                                                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                                  Data="{StaticResource IconePasta}"/>
+                                                        </Viewbox>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- ============ O ANDAMENTO, DENTRO DA LINHA ============ -->
+                                            <Border IsVisible="{Binding Aberto}"
+                                                    Background="{StaticResource Fundo}"
+                                                    BorderBrush="{StaticResource Borda}"
+                                                    BorderThickness="0,1,0,0"
+                                                    Padding="14,13">
+                                                <StackPanel Spacing="11">
+
+                                                    <WrapPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                                                    Margin="0,0,22,0">
+                                                            <TextBlock Text="WhatsApp" FontSize="11.5"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                            <Button Classes="copiavel normal"
+                                                                    Content="{Binding WhatsappFormatado}"
+                                                                    ToolTip.Tip="Clique para copiar o WhatsApp"
+                                                                    Command="{Binding $parent[ItemsControl].((vm:ProcessosViewModel)DataContext).CopiarCommand}"
+                                                                    CommandParameter="{Binding WhatsappFormatado}"/>
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="6"
+                                                                    Margin="0,0,22,0">
+                                                            <TextBlock Text="Contratado em" FontSize="11.5"
+                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                            <TextBlock Text="{Binding ContratadoEmTexto}"
+                                                                       FontSize="11.5" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource Texto}"/>
+                                                        </StackPanel>
+                                                    </WrapPanel>
+
+                                                    <!-- RECURSO: as três fases -->
+                                                    <ItemsControl ItemsSource="{Binding Servico.Fases}"
+                                                                  IsVisible="{Binding Servico.PorInstancias}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <UniformGrid Columns="3"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:FaseViewModel">
+                                                                <Border Classes="fase"
+                                                                        Classes.atual="{Binding Atual}"
+                                                                        Classes.urgente="{Binding Urgente}"
+                                                                        Classes.vazia="{Binding !Existe}">
+                                                                    <StackPanel Spacing="7">
+                                                                        <Grid ColumnDefinitions="*,Auto">
+                                                                            <StackPanel Grid.Column="0"
+                                                                                        Orientation="Horizontal" Spacing="5">
+                                                                                <TextBlock Classes="nomefase" Text="{Binding Numero}"/>
+                                                                                <TextBlock Classes="nomefase" Text="·"/>
+                                                                                <TextBlock Classes="nomefase" Text="{Binding Nome}"/>
+                                                                            </StackPanel>
+                                                                            <Border Grid.Column="1"
+                                                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                                                    Padding="7,2" VerticalAlignment="Center"
+                                                                                    Background="{Binding FundoSituacao, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                                <TextBlock Text="{Binding Situacao}" FontSize="10"
+                                                                                           Foreground="{Binding CorSituacao, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            </Border>
+                                                                        </Grid>
+
+                                                                        <TextBlock Classes="detalhefase"
+                                                                                   IsVisible="{Binding TemExplicacao}"
+                                                                                   Text="{Binding Explicacao}"/>
+
+                                                                        <StackPanel Spacing="3" IsVisible="{Binding Existe}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                        IsVisible="{Binding TemProtocolo}">
+                                                                                <TextBlock Classes="detalhefase" Text="Protocolo"/>
+                                                                                <TextBlock Classes="detalhefase" FontWeight="SemiBold"
+                                                                                           Foreground="{StaticResource Texto}"
+                                                                                           Text="{Binding Protocolo}"/>
+                                                                            </StackPanel>
+                                                                            <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                        IsVisible="{Binding TemEnvio}">
+                                                                                <TextBlock Classes="detalhefase" Text="Enviado em"/>
+                                                                                <TextBlock Classes="detalhefase" FontWeight="SemiBold"
+                                                                                           Foreground="{StaticResource Texto}"
+                                                                                           Text="{Binding EnviadoEm}"/>
+                                                                            </StackPanel>
+                                                                            <StackPanel Orientation="Horizontal" Spacing="5"
+                                                                                        IsVisible="{Binding TemResultado}">
+                                                                                <TextBlock Classes="detalhefase" Text="Resultado em"/>
+                                                                                <TextBlock Classes="detalhefase" FontWeight="SemiBold"
+                                                                                           Foreground="{StaticResource Texto}"
+                                                                                           Text="{Binding ResultadoEm}"/>
+                                                                            </StackPanel>
+                                                                            <TextBlock Classes="detalhefase"
+                                                                                       IsVisible="{Binding TemDestinatario}"
+                                                                                       Text="{Binding Destinatario}"/>
+                                                                        </StackPanel>
+
+                                                                        <Border IsVisible="{Binding TemPrazo}"
+                                                                                CornerRadius="{StaticResource RaioSelo}"
+                                                                                Padding="8,3" HorizontalAlignment="Left"
+                                                                                Background="{Binding FundoPrazo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                            <TextBlock Text="{Binding Prazo}" FontSize="10.5"
+                                                                                       Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                        </Border>
+
+                                                                        <StackPanel Orientation="Horizontal" Spacing="7"
+                                                                                    Margin="0,2,0,0"
+                                                                                    IsVisible="{Binding TemBotao}">
+                                                                            <Button Classes="primario" FontSize="11.5" Padding="11,6"
+                                                                                    Content="Registrar protocolo"
+                                                                                    IsVisible="{Binding PodeProtocolar}"
+                                                                                    Command="{Binding $parent[UserControl].((vm:ProcessosViewModel)DataContext).RegistrarProtocoloCommand}"
+                                                                                    CommandParameter="{Binding}"/>
+                                                                            <Button Classes="neutro" FontSize="11.5" Padding="11,6"
+                                                                                    Content="Registrar resultado"
+                                                                                    IsVisible="{Binding PodeJulgar}"
+                                                                                    Command="{Binding $parent[UserControl].((vm:ProcessosViewModel)DataContext).RegistrarResultadoCommand}"
+                                                                                    CommandParameter="{Binding}"/>
+                                                                            <Button Classes="neutro" FontSize="11.5" Padding="11,6"
+                                                                                    Content="Anular fase"
+                                                                                    ToolTip.Tip="A fase caiu sem ser julgada e o processo segue na seguinte"
+                                                                                    IsVisible="{Binding PodeAnular}"
+                                                                                    Command="{Binding $parent[UserControl].((vm:ProcessosViewModel)DataContext).RegistrarResultadoCommand}"
+                                                                                    CommandParameter="{Binding}"/>
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+
+                                                    <!-- SERVIÇO DIRETO: o roteiro de etapas -->
+                                                    <ItemsControl ItemsSource="{Binding Servico.Etapas}"
+                                                                  IsVisible="{Binding Servico.TemEtapas}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:EtapaViewModel">
+                                                                <Button Classes="etapa" IsEnabled="{Binding PodeMarcar}"
+                                                                        Command="{Binding $parent[UserControl].((vm:ProcessosViewModel)DataContext).MarcarEtapaCommand}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                        <CheckBox Grid.Column="0" Margin="0,0,8,0"
+                                                                                  IsChecked="{Binding Concluida, Mode=OneWay}"
+                                                                                  IsHitTestVisible="False"
+                                                                                  IsEnabled="{Binding PodeMarcar}"
+                                                                                  VerticalAlignment="Center"/>
+                                                                        <TextBlock Grid.Column="1" FontSize="12.5"
+                                                                                   Text="{Binding Nome}"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Classes.cumprida="{Binding Concluida}"
+                                                                                   Foreground="{StaticResource Texto}"/>
+                                                                        <Border Grid.Column="2" Margin="10,0"
+                                                                                IsVisible="{Binding TemAviso}"
+                                                                                CornerRadius="{StaticResource RaioSelo}"
+                                                                                Padding="8,2" VerticalAlignment="Center"
+                                                                                Background="{Binding FundoPrazo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                                <TextBlock Text="{Binding Prazo}" FontSize="10"
+                                                                                           Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                                <TextBlock Text="·" FontSize="10"
+                                                                                           Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                                <TextBlock Text="{Binding Aviso}" FontSize="10"
+                                                                                           Foreground="{Binding CorPrazo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                        <TextBlock Grid.Column="3" FontSize="11"
+                                                                                   Text="{Binding Quando}"
+                                                                                   MinWidth="72" TextAlignment="Right"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Foreground="{StaticResource TextoApagado}"/>
+                                                                    </Grid>
+                                                                </Button>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock IsVisible="{Binding Carregando}"
+                           Text="Carregando os processos..."
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+                <TextBlock IsVisible="{Binding SemResultado}"
+                           Text="{Binding MensagemVazia}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+            </Panel>
+
+            <TextBlock Grid.Row="5" Text="{Binding Contagem}" FontSize="11.5"
+                       Margin="2,12,2,0" VerticalAlignment="Center"
+                       Foreground="{StaticResource TextoApagado}"/>
+        </Grid>
+
+        <!-- Erro fica na tela até alguém resolver: não é aviso que se apaga sozinho -->
+        <Border Margin="24" VerticalAlignment="Top"
+                IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                Background="{StaticResource AlertaClaro}"
+                BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}" Padding="16,13">
+            <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                       Foreground="{StaticResource AlertaEscuro}"/>
+        </Border>
+
+        <!-- O formulário de protocolo ou resultado, por cima de tudo -->
+        <ContentControl Content="{Binding Formulario}"
+                        IsVisible="{Binding Formulario, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+    </Panel>
+</UserControl>

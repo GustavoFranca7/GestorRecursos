@@ -132,8 +132,9 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
         // Lista nova a cada visita: voltar para Clientes traz o que está no banco agora.
         Conteudo = secao switch
         {
-            SecaoApp.Dashboard => new DashboardViewModel(aoAbrirCliente: AbrirClienteDoPainel),
+            SecaoApp.Dashboard => new DashboardViewModel(aoAbrirCliente: AbrirFichaDoCliente),
             SecaoApp.Clientes => new ClientesViewModel(),
+            SecaoApp.Processos => new ProcessosViewModel(aoAbrirCliente: AbrirFichaDoCliente),
             SecaoApp.Arquivados => new ArquivadosViewModel(),
             SecaoApp.Servicos => new ServicosViewModel(),
             SecaoApp.Configuracoes => new ConfiguracoesViewModel(),
@@ -141,12 +142,12 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
         };
     }
 
-    /// <summary>Leva uma linha do painel à ficha do cliente, trocando de seção no caminho.</summary>
+    /// <summary>Leva uma linha de outra seção à ficha do cliente, trocando de seção no caminho.</summary>
     /// <remarks>
-    /// O painel não sabe abrir ficha — quem sabe é a seção Clientes. Por isso ele avisa a
-    /// janela, que navega e só então pede a ficha.
+    /// Nem o painel nem a tela de Processos sabem abrir ficha — quem sabe é a seção
+    /// Clientes. Por isso eles avisam a janela, que navega e só então pede a ficha.
     /// </remarks>
-    private void AbrirClienteDoPainel(int clienteId)
+    private void AbrirFichaDoCliente(int clienteId)
     {
         Navegar(SecaoApp.Clientes);
 
