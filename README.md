@@ -51,11 +51,6 @@ sistema **avisa na tela quando a cópia para de acontecer**.
 
 ## Decisões que valem explicar
 
-**Senha que o sistema não sabe qual é.** PBKDF2 com SHA-256 do próprio .NET, sal sorteado
-por senha e 210.000 iterações. As iterações ficam gravadas junto do hash, então o custo
-pode subir depois sem invalidar o que já está no banco. O código de recuperação passa pelo
-mesmo caminho, pelo mesmo motivo: quem conseguir ler a tabela não entra com o que leu.
-
 **O programa não é o dono do banco.** Em produção a aplicação conecta com um usuário
 próprio, que não é o dono do esquema: ele alcança as tabelas por `GRANT` nominal e
 `CURRENT_SCHEMA`, e **não tem permissão de DDL**. Uma consequência concreta disso está
