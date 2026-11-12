@@ -25,16 +25,37 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
         LancamentoDaFichaViewModel lancamento,
         Action? aoCancelar = null,
         Action? aoSalvar = null)
+        : this(lancamento.Id, lancamento.Aberto, lancamento.Titulo,
+               lancamento.Contratado, lancamento.Pago, lancamento.EmAberto,
+               aoCancelar, aoSalvar)
     {
-        _contratacaoId = lancamento.Id;
-        _emAberto = lancamento.Aberto;
+    }
+
+    /// <summary>A mesma janela, chamada de fora da ficha.</summary>
+    /// <remarks>
+    /// A tela de Financeiro cobra a partir da contratação, e não a partir da ficha de um
+    /// cliente — então ela não tem um <see cref="LancamentoDaFichaViewModel"/> para
+    /// entregar. Recebe os mesmos dados soltos, e o resto do formulário não muda.
+    /// </remarks>
+    public PagamentoFormularioViewModel(
+        int contratacaoId,
+        decimal emAberto,
+        string referencia,
+        string contratado,
+        string jaPago,
+        string emAbertoTexto,
+        Action? aoCancelar = null,
+        Action? aoSalvar = null)
+    {
+        _contratacaoId = contratacaoId;
+        _emAberto = emAberto;
         _aoCancelar = aoCancelar;
         _aoSalvar = aoSalvar;
 
-        Referencia = lancamento.Titulo;
-        Contratado = lancamento.Contratado;
-        JaPago = lancamento.Pago;
-        EmAberto = lancamento.EmAberto;
+        Referencia = referencia;
+        Contratado = contratado;
+        JaPago = jaPago;
+        EmAberto = emAbertoTexto;
 
         Data = Formato.Data(DateTime.Today);
         Valor = _emAberto > 0 ? _emAberto.ToString("N2", Brasil) : string.Empty;
