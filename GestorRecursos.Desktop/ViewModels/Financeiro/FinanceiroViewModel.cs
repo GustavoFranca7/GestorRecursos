@@ -86,6 +86,26 @@ public partial class FinanceiroViewModel : ViewModelBase
     /// <summary>Não dá para avançar além do mês corrente: mês futuro não tem caixa.</summary>
     public bool PodeAvancar => new DateTime(Ano, Mes, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
+    /// <summary>O seletor de mês, aberto por cima do título.</summary>
+    /// <remarks>
+    /// As setas servem para andar de um em um, que é o uso de todo dia. Para voltar a
+    /// março do ano passado seriam vinte cliques, e é para isso que existe o seletor.
+    /// </remarks>
+    [ObservableProperty]
+    public partial bool SeletorAberto { get; set; }
+
+    /// <summary>O ano que o seletor mostra. Trocar de ano aqui não recarrega nada.</summary>
+    [ObservableProperty]
+    public partial int AnoDoSeletor { get; set; }
+
+    public ObservableCollection<OpcaoDeMes> MesesDoSeletor { get; } = [];
+
+    /// <summary>Ano futuro não tem caixa, então o seletor também não passa do ano atual.</summary>
+    public bool PodeAvancarAno => AnoDoSeletor < DateTime.Today.Year;
+
+    /// <summary>Já está no mês corrente: o atalho para "hoje" não teria o que fazer.</summary>
+    public bool NoMesAtual => Ano == DateTime.Today.Year && Mes == DateTime.Today.Month;
+
     [ObservableProperty]
     public partial bool Carregando { get; set; }
 
@@ -230,10 +250,84 @@ public partial class FinanceiroViewModel : ViewModelBase
     private void IrPara(int meses)
     {
         var destino = new DateTime(Ano, Mes, 1).AddMonths(meses);
-        Ano = destino.Year;
-        Mes = destino.Month;
+        Ir(destino.Year, destino.Month);
+    }
 
+    private void Ir(int ano, int mes)
+    {
+        Ano = ano;
+        Mes = mes;
+
+        OnPropertyChanged(nameof(NoMesAtual));
         CarregarCommand.Execute(null);
+    }
+
+    /// <summary>Abre o seletor já no ano do mês que está na tela.</summary>
+    [RelayCommand]
+    private void AbrirSeletor()
+    {
+        AnoDoSeletor = Ano;
+        MontarSeletor();
+        SeletorAberto = true;
+    }
+
+    [RelayCommand]
+    private void AnoAnterior()
+    {
+        AnoDoSeletor--;
+        MontarSeletor();
+    }
+
+    [RelayCommand]
+    private void AnoSeguinte()
+    {
+        if (PodeAvancarAno)
+        {
+            AnoDoSeletor++;
+            MontarSeletor();
+        }
+    }
+
+    /// <summary>Escolher um mês fecha o seletor e carrega: é um gesto só.</summary>
+    [RelayCommand]
+    private void EscolherMes(OpcaoDeMes? opcao)
+    {
+        if (opcao is not { Disponivel: true })
+        {
+            return;
+        }
+
+        SeletorAberto = false;
+        Ir(AnoDoSeletor, opcao.Numero);
+    }
+
+    /// <summary>Volta ao mês corrente de qualquer lugar do histórico.</summary>
+    [RelayCommand]
+    private void IrParaHoje()
+    {
+        SeletorAberto = false;
+        Ir(DateTime.Today.Year, DateTime.Today.Month);
+    }
+
+    /// <summary>Os doze meses do ano escolhido, com o futuro desligado.</summary>
+    private void MontarSeletor()
+    {
+        MesesDoSeletor.Clear();
+
+        for (var mes = 1; mes <= 12; mes++)
+        {
+            // Mês que ainda não chegou não tem caixa: aparece, para a grade não mudar
+            // de forma no meio do ano, mas não recebe clique.
+            var disponivel = new DateTime(AnoDoSeletor, mes, 1)
+                             <= new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+            MesesDoSeletor.Add(new OpcaoDeMes(
+                mes,
+                disponivel,
+                escolhido: AnoDoSeletor == Ano && mes == Mes));
+        }
+
+        OnPropertyChanged(nameof(PodeAvancarAno));
     }
 
     /// <summary>Busca a cada tecla: a lista já está na memória, não há ida ao banco.</summary>
@@ -304,6 +398,31 @@ public partial class FinanceiroViewModel : ViewModelBase
 
         return char.ToUpper(nome[0], Brasil) + nome[1..];
     }
+}
+
+/// <summary>Um mês na grade do seletor.</summary>
+public class OpcaoDeMes
+{
+    private static readonly CultureInfo Brasil = new("pt-BR");
+
+    public OpcaoDeMes(int numero, bool disponivel, bool escolhido)
+    {
+        Numero = numero;
+        Disponivel = disponivel;
+        Escolhido = escolhido;
+
+        // "jan.", "fev." no pt-BR: o ponto some, que numa grade de três colunas só
+        // ocupa espaço e não diz nada.
+        var nome = Brasil.DateTimeFormat.AbbreviatedMonthNames[numero - 1].TrimEnd('.');
+        Nome = char.ToUpper(nome[0], Brasil) + nome[1..];
+    }
+
+    public int Numero { get; }
+    public string Nome { get; }
+    public bool Disponivel { get; }
+
+    /// <summary>É o mês que está carregado na tela.</summary>
+    public bool Escolhido { get; }
 }
 
 /// <summary>Quanto entrou por uma forma de pagamento, com a barra proporcional.</summary>

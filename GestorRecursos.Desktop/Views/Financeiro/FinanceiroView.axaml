@@ -90,6 +90,59 @@
         <Style Selector="Button.mes:disabled">
             <Setter Property="Opacity" Value="0.35"/>
         </Style>
+
+        <!-- O título do mês é um botão: clicar nele abre o seletor -->
+        <Style Selector="Button.titulomes">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="9,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.titulomes /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.titulomes:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+        <!-- Um mês na grade do seletor -->
+        <Style Selector="Button.mesdagrade">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.mesdagrade /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        </Style>
+        <Style Selector="Button.mesdagrade:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+        <Style Selector="Button.mesdagrade.atual /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.mesdagrade:disabled">
+            <Setter Property="Opacity" Value="0.3"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
     </UserControl.Styles>
 
     <Panel>
@@ -120,9 +173,88 @@
                                   Data="{StaticResource IconeSetaEsquerda}"/>
                         </Viewbox>
                     </Button>
-                    <TextBlock Text="{Binding TituloDoMes}" FontSize="17" FontWeight="SemiBold"
-                               MinWidth="210" VerticalAlignment="Center"
-                               Foreground="{StaticResource Texto}"/>
+                    <!-- O título abre o seletor: as setas andam de um em um, e voltar
+                         a março do ano passado por elas seriam vinte cliques. -->
+                    <Panel>
+                        <Button Name="BotaoDoMes" Classes="titulomes"
+                                Command="{Binding AbrirSeletorCommand}"
+                                ToolTip.Tip="Escolher o mês e o ano">
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <TextBlock Text="{Binding TituloDoMes}" FontSize="17"
+                                           FontWeight="SemiBold" MinWidth="188"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource Texto}"/>
+                                <Viewbox Width="10" Height="10" VerticalAlignment="Center"
+                                         RenderTransform="rotate(90deg)">
+                                    <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                          Data="{StaticResource IconeSetaDireita}"/>
+                                </Viewbox>
+                            </StackPanel>
+                        </Button>
+
+                        <Popup IsOpen="{Binding SeletorAberto, Mode=TwoWay}"
+                               PlacementTarget="{Binding #BotaoDoMes}"
+                               Placement="BottomEdgeAlignedLeft"
+                               VerticalOffset="6"
+                               IsLightDismissEnabled="True">
+                            <Border Width="286" Background="{StaticResource Cartao}"
+                                    BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                    CornerRadius="{StaticResource RaioCartao}"
+                                    Padding="14,12" BoxShadow="0 10 30 0 #25102A2C">
+                                <StackPanel Spacing="11">
+
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Button Grid.Column="0" Classes="mes"
+                                                Command="{Binding AnoAnteriorCommand}"
+                                                ToolTip.Tip="Ano anterior">
+                                            <Viewbox Width="11" Height="11">
+                                                <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                      Data="{StaticResource IconeSetaEsquerda}"/>
+                                            </Viewbox>
+                                        </Button>
+                                        <TextBlock Grid.Column="1" Text="{Binding AnoDoSeletor}"
+                                                   FontSize="15" FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource Texto}"/>
+                                        <Button Grid.Column="2" Classes="mes"
+                                                Command="{Binding AnoSeguinteCommand}"
+                                                IsEnabled="{Binding PodeAvancarAno}"
+                                                ToolTip.Tip="Ano seguinte">
+                                            <Viewbox Width="11" Height="11">
+                                                <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                      Data="{StaticResource IconeSetaDireita}"/>
+                                            </Viewbox>
+                                        </Button>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding MesesDoSeletor}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:OpcaoDeMes">
+                                                <Button Classes="mesdagrade"
+                                                        Content="{Binding Nome}"
+                                                        Classes.atual="{Binding Escolhido}"
+                                                        IsEnabled="{Binding Disponivel}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FinanceiroViewModel)DataContext).EscolherMesCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <Button Classes="atalhocartao" Content="ir para o mês atual"
+                                            HorizontalAlignment="Center"
+                                            IsVisible="{Binding !NoMesAtual}"
+                                            Command="{Binding IrParaHojeCommand}"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Panel>
+
                     <Button Classes="mes" Command="{Binding MesSeguinteCommand}"
                             IsEnabled="{Binding PodeAvancar}"
                             ToolTip.Tip="Mês seguinte">
