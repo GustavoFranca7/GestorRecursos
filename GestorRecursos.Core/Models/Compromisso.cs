@@ -19,6 +19,14 @@ public class Compromisso
     public Recorrencia Recorrencia { get; set; } = Recorrencia.Nenhuma;
     public string? Observacao { get; set; }
 
+    /// <summary>O que é, escrito à mão, quando o tipo escolhido foi "Outro".</summary>
+    /// <remarks>
+    /// Existe porque a lista de tipos é fechada — ela define cor, filtro e selo — e
+    /// nem tudo que se marca cabe nela. O texto livre fica à parte do título: o título
+    /// diz o que fazer, este diz que espécie de compromisso é.
+    /// </remarks>
+    public string? TipoOutro { get; set; }
+
     /// <summary>Nome do cliente, quando a consulta traz o cadastro junto.</summary>
     public string? ClienteNome { get; set; }
 

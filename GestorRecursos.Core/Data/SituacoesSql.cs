@@ -14,4 +14,14 @@ internal static class SituacoesSql
     /// </remarks>
     public const string InstanciaEncerrada =
         "('DEFERIDO','INDEFERIDO','ANULADO','CANCELADO','DESISTENCIA','PRAZO_PERDIDO')";
+
+    /// <summary>A mesma regra, para quando a decisão é em C# e não em SQL.</summary>
+    /// <remarks>
+    /// A lista é escrita uma vez e lida nos dois lugares pelo mesmo texto da constante:
+    /// escrever o array à parte seria recriar a divergência que este arquivo existe
+    /// para evitar.
+    /// </remarks>
+    public static bool Encerrada(string? situacao) =>
+        situacao is not null &&
+        InstanciaEncerrada.Contains($"'{situacao}'", System.StringComparison.Ordinal);
 }

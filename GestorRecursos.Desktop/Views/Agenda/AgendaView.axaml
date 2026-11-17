@@ -1,0 +1,853 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.AgendaView"
+             x:DataType="vm:AgendaViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.cartao">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="16,13"/>
+        </Style>
+        <Style Selector="TextBlock.titulocartao">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.7"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+        <Style Selector="TextBlock.legenda">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+
+        <!-- Aba da seção: sublinhado, igual ao do Financeiro e da ficha -->
+        <Style Selector="Button.abasecao">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="2,9"/>
+            <Setter Property="Margin" Value="0,0,24,0"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.abasecao /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.abasecao:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+        </Style>
+        <Style Selector="Button.abasecao:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+        <Style Selector="Button.abasecao.escolhida">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Seta de mês e ano -->
+        <Style Selector="Button.mes">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.mes /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+        </Style>
+        <Style Selector="Button.mes:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+        <Style Selector="Button.titulomes">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="9,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.titulomes /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.titulomes:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+        </Style>
+
+        <Style Selector="Button.mesdagrade">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.mesdagrade /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        </Style>
+        <Style Selector="Button.mesdagrade:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        </Style>
+        <Style Selector="Button.mesdagrade.atual">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+
+        <!-- ========== O DIA NA GRADE ==========
+             Cartão branco sobre o campo cinza do calendário, com vão entre os vizinhos:
+             branco sobre branco some contra o fundo da tela. -->
+        <Style Selector="Button.dia">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="2.5"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+        <Style Selector="Button.dia /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        </Style>
+        <Style Selector="Button.dia:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource CartaoSuave}"/>
+        </Style>
+
+        <!-- Dia de outro mês: fica no campo, sem virar cartão -->
+        <Style Selector="Button.dia.fora">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.dia.fora /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.dia.hoje">
+            <Setter Property="BorderBrush" Value="#BFE3E0"/>
+        </Style>
+        <Style Selector="Button.dia.hoje /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        </Style>
+
+        <Style Selector="Button.dia.escolhido">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <!-- Prazo vencendo: a faixa da esquerda grita de longe (RF-27) -->
+        <Style Selector="Button.dia.urgente">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding" Value="4,6,6,6"/>
+        </Style>
+
+        <Style Selector="TextBlock.numerodia">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+        <Style Selector="TextBlock.numerodia.fora">
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+
+        <!-- Uma etiqueta dentro da célula -->
+        <Style Selector="Border.etiqueta">
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="5,2"/>
+        </Style>
+        <Style Selector="TextBlock.etiqueta">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <!-- Linha do painel e da lista -->
+        <Style Selector="Button.linha">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.linha /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.linha:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource CartaoSuave}"/>
+        </Style>
+
+        <!-- A caixinha de concluir -->
+        <Style Selector="Button.caixa">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1.4"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.caixa /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+        </Style>
+        <Style Selector="Button.caixa:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        </Style>
+        <Style Selector="Button.caixa.marcada">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="Button.caixa.marcada /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Primaria}"/>
+        </Style>
+
+        <Style Selector="TextBlock.feito">
+            <Setter Property="TextDecorations" Value="Strikethrough"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+
+        <Style Selector="TextBox.diario">
+            <Setter Property="Background" Value="{StaticResource Fundo}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="MinHeight" Value="86"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBox.diario:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+
+        <Style Selector="TextBlock.cabecalhosemana">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="1"/>
+            <Setter Property="Padding" Value="0,9"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+
+        <!-- Botão largo de exclusão, para a escolha de quanto apagar -->
+        <Style Selector="Button.perigoso">
+            <Setter Property="Background" Value="{StaticResource Alerta}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.perigoso /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="Button.perigoso:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AlertaEscuro}"/>
+        </Style>
+
+        <Style Selector="ComboBox.filtro">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel Background="{StaticResource Fundo}">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24,20,24,16">
+
+            <!-- ========== CABEÇALHO ========== -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14">
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center">
+                    <Button Classes="mes" Command="{Binding MesAnteriorCommand}"
+                            ToolTip.Tip="Mês anterior">
+                        <Viewbox Width="11" Height="11">
+                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                  Data="{StaticResource IconeSetaEsquerda}"/>
+                        </Viewbox>
+                    </Button>
+
+                    <Panel>
+                        <Button Name="BotaoDoMes" Classes="titulomes"
+                                Command="{Binding AbrirSeletorCommand}"
+                                ToolTip.Tip="Escolher o mês e o ano">
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <TextBlock Text="{Binding TituloDoMes}" FontSize="17"
+                                           FontWeight="SemiBold" MinWidth="188"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource Texto}"/>
+                                <Viewbox Width="10" Height="10" VerticalAlignment="Center"
+                                         RenderTransform="rotate(90deg)">
+                                    <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                          Data="{StaticResource IconeSetaDireita}"/>
+                                </Viewbox>
+                            </StackPanel>
+                        </Button>
+
+                        <Popup IsOpen="{Binding SeletorAberto, Mode=TwoWay}"
+                               PlacementTarget="{Binding #BotaoDoMes}"
+                               Placement="BottomEdgeAlignedLeft"
+                               VerticalOffset="6"
+                               IsLightDismissEnabled="True">
+                            <Border Width="286" Background="{StaticResource Cartao}"
+                                    BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                    CornerRadius="{StaticResource RaioCartao}"
+                                    Padding="14,12" BoxShadow="0 10 30 0 #25102A2C">
+                                <StackPanel Spacing="11">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Button Grid.Column="0" Classes="mes"
+                                                Command="{Binding AnoAnteriorCommand}"
+                                                ToolTip.Tip="Ano anterior">
+                                            <Viewbox Width="11" Height="11">
+                                                <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                      Data="{StaticResource IconeSetaEsquerda}"/>
+                                            </Viewbox>
+                                        </Button>
+                                        <TextBlock Grid.Column="1" Text="{Binding AnoDoSeletor}"
+                                                   FontSize="15" FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource Texto}"/>
+                                        <Button Grid.Column="2" Classes="mes"
+                                                Command="{Binding AnoSeguinteCommand}"
+                                                ToolTip.Tip="Ano seguinte">
+                                            <Viewbox Width="11" Height="11">
+                                                <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                      Data="{StaticResource IconeSetaDireita}"/>
+                                            </Viewbox>
+                                        </Button>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding MesesDoSeletor}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:OpcaoDeMes">
+                                                <Button Classes="mesdagrade"
+                                                        Content="{Binding Nome}"
+                                                        Classes.atual="{Binding Escolhido}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).EscolherMesCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Panel>
+
+                    <Button Classes="mes" Command="{Binding MesSeguinteCommand}"
+                            ToolTip.Tip="Mês seguinte">
+                        <Viewbox Width="11" Height="11">
+                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                  Data="{StaticResource IconeSetaDireita}"/>
+                        </Viewbox>
+                    </Button>
+
+                    <Button Classes="atalhocartao" Content="hoje"
+                            VerticalAlignment="Center"
+                            Command="{Binding IrParaHojeCommand}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center">
+                    <Button Classes="primario" Content="+ Compromisso"
+                            FontSize="11.5" Padding="14,8"
+                            ToolTip.Tip="Atendimento, prova, ida ao DETRAN, tarefa"
+                            Command="{Binding NovoCompromissoCommand}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ========== CALENDÁRIO OU LISTA ========== -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                <Button Classes="abasecao" Content="Calendário"
+                        Classes.escolhida="{Binding NoCalendario}"
+                        Command="{Binding TrocarVisaoCommand}"
+                        CommandParameter="{x:Static vm:VisaoAgenda.Calendario}"/>
+                <Button Classes="abasecao" Content="Lista"
+                        Classes.escolhida="{Binding NaLista}"
+                        Command="{Binding TrocarVisaoCommand}"
+                        CommandParameter="{x:Static vm:VisaoAgenda.Lista}"/>
+            </StackPanel>
+
+            <!-- ========== VISÃO CALENDÁRIO ========== -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,16,352" IsVisible="{Binding NoCalendario}">
+
+                <!-- O quadro do mês é um campo cinza; cada dia é um cartão em cima dele -->
+                <Border Grid.Column="0" Background="{StaticResource Fundo}"
+                        BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                        CornerRadius="{StaticResource RaioCartao}" ClipToBounds="True"
+                        BoxShadow="0 1 3 0 #10102A2C">
+                    <Grid RowDefinitions="Auto,*">
+
+                        <Border Grid.Row="0" Background="{StaticResource Cartao}"
+                                BorderBrush="{StaticResource Borda}" BorderThickness="0,0,0,1"
+                                Padding="6,0">
+                            <UniformGrid Columns="7">
+                                <TextBlock Classes="cabecalhosemana" Text="DOM"/>
+                                <TextBlock Classes="cabecalhosemana" Text="SEG"/>
+                                <TextBlock Classes="cabecalhosemana" Text="TER"/>
+                                <TextBlock Classes="cabecalhosemana" Text="QUA"/>
+                                <TextBlock Classes="cabecalhosemana" Text="QUI"/>
+                                <TextBlock Classes="cabecalhosemana" Text="SEX"/>
+                                <TextBlock Classes="cabecalhosemana" Text="SÁB"/>
+                            </UniformGrid>
+                        </Border>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Dias}" Margin="3.5">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DiaDoMesViewModel">
+                                    <Button Classes="dia"
+                                            Classes.fora="{Binding !DoMes}"
+                                            Classes.hoje="{Binding Hoje}"
+                                            Classes.escolhido="{Binding Escolhido}"
+                                            Classes.urgente="{Binding Urgente}"
+                                            Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).EscolherDiaCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Grid RowDefinitions="Auto,*,Auto">
+
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal"
+                                                        Spacing="5" Margin="0,0,0,4">
+                                                <TextBlock Classes="numerodia"
+                                                           Classes.fora="{Binding !DoMes}"
+                                                           Text="{Binding Numero}"/>
+                                                <Border Background="{StaticResource Primaria}"
+                                                        CornerRadius="3" Padding="4,1"
+                                                        VerticalAlignment="Center"
+                                                        IsVisible="{Binding Hoje}">
+                                                    <TextBlock Text="HOJE" FontSize="8"
+                                                               FontWeight="Bold" LetterSpacing="0.5"
+                                                               Foreground="White"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="1" Spacing="3">
+                                                <ItemsControl ItemsSource="{Binding Visiveis}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:ItemDaAgendaViewModel">
+                                                            <Border Classes="etiqueta" Margin="0,0,0,3"
+                                                                    Background="{Binding Fundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                <TextBlock Classes="etiqueta"
+                                                                           Classes.feito="{Binding Concluido}"
+                                                                           Text="{Binding Rotulo}"
+                                                                           Foreground="{Binding Cor, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <TextBlock Text="{Binding Extras}" FontSize="10"
+                                                           IsVisible="{Binding TemExtras}"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+                                            </StackPanel>
+
+                                            <!-- Quantos recursos do dia já foram protocolados -->
+                                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*"
+                                                  IsVisible="{Binding TemPlano}" Margin="0,4,0,0">
+                                                <TextBlock Grid.Column="0" Text="{Binding PlanoTexto}"
+                                                           FontSize="9.5" VerticalAlignment="Center"
+                                                           Margin="0,0,6,0"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+                                                <Panel Grid.Column="1" HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center">
+                                                    <Border Width="40" Height="4" CornerRadius="2"
+                                                            Background="{StaticResource BordaClara}"/>
+                                                    <Border Width="{Binding LarguraFeita}" Height="4"
+                                                            CornerRadius="2" HorizontalAlignment="Left"
+                                                            Background="{StaticResource Sucesso}"/>
+                                                </Panel>
+                                            </Grid>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+
+                <!-- ========== PAINEL DO DIA ========== -->
+                <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12">
+
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding TituloDoDia}" FontSize="15"
+                                           FontWeight="SemiBold" TextWrapping="Wrap"
+                                           Foreground="{StaticResource Texto}"/>
+                                <TextBlock Classes="legenda" Text="{Binding ResumoDoDia}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RF-29: é isto que substitui a planilha de produção diária -->
+                        <Border Classes="cartao" IsVisible="{Binding TemPlano}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="titulocartao" Text="PLANO DO DIA"/>
+
+                                <StackPanel Spacing="7">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <TextBlock Text="{Binding PrazosFeitos}" FontSize="22"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{Binding CorDoPlano, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                        <TextBlock Classes="legenda" Text="{Binding PlanoTexto}"
+                                                   VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                                    </StackPanel>
+                                    <Panel HorizontalAlignment="Left">
+                                        <Border Width="300" Height="6" CornerRadius="3"
+                                                Background="{StaticResource BordaClara}"/>
+                                        <Border Width="{Binding LarguraDoPlano}" Height="6"
+                                                CornerRadius="3" HorizontalAlignment="Left"
+                                                Background="{StaticResource Sucesso}"/>
+                                    </Panel>
+                                </StackPanel>
+
+                                <!-- O prazo se fecha protocolando na ficha, não com um clique aqui -->
+                                <ItemsControl ItemsSource="{Binding ItensDoDia}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ItemDaAgendaViewModel">
+                                            <Button Classes="linha" IsVisible="{Binding EhPrazo}"
+                                                    Padding="0,7"
+                                                    ToolTip.Tip="Abrir a ficha do cliente para protocolar"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).AbrirClienteCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Grid ColumnDefinitions="Auto,*">
+                                                    <Border Grid.Column="0" Width="16" Height="16"
+                                                            CornerRadius="4" Margin="0,0,9,0"
+                                                            VerticalAlignment="Center"
+                                                            BorderThickness="1.4"
+                                                            BorderBrush="{StaticResource Borda}"
+                                                            Background="{StaticResource Cartao}">
+                                                        <Panel IsVisible="{Binding Concluido}"
+                                                               Background="{StaticResource Sucesso}"/>
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1" FontSize="12"
+                                                               TextWrapping="Wrap"
+                                                               Classes.feito="{Binding Concluido}"
+                                                               Text="{Binding Rotulo}"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RF-28 -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="9">
+                                <TextBlock Classes="titulocartao" Text="COMPROMISSOS"/>
+
+                                <ItemsControl ItemsSource="{Binding ItensDoDia}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ItemDaAgendaViewModel">
+                                            <Grid ColumnDefinitions="Auto,42,*,Auto,Auto"
+                                                  IsVisible="{Binding PodeConcluir}"
+                                                  Margin="0,0,0,8">
+                                                <Button Grid.Column="0" Classes="caixa"
+                                                        Classes.marcada="{Binding Concluido}"
+                                                        Margin="0,0,9,0"
+                                                        ToolTip.Tip="Marcar como feito"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).AlternarConcluidoCommand}"
+                                                        CommandParameter="{Binding}"/>
+
+                                                <TextBlock Grid.Column="1" Text="{Binding HoraOuTraco}"
+                                                           FontSize="11.5" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource TextoFraco}"/>
+
+                                                <StackPanel Grid.Column="2" Spacing="1"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                                               FontWeight="SemiBold" TextWrapping="Wrap"
+                                                               Classes.feito="{Binding Concluido}"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <TextBlock Text="{Binding Detalhe}" FontSize="10.5"
+                                                               TextWrapping="Wrap"
+                                                               IsVisible="{Binding TemDetalhe}"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <Button Grid.Column="3" Classes="atalhoicone"
+                                                        VerticalAlignment="Center" Margin="0,0,2,0"
+                                                        ToolTip.Tip="Alterar dia, hora ou o que está escrito"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).EditarCompromissoCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Viewbox Width="12" Height="12">
+                                                        <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                                                              Data="{StaticResource IconeEditar}"/>
+                                                    </Viewbox>
+                                                </Button>
+
+                                                <Button Grid.Column="4" Classes="atalhoicone perigosa"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip.Tip="Excluir"
+                                                        Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).ExcluirCompromissoCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Viewbox Width="12" Height="12">
+                                                        <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                                                              Data="{StaticResource IconeExcluir}"/>
+                                                    </Viewbox>
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Classes="legenda" IsVisible="{Binding SemCompromissosNoDia}"
+                                           Text="Nada marcado neste dia."/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RF-30: por que nada foi protocolado também é informação -->
+                        <Border Classes="cartao">
+                            <StackPanel Spacing="9">
+                                <TextBlock Classes="titulocartao" Text="DIÁRIO DO DIA"/>
+                                <TextBox Classes="diario" Text="{Binding Diario}"
+                                         PlaceholderText="O que aconteceu, ou por que nada foi protocolado."/>
+                                <Button Classes="primario" Content="Salvar o diário"
+                                        FontSize="11.5" Padding="13,7"
+                                        HorizontalAlignment="Right"
+                                        IsVisible="{Binding DiarioMudou}"
+                                        Command="{Binding SalvarDiarioCommand}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- ========== VISÃO LISTA ========== -->
+            <Grid Grid.Row="2" RowDefinitions="Auto,*" IsVisible="{Binding NaLista}">
+
+                <Grid Grid.Row="0" ColumnDefinitions="260,Auto,Auto,*,Auto" Margin="0,0,0,12">
+                    <TextBox Grid.Column="0" Classes="busca" Text="{Binding TermoBusca}"
+                             PlaceholderText="Buscar por cliente, AIT ou compromisso"/>
+
+                    <ComboBox Grid.Column="1" Classes="filtro" Width="176" Margin="10,0,0,0"
+                              ItemsSource="{Binding Tipos}"
+                              SelectedItem="{Binding TipoEscolhido}"/>
+
+                    <CheckBox Grid.Column="2" Margin="14,0,0,0" FontSize="12"
+                              VerticalAlignment="Center"
+                              IsChecked="{Binding SoDaquiPraFrente}"
+                              Content="Só daqui pra frente"/>
+
+                    <TextBlock Grid.Column="4" Text="{Binding ResumoDaLista}" FontSize="11.5"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextoFraco}"/>
+                </Grid>
+
+                <Panel Grid.Row="1">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding DiasDaLista}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DiaDaListaViewModel">
+                                    <StackPanel Margin="0,0,0,14">
+
+                                        <Grid ColumnDefinitions="Auto,Auto,*" Margin="2,0,0,7">
+                                            <TextBlock Grid.Column="0" Text="{Binding Titulo}"
+                                                       FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Texto}"/>
+                                            <Border Grid.Column="1" Background="{StaticResource Primaria}"
+                                                    CornerRadius="3" Padding="5,1" Margin="8,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding Hoje}">
+                                                <TextBlock Text="HOJE" FontSize="8.5" FontWeight="Bold"
+                                                           LetterSpacing="0.5" Foreground="White"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="2" Text="{Binding Resumo}"
+                                                       FontSize="11" Margin="10,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource TextoApagado}"/>
+                                        </Grid>
+
+                                        <Border Classes="cartao" Padding="0" ClipToBounds="True">
+                                            <ItemsControl ItemsSource="{Binding Itens}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ItemDaAgendaViewModel">
+                                                        <Button Classes="linha"
+                                                                Command="{Binding $parent[ItemsControl].((vm:AgendaViewModel)DataContext).AbrirClienteCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <Grid ColumnDefinitions="Auto,52,*,Auto">
+                                                                <Border Grid.Column="0" Width="4" Height="30"
+                                                                        CornerRadius="2" Margin="0,0,11,0"
+                                                                        VerticalAlignment="Center"
+                                                                        Background="{Binding Cor, Converter={x:Static vm:Conversores.Pincel}}"/>
+
+                                                                <TextBlock Grid.Column="1" Text="{Binding HoraOuTraco}"
+                                                                           FontSize="11.5" VerticalAlignment="Center"
+                                                                           Foreground="{StaticResource TextoFraco}"/>
+
+                                                                <StackPanel Grid.Column="2" Spacing="1"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Titulo}" FontSize="12.5"
+                                                                               FontWeight="SemiBold" TextWrapping="Wrap"
+                                                                               Classes.feito="{Binding Concluido}"
+                                                                               Foreground="{StaticResource Texto}"/>
+                                                                    <TextBlock Text="{Binding Detalhe}" FontSize="10.5"
+                                                                               TextWrapping="Wrap"
+                                                                               IsVisible="{Binding TemDetalhe}"
+                                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                                </StackPanel>
+
+                                                                <Border Grid.Column="3" CornerRadius="{StaticResource RaioSelo}"
+                                                                        Padding="8,3" VerticalAlignment="Center"
+                                                                        Background="{Binding FundoDoSelo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                    <TextBlock Text="{Binding Selo}" FontSize="10"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="{Binding CorDoSelo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                </Border>
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock IsVisible="{Binding SemNaLista}"
+                               Text="Nada na agenda para o que foi escolhido."
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+                </Panel>
+            </Grid>
+
+            <!-- ========== LEGENDA ========== -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="18" Margin="2,12,0,0"
+                        IsVisible="{Binding NoCalendario}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                            Background="{StaticResource Alerta}"/>
+                    <TextBlock Classes="legenda" Text="prazo de protocolo"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                            Background="{StaticResource Primaria}"/>
+                    <TextBlock Classes="legenda" Text="atendimento"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                            Background="{StaticResource Roxo}"/>
+                    <TextBlock Classes="legenda" Text="prova"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                            Background="{StaticResource Aviso}"/>
+                    <TextBlock Classes="legenda" Text="delegacia e vistoria"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                            Background="{StaticResource TextoApagado}"/>
+                    <TextBlock Classes="legenda" Text="tarefa"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <TextBlock IsVisible="{Binding Carregando}"
+                   Text="Carregando a agenda..."
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+        <!-- Erro fica na tela até alguém resolver -->
+        <Border Margin="24" VerticalAlignment="Top"
+                IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                Background="{StaticResource AlertaClaro}"
+                BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}" Padding="16,13">
+            <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                       Foreground="{StaticResource AlertaEscuro}"/>
+        </Border>
+
+        <ContentControl Content="{Binding Formulario}"
+                        IsVisible="{Binding Formulario, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+
+        <!-- Tarefa que repete: apagar uma vez não é a mesma coisa que parar de repetir -->
+        <Border Background="#73102A2C"
+                IsVisible="{Binding SerieAExcluir, Converter={x:Static vm:Conversores.NaoEhNulo}}">
+            <Border Width="470" Background="{StaticResource Cartao}"
+                    BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                    CornerRadius="{StaticResource RaioCartao}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="26,22" BoxShadow="0 18 50 0 #35102A2C">
+                <StackPanel Spacing="16">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Esta tarefa se repete" FontSize="17" FontWeight="Bold"
+                                   Foreground="{StaticResource Texto}"/>
+                        <TextBlock FontSize="12.5" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextoFraco}"
+                                   Text="{Binding SerieAExcluir.Titulo}"/>
+                        <TextBlock FontSize="11.5" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Foreground="{StaticResource TextoApagado}"
+                                   Text="O que já passou fica no lugar: as datas anteriores são registro do que foi feito."/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <Button Classes="neutro" Content="Excluir só a deste dia"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Padding="16,10"
+                                Command="{Binding ExcluirSoEsteCommand}"/>
+                        <Button Classes="perigoso" Content="Excluir esta e as seguintes"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Padding="16,10"
+                                Command="{Binding ExcluirAsSeguintesCommand}"/>
+                    </StackPanel>
+
+                    <Button Classes="atalhocartao" Content="cancelar"
+                            HorizontalAlignment="Center"
+                            Command="{Binding DesistirDaExclusaoCommand}"/>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Panel>
+</UserControl>

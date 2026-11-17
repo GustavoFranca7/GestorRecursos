@@ -136,6 +136,7 @@ public partial class JanelaPrincipalViewModel : ViewModelBase
             SecaoApp.Clientes => new ClientesViewModel(),
             SecaoApp.Processos => new ProcessosViewModel(aoAbrirCliente: AbrirFichaDoCliente),
             SecaoApp.Financeiro => new FinanceiroViewModel(aoAbrirCliente: AbrirFichaDoCliente),
+            SecaoApp.Agenda => new AgendaViewModel(aoAbrirCliente: AbrirFichaDoCliente),
             SecaoApp.Arquivados => new ArquivadosViewModel(),
             SecaoApp.Servicos => new ServicosViewModel(),
             SecaoApp.Configuracoes => new ConfiguracoesViewModel(),
