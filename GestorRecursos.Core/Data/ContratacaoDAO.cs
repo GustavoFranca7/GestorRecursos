@@ -126,6 +126,16 @@ public class ContratacaoDAO
             {
                 pagamento.ContratacaoId = idContratacao;
                 await PagamentoDAO.InserirAsync(conexao, transacao, pagamento, cancelamento);
+
+                // Pago com o saldo do cliente: os créditos que o bancam são gastos no
+                // mesmo commit, senão o contrato nasceria quitado sem nada ter saído de
+                // lá — e o saldo continuaria inteiro para ser usado de novo.
+                if (pagamento.Forma == FormaPagamento.Saldo)
+                {
+                    await PagamentoDAO.ConsumirSaldoAsync(
+                        conexao, transacao, contratacao.ClienteId,
+                        pagamento.Valor, pagamento.DataPagamento, cancelamento);
+                }
             }
 
             await transacao.CommitAsync(cancelamento);

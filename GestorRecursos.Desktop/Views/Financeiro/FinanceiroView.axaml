@@ -158,14 +158,19 @@
                         Classes.escolhida="{Binding NaCobranca}"
                         Command="{Binding TrocarAbaCommand}"
                         CommandParameter="{x:Static vm:AbaFinanceiro.Cobranca}"/>
+                <Button Classes="abasecao" Content="Saldos"
+                        Classes.escolhida="{Binding NosSaldos}"
+                        Command="{Binding TrocarAbaCommand}"
+                        CommandParameter="{x:Static vm:AbaFinanceiro.Saldos}"/>
             </StackPanel>
 
             <!-- ============ ABA CAIXA ============ -->
             <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*" IsVisible="{Binding NoCaixa}">
 
                 <!-- O mês, e o caminho para os outros -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10"
-                            Margin="0,0,0,14" VerticalAlignment="Center">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center">
                     <Button Classes="mes" Command="{Binding MesAnteriorCommand}"
                             ToolTip.Tip="Mês anterior">
                         <Viewbox Width="11" Height="11">
@@ -264,6 +269,13 @@
                         </Viewbox>
                     </Button>
                 </StackPanel>
+
+                    <!-- O custo do serviço se lança daqui: é no caixa que ele aparece -->
+                    <Button Grid.Column="2" Classes="neutro" Content="+ Lançar despesa"
+                            FontSize="11.5" Padding="13,8" VerticalAlignment="Center"
+                            ToolTip.Tip="Correio, taxa de DETRAN, autenticação"
+                            Command="{Binding LancarDespesaCommand}"/>
+                </Grid>
 
                 <!-- Entrou, saiu, líquido e o que foi fechado -->
                 <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Margin="0,0,0,14">
@@ -517,6 +529,129 @@
 
                     <TextBlock IsVisible="{Binding SemCobrancas}"
                                Text="{Binding MensagemSemCobrancas}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
+                               FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+                </Panel>
+            </Grid>
+
+            <!-- ============ ABA CRÉDITOS ============ -->
+            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*" IsVisible="{Binding NosSaldos}">
+
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14">
+                    <Border Grid.Column="0" Classes="cartao">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="numero" Text="{Binding TotalDeSaldos}"
+                                       Foreground="{StaticResource PrimariaEscura}"/>
+                            <TextBlock Classes="legenda" Text="{Binding ResumoDosSaldos}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Column="2" Classes="primario" Content="+ Novo saldo"
+                            FontSize="11.5" Padding="13,8" VerticalAlignment="Center"
+                            ToolTip.Tip="Registrar uma devolução como saldo do cliente"
+                            Command="{Binding NovoSaldoCommand}"/>
+                </Grid>
+
+                <Panel Grid.Row="1" Width="420" HorizontalAlignment="Left" Margin="0,0,0,14">
+                    <TextBox Classes="busca" Text="{Binding TermoBusca}"
+                             PlaceholderText="Buscar por cliente, CPF ou origem do saldo"/>
+                    <Button Command="{Binding LimparBuscaCommand}" Background="Transparent"
+                            BorderThickness="0" Padding="8,0" Cursor="Hand"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            IsVisible="{Binding TemBusca}" ToolTip.Tip="Limpar a busca">
+                        <Viewbox Width="12" Height="12">
+                            <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                  Data="{StaticResource IconeFechar}"/>
+                        </Viewbox>
+                    </Button>
+                    <Viewbox Width="15" Height="15" HorizontalAlignment="Right"
+                             Margin="0,0,10,0" VerticalAlignment="Center"
+                             IsVisible="{Binding !TemBusca}">
+                        <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                              Data="{StaticResource IconeBusca}"/>
+                    </Viewbox>
+                </Panel>
+
+                <Panel Grid.Row="2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Saldos}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SaldoViewModel">
+                                    <Border Background="{StaticResource Cartao}"
+                                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                            CornerRadius="{StaticResource RaioCartao}"
+                                            Margin="0,0,0,7" Padding="14,12">
+                                        <Grid ColumnDefinitions="2.4*,2.6*,1.1*,Auto">
+
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center"
+                                                        Margin="0,0,12,0">
+                                                <Button Classes="copiavel" Content="{Binding Nome}"
+                                                        FontSize="13" FontWeight="SemiBold"
+                                                        Foreground="{StaticResource Texto}"
+                                                        ToolTip.Tip="Clique para copiar o nome"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FinanceiroViewModel)DataContext).CopiarCommand}"
+                                                        CommandParameter="{Binding Nome}"/>
+                                                <Button Classes="copiavel secundario"
+                                                        Content="{Binding CpfFormatado}"
+                                                        ToolTip.Tip="Clique para copiar o CPF"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FinanceiroViewModel)DataContext).CopiarCommand}"
+                                                        CommandParameter="{Binding CpfFormatado}"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                                        Spacing="3" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Origem}" FontSize="12"
+                                                           IsVisible="{Binding TemOrigem}"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{StaticResource Texto}"/>
+                                                <TextBlock Text="{Binding Data}" FontSize="11"
+                                                           Foreground="{StaticResource TextoApagado}"/>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2" DataContext="{Binding Selo}"
+                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                    Padding="9,3" HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    Background="{Binding ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                <TextBlock Text="{Binding Texto}" FontSize="11"
+                                                           Foreground="{Binding ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal"
+                                                        Spacing="10" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Valor}"
+                                                           FontSize="14.5" FontWeight="SemiBold"
+                                                           MinWidth="104" TextAlignment="Right"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{StaticResource PrimariaEscura}"/>
+
+                                                <!-- O botão diz o que vai acontecer, não o estado -->
+                                                <Button Classes="atalhocartao"
+                                                        Content="{Binding AcaoDoBotao}"
+                                                        MinWidth="128" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FinanceiroViewModel)DataContext).AlternarUsoDoSaldoCommand}"
+                                                        CommandParameter="{Binding}"/>
+
+                                                <Button Classes="acao"
+                                                        ToolTip.Tip="Abrir a ficha do cliente"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FinanceiroViewModel)DataContext).AbrirClienteCommand}"
+                                                        CommandParameter="{Binding ClienteId}">
+                                                    <Viewbox Width="14" Height="14">
+                                                        <Path Fill="{StaticResource TextoFraco}" Stretch="Uniform"
+                                                              Data="{StaticResource IconePasta}"/>
+                                                    </Viewbox>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock IsVisible="{Binding SemSaldos}"
+                               Text="{Binding MensagemSemSaldos}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center"
                                FontSize="13" Foreground="{StaticResource TextoFraco}"/>

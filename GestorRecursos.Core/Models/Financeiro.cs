@@ -1,10 +1,18 @@
 namespace GestorRecursos.Core.Models;
 
-/// <summary>O dinheiro entrou ou saiu.</summary>
+/// <summary>O dinheiro entrou, saiu, ou não se moveu.</summary>
 public enum TipoDeMovimento
 {
     Entrada,
-    Saida
+    Saida,
+
+    /// <summary>Dívida quitada com o saldo do cliente.</summary>
+    /// <remarks>
+    /// Aparece no extrato porque aconteceu, mas fica fora do "entrou no mês": o dinheiro
+    /// entrou lá atrás, quando virou saldo. Contar de novo infla o caixa com um valor que
+    /// nunca passou pela conta duas vezes.
+    /// </remarks>
+    Abatimento
 }
 
 /// <summary>Uma linha do extrato do mês: um pagamento recebido ou uma despesa paga.</summary>
@@ -99,4 +107,48 @@ public class CobrancaAberta
 
     /// <summary>Nunca pagou nada e já passou de 30 dias.</summary>
     public bool SemNenhumPagamento => TotalPago <= 0;
+}
+
+/// <summary>Uma contratação como ela aparece na hora de escolher onde lançar a despesa.</summary>
+/// <remarks>
+/// A despesa é de uma contratação, e não de um cliente: o correio de um recurso e a taxa
+/// de DETRAN de uma renovação são custos de serviços diferentes, e é por contratação que
+/// o resultado líquido é calculado. Por isso a escolha mostra o serviço e a data, e não
+/// só o nome — quem tem três contratações precisa saber em qual está lançando.
+/// </remarks>
+public class ContratacaoParaLancamento
+{
+    public int ContratacaoId { get; set; }
+    public int ClienteId { get; set; }
+    public string ClienteNome { get; set; } = string.Empty;
+    public string ClienteCpf { get; set; } = string.Empty;
+
+    public DateTime DataContratacao { get; set; }
+    public decimal ValorFinal { get; set; }
+    public decimal TotalDespesas { get; set; }
+
+    public string? Servicos { get; set; }
+}
+
+/// <summary>Um crédito de devolução, com o cliente dono dele.</summary>
+public class CreditoDoCliente
+{
+    public int Id { get; set; }
+    public int ClienteId { get; set; }
+    public string ClienteNome { get; set; } = string.Empty;
+    public string ClienteCpf { get; set; } = string.Empty;
+    public string ClienteWhatsapp { get; set; } = string.Empty;
+
+    public decimal Valor { get; set; }
+    public string? Origem { get; set; }
+    public bool Utilizado { get; set; }
+    public DateTime DataCredito { get; set; }
+}
+
+/// <summary>Um cliente numa lista de escolha, com o mínimo para reconhecê-lo.</summary>
+public class ClienteParaEscolha
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public string Cpf { get; set; } = string.Empty;
 }

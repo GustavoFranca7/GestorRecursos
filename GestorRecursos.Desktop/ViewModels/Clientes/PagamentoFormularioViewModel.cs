@@ -20,14 +20,18 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
     private readonly Action? _aoSalvar;
     private readonly int _contratacaoId;
     private readonly decimal _emAberto;
+    private readonly int _clienteId;
+    private readonly decimal _saldoDisponivel;
 
     public PagamentoFormularioViewModel(
         LancamentoDaFichaViewModel lancamento,
         Action? aoCancelar = null,
-        Action? aoSalvar = null)
+        Action? aoSalvar = null,
+        int clienteId = 0,
+        decimal saldoDisponivel = 0m)
         : this(lancamento.Id, lancamento.Aberto, lancamento.Titulo,
                lancamento.Contratado, lancamento.Pago, lancamento.EmAberto,
-               aoCancelar, aoSalvar)
+               aoCancelar, aoSalvar, clienteId, saldoDisponivel)
     {
     }
 
@@ -45,10 +49,14 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
         string jaPago,
         string emAbertoTexto,
         Action? aoCancelar = null,
-        Action? aoSalvar = null)
+        Action? aoSalvar = null,
+        int clienteId = 0,
+        decimal saldoDisponivel = 0m)
     {
         _contratacaoId = contratacaoId;
         _emAberto = emAberto;
+        _clienteId = clienteId;
+        _saldoDisponivel = saldoDisponivel;
         _aoCancelar = aoCancelar;
         _aoSalvar = aoSalvar;
 
@@ -56,6 +64,12 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
         Contratado = contratado;
         JaPago = jaPago;
         EmAberto = emAbertoTexto;
+
+        // "Saldo" só aparece quando há saldo: oferecer uma forma que daria erro na hora
+        // de gravar é pior que não oferecer.
+        Formas = TemSaldo
+            ? ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito", "Saldo"]
+            : ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito"];
 
         Data = Formato.Data(DateTime.Today);
         Valor = _emAberto > 0 ? _emAberto.ToString("N2", Brasil) : string.Empty;
@@ -68,8 +82,20 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
     public string JaPago { get; }
     public string EmAberto { get; }
 
-    public IReadOnlyList<string> Formas { get; } =
-        ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito"];
+    public IReadOnlyList<string> Formas { get; }
+
+    /// <summary>O cliente tem saldo a receber do escritório.</summary>
+    public bool TemSaldo => _clienteId > 0 && _saldoDisponivel > 0;
+
+    /// <summary>"R$ 45,00 de saldo disponível", mostrado quando a forma é saldo.</summary>
+    public string SaldoTexto => $"{Formato.Dinheiro(_saldoDisponivel)} de saldo disponível";
+
+    public bool PagandoComSaldo => Forma == "Saldo";
+
+    /// <summary>Pelo saldo não dá para pagar mais do que ele tem.</summary>
+    private decimal TetoDoValor => PagandoComSaldo
+        ? Math.Min(_emAberto, _saldoDisponivel)
+        : _emAberto;
 
     [ObservableProperty] public partial string Valor { get; set; }
     [ObservableProperty] public partial string Data { get; set; }
@@ -91,8 +117,9 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
     private void Cancelar() => _aoCancelar?.Invoke();
 
     /// <summary>Põe de volta o valor que falta, depois de uma digitação qualquer.</summary>
+    /// <remarks>Pagando com saldo, "tudo" é o que o saldo alcança, e não o que falta.</remarks>
     [RelayCommand]
-    private void Quitar() => Valor = _emAberto > 0 ? _emAberto.ToString("N2", Brasil) : "0,00";
+    private void Quitar() => Valor = TetoDoValor > 0 ? TetoDoValor.ToString("N2", Brasil) : "0,00";
 
     [RelayCommand]
     private async Task Salvar()
@@ -107,15 +134,29 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
 
         try
         {
-            await _pagamentos.RegistrarAsync(new Pagamento
+            var data = Formato.LerData(Data) ?? DateTime.Today;
+            var valor = Formato.LerDinheiro(Valor) ?? 0m;
+            var observacao = string.IsNullOrWhiteSpace(Observacao) ? null : Observacao.Trim();
+
+            // Pelo saldo não é só gravar o pagamento: os créditos que o bancam precisam
+            // ser consumidos na mesma transação, e disso cuida o DAO.
+            if (PagandoComSaldo)
             {
-                ContratacaoId = _contratacaoId,
-                DataPagamento = Formato.LerData(Data) ?? DateTime.Today,
-                Valor = Formato.LerDinheiro(Valor) ?? 0m,
-                Forma = FormaEscolhida(),
-                Parcelas = Parcelavel && int.TryParse(Parcelas, out var n) && n is >= 1 and <= 12 ? n : 1,
-                Observacao = string.IsNullOrWhiteSpace(Observacao) ? null : Observacao.Trim()
-            });
+                await _pagamentos.PagarComSaldoAsync(
+                    _contratacaoId, _clienteId, valor, data, observacao);
+            }
+            else
+            {
+                await _pagamentos.RegistrarAsync(new Pagamento
+                {
+                    ContratacaoId = _contratacaoId,
+                    DataPagamento = data,
+                    Valor = valor,
+                    Forma = FormaEscolhida(),
+                    Parcelas = Parcelavel && int.TryParse(Parcelas, out var n) && n is >= 1 and <= 12 ? n : 1,
+                    Observacao = observacao
+                });
+            }
 
             _aoSalvar?.Invoke();
         }
@@ -142,6 +183,10 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
             // Receber mais do que o combinado vira crédito do cliente, não pagamento:
             // somado aqui, a contratação ficaria com saldo negativo e sem explicação.
             ErroValor = $"O valor excede o que está em aberto ({Formato.Dinheiro(_emAberto)}).";
+        }
+        else if (PagandoComSaldo && valor > _saldoDisponivel)
+        {
+            ErroValor = $"O saldo disponível é de {Formato.Dinheiro(_saldoDisponivel)}.";
         }
 
         if (Formato.LerData(Data) is not { } data)
@@ -172,5 +217,17 @@ public partial class PagamentoFormularioViewModel : ViewModelBase
     };
 
     partial void OnErroChanged(string? valor) => OnPropertyChanged(nameof(TemErro));
-    partial void OnFormaChanged(string? valor) => OnPropertyChanged(nameof(Parcelavel));
+
+    partial void OnFormaChanged(string? valor)
+    {
+        OnPropertyChanged(nameof(Parcelavel));
+        OnPropertyChanged(nameof(PagandoComSaldo));
+
+        // Trocar para saldo com um valor maior do que ele cobre deixaria o campo
+        // vermelho sem a pessoa ter digitado nada: ajusta sozinho para o teto.
+        if (PagandoComSaldo && Formato.LerDinheiro(Valor) > TetoDoValor)
+        {
+            Valor = TetoDoValor.ToString("N2", Brasil);
+        }
+    }
 }

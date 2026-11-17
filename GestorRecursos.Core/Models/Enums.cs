@@ -113,7 +113,17 @@ public enum FormaPagamento
     [ValorBanco("PIX")] Pix,
     [ValorBanco("PIX_PARCELADO")] PixParcelado,
     [ValorBanco("DEBITO")] Debito,
-    [ValorBanco("CREDITO")] Credito
+
+    /// <summary>Cartão de crédito. Não confundir com <see cref="Saldo"/>.</summary>
+    [ValorBanco("CREDITO")] Credito,
+
+    /// <summary>O saldo que o próprio cliente tinha a receber do escritório.</summary>
+    /// <remarks>
+    /// Precisa do <c>Database/13-PagamentoComSaldo.sql</c> rodado. Nenhum dinheiro entra
+    /// no caixa aqui — ele entrou quando virou saldo —, mas a dívida da contratação cai,
+    /// e para isso o saldo tem de ser um pagamento como os outros.
+    /// </remarks>
+    [ValorBanco("SALDO")] Saldo
 }
 
 public enum TipoCompromisso
@@ -123,6 +133,13 @@ public enum TipoCompromisso
     [ValorBanco("PROVA")] Prova,
     [ValorBanco("VISTORIA")] Vistoria,
     [ValorBanco("DETRAN")] Detran,
+
+    /// <summary>Ida à delegacia. Substituiu o DETRAN na lista da tela em 17/11/2026.</summary>
+    /// <remarks>
+    /// DETRAN continua no enum para as marcações antigas seguirem legíveis; ele só
+    /// saiu das opções oferecidas ao marcar um compromisso novo.
+    /// </remarks>
+    [ValorBanco("DELEGACIA")] Delegacia,
     [ValorBanco("TAREFA")] Tarefa,
     [ValorBanco("OUTRO")] Outro
 }

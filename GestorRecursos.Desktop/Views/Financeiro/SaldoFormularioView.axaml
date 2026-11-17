@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.SaldoFormularioView"
+             x:DataType="vm:SaldoFormularioViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <Style Selector="Button.escolha">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.escolha /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.escolha:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource PrimariaClara}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="#73102A2C">
+        <Border Width="580" MaxHeight="640" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <StackPanel Grid.Row="0" Spacing="3" Margin="26,22,26,0">
+                    <TextBlock Text="Registrar saldo" FontSize="17" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock FontSize="12" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="Dinheiro que voltou e fica para o cliente usar depois. Serve de lembrete na próxima negociação."/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                              Margin="26,18,26,0">
+                    <StackPanel Spacing="14">
+
+                        <StackPanel Spacing="8" IsVisible="{Binding Escolhendo}">
+                            <TextBlock Classes="rotulo" Text="De quem é o saldo *"/>
+                            <TextBox Classes="busca" Text="{Binding TermoBusca}"
+                                     PlaceholderText="Buscar por nome ou CPF"/>
+
+                            <Border BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                    CornerRadius="{StaticResource RaioBotao}"
+                                    MaxHeight="286" ClipToBounds="True">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Clientes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:EscolhaDeClienteViewModel">
+                                                <Button Classes="escolha"
+                                                        Command="{Binding $parent[ItemsControl].((vm:SaldoFormularioViewModel)DataContext).EscolherCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock Text="{Binding Nome}" FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Texto}"/>
+                                                        <TextBlock Text="{Binding Cpf}" FontSize="11"
+                                                                   Foreground="{StaticResource TextoApagado}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+
+                            <TextBlock IsVisible="{Binding SemClientes}" FontSize="12"
+                                       Margin="0,6,0,0" HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}"
+                                       Text="Nenhum cliente encontrado."/>
+
+                            <TextBlock Classes="erroCampo" Text="{Binding ErroEscolha}"
+                                       IsVisible="{Binding ErroEscolha, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="14" IsVisible="{Binding !Escolhendo}">
+
+                            <Border Background="{StaticResource Fundo}"
+                                    CornerRadius="{StaticResource RaioBotao}" Padding="13,11">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="{Binding Escolhido.Nome}" FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Texto}"/>
+                                        <TextBlock Text="{Binding Escolhido.Cpf}" FontSize="11"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="atalhocartao" Content="trocar"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding TrocarCommand}"/>
+                                </Grid>
+                            </Border>
+
+                            <Grid ColumnDefinitions="*,16,*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="rotulo" Text="Valor *"/>
+                                    <TextBox Classes="entrada" Text="{Binding Valor}"
+                                             Classes.erro="{Binding ErroValor, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             PlaceholderText="0,00"/>
+                                    <TextBlock Classes="erroCampo" Text="{Binding ErroValor}"
+                                               IsVisible="{Binding ErroValor, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Classes="rotulo" Text="Data *"/>
+                                    <TextBox Classes="entrada" Text="{Binding Data}"
+                                             servicos:Mascara.Padrao="data"
+                                             Classes.erro="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                             PlaceholderText="dd/mm/aaaa"/>
+                                    <TextBlock Classes="erroCampo" Text="{Binding ErroData}"
+                                               IsVisible="{Binding ErroData, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel>
+                                <TextBlock Classes="rotulo" Text="De onde veio"/>
+                                <TextBox Classes="entrada" Text="{Binding Origem}"
+                                         PlaceholderText="Recurso cancelado, cobrança a mais..."/>
+                                <!-- Sem isso, daqui a seis meses o crédito é um valor
+                                     solto que ninguém sabe explicar ao cliente. -->
+                                <TextBlock FontSize="10.5" Margin="0,5,0,0" TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextoApagado}"
+                                           Text="Opcional, mas é o que explica o saldo quando o cliente voltar."/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Row="2" Background="{StaticResource Fundo}"
+                        BorderBrush="{StaticResource Borda}" BorderThickness="0,1,0,0"
+                        Padding="26,16" Margin="0,18,0,0">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="11.5"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"
+                                   IsVisible="{Binding TemErro}"
+                                   Foreground="{StaticResource Alerta}"/>
+                        <Button Grid.Column="1" Classes="neutro" Content="Cancelar"
+                                Padding="16,8" Margin="0,0,8,0"
+                                Command="{Binding CancelarCommand}"/>
+                        <Button Grid.Column="2" Classes="primario" Content="Registrar saldo"
+                                Padding="16,8" IsEnabled="{Binding !Salvando}"
+                                Command="{Binding SalvarCommand}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

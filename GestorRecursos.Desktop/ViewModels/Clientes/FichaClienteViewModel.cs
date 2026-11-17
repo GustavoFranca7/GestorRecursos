@@ -166,6 +166,17 @@ public partial class FichaClienteViewModel : ViewModelBase
     [ObservableProperty]
     public partial string NotaDoFinanceiro { get; set; } = string.Empty;
 
+    /// <summary>O que o escritório ainda deve a ele, no resumo do financeiro.</summary>
+    [ObservableProperty]
+    public partial string Saldo { get; set; } = "—";
+
+    /// <summary>Sem saldo, o cartão não aparece: zero ali só ocuparia espaço.</summary>
+    [ObservableProperty]
+    public partial bool TemSaldo { get; set; }
+
+    /// <summary>O número por trás do texto, para o formulário de pagamento.</summary>
+    private decimal _saldoDisponivel;
+
     /// <summary>Sem contratação não há o que medir: a barra some em vez de aparecer cheia.</summary>
     [ObservableProperty]
     public partial bool TemContratacao { get; set; }
@@ -1040,7 +1051,9 @@ public partial class FichaClienteViewModel : ViewModelBase
         Formulario = new PagamentoFormularioViewModel(
             lancamento,
             aoCancelar: () => Formulario = null,
-            aoSalvar: Recarregar);
+            aoSalvar: Recarregar,
+            clienteId: ClienteId,
+            saldoDisponivel: _saldoDisponivel);
     }
 
     /// <summary>Pergunta antes de apagar um pagamento lançado errado.</summary>
@@ -1237,6 +1250,10 @@ public partial class FichaClienteViewModel : ViewModelBase
         TotalContratado = Formato.Dinheiro(financeiro.TotalContratado);
         TemContratacao = financeiro.TotalContratado > 0;
         PercentualQuitado = financeiro.PercentualQuitado;
+
+        _saldoDisponivel = financeiro.SaldoDisponivel;
+        Saldo = Formato.Dinheiro(financeiro.SaldoDisponivel);
+        TemSaldo = financeiro.TemSaldo;
 
         NotaDoFinanceiro = financeiro.UltimoPagamento is { } ultimo
             ? $"{financeiro.PercentualQuitado}% quitado · último em {Formato.Data(ultimo)}"

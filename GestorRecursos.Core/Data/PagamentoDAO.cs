@@ -306,6 +306,173 @@ public class PagamentoDAO
         return credito.Id;
     }
 
+    /// <summary>Quanto o cliente ainda tem a receber do escritório. Na tela, "saldo".</summary>
+    public async Task<decimal> SaldoDisponivelAsync(
+        int clienteId, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            SELECT NVL(SUM(VALOR), 0)
+              FROM CREDITOS
+             WHERE CLIENTE_ID = :clienteId
+               AND UTILIZADO = 'N'
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("clienteId", clienteId);
+
+        var valor = await cmd.ExecuteScalarAsync(cancelamento);
+        return valor is null or DBNull ? 0m : Convert.ToDecimal(valor);
+    }
+
+    /// <summary>Quita parte de uma contratação com o saldo que o cliente tem.</summary>
+    /// <remarks>
+    /// Vai em transação porque são duas coisas que precisam cair juntas: o pagamento, que
+    /// é o que faz a dívida diminuir, e o consumo dos créditos que o bancaram. Metade
+    /// disso gravado deixaria saldo gasto sem dívida abatida, ou o contrário.
+    ///
+    /// Os créditos são consumidos do mais antigo para o mais novo. Quando o último não
+    /// cabe inteiro, ele é marcado como usado e o troco vira um crédito novo — em vez de
+    /// uma coluna de "quanto já foi gasto deste aqui", que obrigaria a mexer na tabela e
+    /// a reescrever toda consulta que hoje soma por UTILIZADO.
+    ///
+    /// Exige o <c>Database/13-PagamentoComSaldo.sql</c>: sem ele o INSERT bate no
+    /// CK_PAGAMENTOS_FORMA e a transação inteira volta atrás.
+    /// </remarks>
+    public async Task<int> PagarComSaldoAsync(
+        int contratacaoId,
+        int clienteId,
+        decimal valor,
+        DateTime data,
+        string? observacao = null,
+        CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
+
+        try
+        {
+            var id = await InserirAsync(conexao, transacao, new Pagamento
+            {
+                ContratacaoId = contratacaoId,
+                DataPagamento = data,
+                Valor = valor,
+                Forma = FormaPagamento.Saldo,
+                Parcelas = 1,
+                Observacao = observacao
+            }, cancelamento);
+
+            await ConsumirSaldoAsync(conexao, transacao, clienteId, valor, data, cancelamento);
+
+            await transacao.CommitAsync(cancelamento);
+            return id;
+        }
+        catch
+        {
+            await transacao.RollbackAsync(cancelamento);
+            throw;
+        }
+    }
+
+    /// <summary>Gasta os créditos do cliente, do mais antigo para o mais novo.</summary>
+    /// <remarks>
+    /// Separado para a contratação poder nascer paga com saldo: lá o pagamento já entra
+    /// na transação do contrato, e o que falta é só consumir o que o bancou.
+    ///
+    /// Quando o último crédito não cabe inteiro, ele é marcado como usado e o troco vira
+    /// um crédito novo — em vez de uma coluna de "quanto já foi gasto deste aqui", que
+    /// obrigaria a mexer na tabela e a reescrever toda consulta que soma por UTILIZADO.
+    /// </remarks>
+    internal static async Task ConsumirSaldoAsync(
+        OracleConnection conexao,
+        OracleTransaction? transacao,
+        int clienteId,
+        decimal valor,
+        DateTime data,
+        CancellationToken cancelamento = default)
+    {
+        const string sqlCreditos = """
+            SELECT ID, VALOR
+              FROM CREDITOS
+             WHERE CLIENTE_ID = :clienteId
+               AND UTILIZADO = 'N'
+             ORDER BY DATA_CREDITO, ID
+            """;
+
+        const string sqlUsar = "UPDATE CREDITOS SET UTILIZADO = 'S' WHERE ID = :id";
+
+        const string sqlTroco = """
+            INSERT INTO CREDITOS (CLIENTE_ID, VALOR, ORIGEM, UTILIZADO, DATA_CREDITO)
+            VALUES (:clienteId, :valor, :origem, 'N', :dataCredito)
+            """;
+
+        var disponiveis = new List<(int Id, decimal Valor)>();
+        await using (var cmd = conexao.Comando(sqlCreditos, transacao))
+        {
+            cmd.Param("clienteId", clienteId);
+
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                disponiveis.Add((reader.Inteiro(0), reader.Decimal(1)));
+            }
+        }
+
+        var total = disponiveis.Sum(c => c.Valor);
+        if (valor > total)
+        {
+            throw new InvalidOperationException(
+                $"O saldo disponível é de {total:C}, menor que os {valor:C} pedidos.");
+        }
+
+        var falta = valor;
+        foreach (var credito in disponiveis)
+        {
+            if (falta <= 0)
+            {
+                break;
+            }
+
+            await using (var cmd = conexao.Comando(sqlUsar, transacao))
+            {
+                cmd.Param("id", credito.Id);
+                await cmd.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            if (credito.Valor > falta)
+            {
+                await using var troco = conexao.Comando(sqlTroco, transacao);
+                troco.Param("clienteId", clienteId)
+                     .Param("valor", credito.Valor - falta)
+                     .Param("origem", $"Resto do saldo usado em {data:dd/MM/yyyy}")
+                     .Param("dataCredito", data);
+
+                await troco.ExecuteNonQueryAsync(cancelamento);
+            }
+
+            falta -= credito.Valor;
+        }
+    }
+
+    /// <summary>Marca o crédito como usado, ou devolve à disponibilidade.</summary>
+    /// <remarks>
+    /// Usar é sempre um gesto de fora do sistema — vira desconto na próxima negociação —,
+    /// então o que fica guardado é só o fato de já ter sido usado. Dá para desmarcar
+    /// porque "marquei o crédito errado" é um erro que acontece.
+    /// </remarks>
+    public async Task<bool> MarcarCreditoUsadoAsync(
+        int id, bool usado, CancellationToken cancelamento = default)
+    {
+        const string sql = "UPDATE CREDITOS SET UTILIZADO = :utilizado WHERE ID = :id";
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("utilizado", usado.ParaSN())
+           .Param("id", id);
+
+        return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
+    }
+
     public async Task<List<Credito>> ListarCreditosAsync(int clienteId, bool apenasDisponiveis = true, CancellationToken cancelamento = default)
     {
         var filtro = apenasDisponiveis ? "AND UTILIZADO = 'N'" : string.Empty;

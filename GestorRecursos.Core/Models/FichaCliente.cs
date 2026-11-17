@@ -163,6 +163,15 @@ public class ResumoFinanceiroCliente
     public decimal EmAberto => TotalContratado - TotalPago;
     public DateTime? UltimoPagamento { get; set; }
 
+    /// <summary>O que o escritório ainda deve a ele: a soma dos créditos não usados.</summary>
+    /// <remarks>
+    /// Na interface isso se chama <b>saldo</b>. Fica no resumo porque é a informação que
+    /// some: o cliente volta meses depois e, sem ela à vista, ninguém lembra de abater.
+    /// </remarks>
+    public decimal SaldoDisponivel { get; set; }
+
+    public bool TemSaldo => SaldoDisponivel > 0;
+
     /// <summary>Quanto do contratado já foi pago, de 0 a 100.</summary>
     public int PercentualQuitado =>
         TotalContratado <= 0 ? 100 : (int)Math.Round(TotalPago / TotalContratado * 100);

@@ -451,6 +451,14 @@ public class FichaClienteDAO
              WHERE C.CLIENTE_ID = :id
             """;
 
+        // O que o escritorio ainda deve a ele. Na tela chama-se "saldo".
+        const string sqlSaldo = """
+            SELECT NVL(SUM(VALOR), 0)
+              FROM CREDITOS
+             WHERE CLIENTE_ID = :id
+               AND UTILIZADO = 'N'
+            """;
+
         var resumo = new ResumoFinanceiroCliente();
 
         await using (var cmd = conexao.Comando(sqlTotais))
@@ -474,6 +482,14 @@ public class FichaClienteDAO
             {
                 resumo.UltimoPagamento = data;
             }
+        }
+
+        await using (var cmd = conexao.Comando(sqlSaldo))
+        {
+            cmd.Param("id", clienteId);
+
+            var valor = await cmd.ExecuteScalarAsync(cancelamento);
+            resumo.SaldoDisponivel = valor is null or DBNull ? 0m : Convert.ToDecimal(valor);
         }
 
         return resumo;

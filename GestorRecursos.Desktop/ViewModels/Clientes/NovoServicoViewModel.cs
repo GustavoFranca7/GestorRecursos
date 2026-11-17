@@ -189,8 +189,20 @@ public partial class NovoServicoViewModel : ViewModelBase
     /// </remarks>
     public ObservableCollection<DespesaDoServicoViewModel> Despesas { get; } = [];
 
-    public IReadOnlyList<string> Formas { get; } =
+    /// <summary>"Saldo" entra na lista só quando o cliente tem o que gastar.</summary>
+    /// <remarks>
+    /// Oferecer uma forma que daria erro na gravação é pior que não oferecer — e aqui o
+    /// erro custaria o assistente inteiro, que já passou por cinco passos.
+    /// </remarks>
+    public ObservableCollection<string> Formas { get; } =
         ["Dinheiro", "PIX", "PIX parcelado", "Débito", "Crédito"];
+
+    /// <summary>Quanto o cliente tem a receber do escritório.</summary>
+    private decimal _saldoDisponivel;
+
+    public bool TemSaldo => _saldoDisponivel > 0;
+    public bool PagandoComSaldo => Forma == "Saldo";
+    public string SaldoTexto => $"{Formato.Dinheiro(_saldoDisponivel)} de saldo disponível";
 
     public IReadOnlyList<string> TiposDeProcesso { get; } = ["Suspensão", "Cassação"];
 
@@ -376,6 +388,17 @@ public partial class NovoServicoViewModel : ViewModelBase
         {
             _tabela = await _tiposServico.ListarAsync();
             MontarOpcoes();
+
+            // O saldo vem junto da tabela de preços: é uma consulta leve, e saber disso
+            // só no último passo obrigaria a esperar de novo bem na hora de contratar.
+            _saldoDisponivel = await new PagamentoDAO().SaldoDisponivelAsync(_clienteId);
+            if (TemSaldo && !Formas.Contains("Saldo"))
+            {
+                Formas.Add("Saldo");
+            }
+
+            OnPropertyChanged(nameof(TemSaldo));
+            OnPropertyChanged(nameof(SaldoTexto));
         }
         catch (Exception excecao)
         {
@@ -929,6 +952,12 @@ public partial class NovoServicoViewModel : ViewModelBase
                 return;
             }
 
+            if (PagandoComSaldo && valor > _saldoDisponivel)
+            {
+                Erro = $"O saldo disponível é de {Formato.Dinheiro(_saldoDisponivel)}.";
+                return;
+            }
+
             if (valor > valorFinal)
             {
                 Erro = "O valor pago não pode exceder o valor combinado.";
@@ -1038,6 +1067,7 @@ public partial class NovoServicoViewModel : ViewModelBase
         "PIX parcelado" => FormaPagamento.PixParcelado,
         "Débito" => FormaPagamento.Debito,
         "Crédito" => FormaPagamento.Credito,
+        "Saldo" => FormaPagamento.Saldo,
         _ => FormaPagamento.Pix
     };
 
@@ -1096,5 +1126,16 @@ public partial class NovoServicoViewModel : ViewModelBase
         OnPropertyChanged(nameof(SemMultasDoCliente));
     }
 
-    partial void OnFormaChanged(string? valor) => OnPropertyChanged(nameof(Parcelavel));
+    partial void OnFormaChanged(string? valor)
+    {
+        OnPropertyChanged(nameof(Parcelavel));
+        OnPropertyChanged(nameof(PagandoComSaldo));
+
+        // Trocar para saldo com um valor maior do que ele cobre deixaria o passo
+        // travado no "Contratar" sem a pessoa ter digitado nada.
+        if (PagandoComSaldo && Formato.LerDinheiro(ValorPagoTexto) > _saldoDisponivel)
+        {
+            ValorPagoTexto = Math.Min(_saldoDisponivel, ValorFinal).ToString("N2", Brasil);
+        }
+    }
 }

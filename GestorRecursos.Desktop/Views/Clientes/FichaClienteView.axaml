@@ -1217,7 +1217,7 @@
                             <StackPanel Spacing="14">
                                 <TextBlock Classes="titulocartao" Text="RESUMO DO CLIENTE"/>
 
-                                <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                                     <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,34,0">
                                         <TextBlock Text="{Binding TotalContratado}" FontSize="19"
                                                    FontWeight="Bold" Foreground="{StaticResource Texto}"/>
@@ -1238,7 +1238,18 @@
                                                    Foreground="{StaticResource TextoApagado}"/>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="6">
+                                    <!-- O que o escritório deve a ele. Só aparece quando há:
+                                         zero ali seria mais uma coluna a ler por nada. -->
+                                    <StackPanel Grid.Column="3" Spacing="2" Margin="0,0,34,0"
+                                                IsVisible="{Binding TemSaldo}">
+                                        <TextBlock Text="{Binding Saldo}" FontSize="19" FontWeight="Bold"
+                                                   Foreground="{StaticResource PrimariaEscura}"/>
+                                        <TextBlock Text="SALDO DO CLIENTE" FontSize="9.5"
+                                                   LetterSpacing="0.5"
+                                                   Foreground="{StaticResource TextoApagado}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="4" VerticalAlignment="Center" Spacing="6">
                                         <ProgressBar Minimum="0" Maximum="100"
                                                      Value="{Binding PercentualQuitado}"
                                                      IsVisible="{Binding TemContratacao}"

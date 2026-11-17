@@ -673,6 +673,21 @@
                                     </StackPanel>
                                 </Grid>
 
+                                <!-- Dizer quanto há: o valor pago não pode passar disso -->
+                                <Border IsVisible="{Binding PagandoComSaldo}"
+                                        Background="{StaticResource PrimariaClara}"
+                                        BorderBrush="{StaticResource PrimariaBorda}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RaioBotao}" Padding="12,9">
+                                    <StackPanel Spacing="3">
+                                        <TextBlock Text="{Binding SaldoTexto}" FontSize="12.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource PrimariaEscura}"/>
+                                        <TextBlock FontSize="11" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource PrimariaEscura}"
+                                                   Text="Nenhum dinheiro entra no caixa: o saldo abate o que foi combinado."/>
+                                    </StackPanel>
+                                </Border>
+
                                 <StackPanel>
                                     <TextBlock Classes="rotulo" Text="Observação do pagamento"/>
                                     <TextBox Classes="entrada" Text="{Binding ObservacaoPagamento}"

@@ -798,4 +798,35 @@ public class ClienteDAO
 
         return cliente;
     }
+
+    // Nome e CPF, nada mais: quem monta uma lista para escolher cliente — crédito,
+    // compromisso da agenda — precisa mostrar quem é e achar pelo documento.
+    private const string SqlParaEscolha = """
+        SELECT ID, NOME, CPF
+          FROM CLIENTES
+         WHERE ARQUIVADO = 'N'
+         ORDER BY NOME
+        """;
+
+    /// <summary>Os clientes ativos, só com o que uma lista de escolha precisa mostrar.</summary>
+    public async Task<List<ClienteParaEscolha>> ListarParaEscolhaAsync(
+        CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(SqlParaEscolha);
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+
+        var lista = new List<ClienteParaEscolha>();
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new ClienteParaEscolha
+            {
+                Id = reader.Inteiro(0),
+                Nome = reader.Texto(1),
+                Cpf = reader.Texto(2)
+            });
+        }
+
+        return lista;
+    }
 }

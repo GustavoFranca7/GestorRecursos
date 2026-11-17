@@ -58,6 +58,10 @@ public static class Rotulos
             Core.Models.FormaPagamento.PixParcelado => "PIX parcelado",
             Core.Models.FormaPagamento.Debito => "débito",
             Core.Models.FormaPagamento.Credito => "crédito",
+
+            // "crédito" ali em cima é o cartão. Este é o do próprio cliente.
+            Core.Models.FormaPagamento.Saldo => "saldo",
+
             _ => forma.ToString().ToLowerInvariant()
         };
 

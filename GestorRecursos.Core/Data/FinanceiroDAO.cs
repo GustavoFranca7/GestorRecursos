@@ -78,13 +78,19 @@ public class FinanceiroDAO
             await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
             while (await reader.ReadAsync(cancelamento))
             {
+                var forma = ValorBanco.DeOuNulo<FormaPagamento>(reader.TextoOuNulo(4));
+
                 movimentos.Add(new MovimentoDoCaixa
                 {
-                    Tipo = reader.Texto(0) == "E" ? TipoDeMovimento.Entrada : TipoDeMovimento.Saida,
+                    // Pagamento com saldo e entrada de dinheiro vêm os dois como 'E' do
+                    // banco, mas só um deles fez a conta do escritório crescer no mês.
+                    Tipo = reader.Texto(0) != "E" ? TipoDeMovimento.Saida
+                         : forma == FormaPagamento.Saldo ? TipoDeMovimento.Abatimento
+                         : TipoDeMovimento.Entrada,
                     Id = reader.Inteiro(1),
                     Quando = reader.Data(2),
                     Valor = reader.Decimal(3),
-                    Forma = ValorBanco.DeOuNulo<FormaPagamento>(reader.TextoOuNulo(4)),
+                    Forma = forma,
                     Parcelas = reader.Inteiro(5),
                     Descricao = reader.TextoOuNulo(6),
                     ContratacaoId = reader.Inteiro(7),
@@ -115,6 +121,89 @@ public class FinanceiroDAO
         }
 
         return fechamento;
+    }
+
+    // Contratacoes vivas, para escolher onde lancar uma despesa. A cancelada fica de
+    // fora: lancar custo numa contratacao desfeita e so sujar o resultado liquido.
+    private const string SqlContratacoes = """
+        SELECT V.CONTRATACAO_ID, V.CLIENTE_ID, V.CLIENTE_NOME, V.CLIENTE_CPF,
+               V.DATA_CONTRATACAO, V.VALOR_FINAL, V.TOTAL_DESPESAS,
+               (SELECT LISTAGG(TS.NOME, ', ') WITHIN GROUP (ORDER BY TS.NOME)
+                  FROM ITENS_CONTRATACAO IT
+                  JOIN TIPOS_SERVICO TS ON TS.ID = IT.TIPO_SERVICO_ID
+                 WHERE IT.CONTRATACAO_ID = V.CONTRATACAO_ID)
+          FROM VW_CONTRATACAO_FINANCEIRO V
+          JOIN CLIENTES CL ON CL.ID = V.CLIENTE_ID
+         WHERE V.SITUACAO <> 'CANCELADO'
+           AND CL.ARQUIVADO = 'N'
+         ORDER BY V.DATA_CONTRATACAO DESC, V.CONTRATACAO_ID DESC
+        """;
+
+    private const string SqlCreditos = """
+        SELECT C.ID, C.CLIENTE_ID, CL.NOME, CL.CPF, CL.WHATSAPP,
+               C.VALOR, C.ORIGEM, C.UTILIZADO, C.DATA_CREDITO
+          FROM CREDITOS C
+          JOIN CLIENTES CL ON CL.ID = C.CLIENTE_ID
+         ORDER BY C.UTILIZADO, C.DATA_CREDITO DESC, C.ID DESC
+        """;
+
+    /// <summary>As contratações em que uma despesa pode ser lançada.</summary>
+    public async Task<List<ContratacaoParaLancamento>> ListarContratacoesAsync(
+        CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(SqlContratacoes);
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+
+        var lista = new List<ContratacaoParaLancamento>();
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new ContratacaoParaLancamento
+            {
+                ContratacaoId = reader.Inteiro(0),
+                ClienteId = reader.Inteiro(1),
+                ClienteNome = reader.Texto(2),
+                ClienteCpf = reader.Texto(3),
+                DataContratacao = reader.Data(4),
+                ValorFinal = reader.Decimal(5),
+                TotalDespesas = reader.Decimal(6),
+                Servicos = reader.TextoOuNulo(7)
+            });
+        }
+
+        return lista;
+    }
+
+    /// <summary>Todos os créditos do escritório: os disponíveis primeiro.</summary>
+    /// <remarks>
+    /// Entram também os de cliente arquivado, de propósito: o crédito é uma dívida do
+    /// escritório com a pessoa, e arquivar a ficha dela não apaga isso.
+    /// </remarks>
+    public async Task<List<CreditoDoCliente>> ListarCreditosAsync(
+        CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(SqlCreditos);
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+
+        var lista = new List<CreditoDoCliente>();
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new CreditoDoCliente
+            {
+                Id = reader.Inteiro(0),
+                ClienteId = reader.Inteiro(1),
+                ClienteNome = reader.Texto(2),
+                ClienteCpf = reader.Texto(3),
+                ClienteWhatsapp = reader.Texto(4),
+                Valor = reader.Decimal(5),
+                Origem = reader.TextoOuNulo(6),
+                Utilizado = reader.Booleano(7),
+                DataCredito = reader.Data(8)
+            });
+        }
+
+        return lista;
     }
 
     /// <summary>Tudo que está em aberto, do mais antigo para o mais recente.</summary>

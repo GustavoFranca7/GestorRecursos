@@ -15,30 +15,42 @@ public class MovimentoViewModel
         Id = dados.Id;
         ClienteId = dados.ClienteId;
         Entrada = dados.Tipo == TipoDeMovimento.Entrada;
+        Abatimento = dados.Tipo == TipoDeMovimento.Abatimento;
 
         Data = Formato.Data(dados.Quando);
         DiaCurto = Formato.DiaCurto(dados.Quando);
         Nome = dados.ClienteNome;
 
         // O sinal faz o trabalho da cor para quem lê rápido, e continua funcionando
-        // numa impressão em preto e branco.
-        Valor = $"{(Entrada ? "+" : "−")} {Formato.Dinheiro(dados.Valor)}";
-        CorDoValor = Entrada ? "Sucesso" : "Alerta";
+        // numa impressão em preto e branco. O abatimento não leva sinal: nada entrou
+        // nem saiu do caixa, a dívida é que diminuiu.
+        Valor = Abatimento
+            ? Formato.Dinheiro(dados.Valor)
+            : $"{(Entrada ? "+" : "−")} {Formato.Dinheiro(dados.Valor)}";
 
-        Descricao = Entrada
-            ? dados.Descricao
-            : dados.Descricao ?? "despesa";
+        CorDoValor = Abatimento ? "TextoFraco" : Entrada ? "Sucesso" : "Alerta";
+
+        Descricao = Abatimento
+            ? dados.Descricao ?? "quitado com o saldo do cliente"
+            : Entrada
+                ? dados.Descricao
+                : dados.Descricao ?? "despesa";
 
         TemDescricao = !string.IsNullOrWhiteSpace(Descricao);
 
-        Selo = Entrada && dados.Forma is { } forma
-            ? new SeloViewModel(Rotulos.Forma(forma, dados.Parcelas), "RoxoClaro", "Roxo")
-            : new SeloViewModel("despesa", "AlertaClaro", "Alerta");
+        Selo = Abatimento
+            ? new SeloViewModel("saldo", "Fundo", "TextoFraco")
+            : Entrada && dados.Forma is { } forma
+                ? new SeloViewModel(Rotulos.Forma(forma, dados.Parcelas), "RoxoClaro", "Roxo")
+                : new SeloViewModel("despesa", "AlertaClaro", "Alerta");
     }
 
     public int Id { get; }
     public int ClienteId { get; }
     public bool Entrada { get; }
+
+    /// <summary>Quitado com o saldo do cliente: não mexeu no caixa.</summary>
+    public bool Abatimento { get; }
 
     public string Data { get; }
     public string DiaCurto { get; }
@@ -152,4 +164,57 @@ public class CobrancaViewModel
             _ => new SeloViewModel(texto, "Fundo", "TextoFraco")
         };
     }
+}
+
+/// <summary>Uma linha da aba Créditos: uma devolução que ficou com o cliente.</summary>
+public class SaldoViewModel
+{
+    public SaldoViewModel(CreditoDoCliente dados)
+    {
+        Id = dados.Id;
+        ClienteId = dados.ClienteId;
+        Nome = dados.ClienteNome;
+        CpfFormatado = Formato.Cpf(dados.ClienteCpf);
+        WhatsappFormatado = Formato.Telefone(dados.ClienteWhatsapp);
+
+        Valor = Formato.Dinheiro(dados.Valor);
+        ValorNumerico = dados.Valor;
+        Data = Formato.Data(dados.DataCredito);
+
+        Origem = dados.Origem;
+        TemOrigem = !string.IsNullOrWhiteSpace(Origem);
+
+        Utilizado = dados.Utilizado;
+
+        Selo = Utilizado
+            ? new SeloViewModel("já usado", "Fundo", "TextoApagado")
+            : new SeloViewModel("disponível", "SucessoClaro", "Sucesso");
+
+        // O botão diz o que vai acontecer, e não o estado atual: "marcar como usado"
+        // num crédito disponível, "devolver à disponibilidade" num já gasto.
+        AcaoDoBotao = Utilizado ? "devolver" : "marcar como usado";
+
+        Busca = $"{dados.ClienteNome} {dados.ClienteCpf} {CpfFormatado} {dados.Origem}"
+            .ToLowerInvariant();
+    }
+
+    public int Id { get; }
+    public int ClienteId { get; }
+
+    public string Nome { get; }
+    public string CpfFormatado { get; }
+    public string WhatsappFormatado { get; }
+
+    public string Valor { get; }
+    public decimal ValorNumerico { get; }
+    public string Data { get; }
+
+    public string? Origem { get; }
+    public bool TemOrigem { get; }
+
+    public bool Utilizado { get; }
+    public SeloViewModel Selo { get; }
+    public string AcaoDoBotao { get; }
+
+    public string Busca { get; }
 }

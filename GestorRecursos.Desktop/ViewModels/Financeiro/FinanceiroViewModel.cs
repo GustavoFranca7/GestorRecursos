@@ -19,7 +19,10 @@ public enum AbaFinanceiro
     Caixa,
 
     /// <summary>O que ainda não entrou.</summary>
-    Cobranca
+    Cobranca,
+
+    /// <summary>O que o escritório deve de volta.</summary>
+    Saldos
 }
 
 /// <summary>A seção Financeiro: o caixa do mês e quem está devendo.</summary>
@@ -49,9 +52,15 @@ public partial class FinanceiroViewModel : ViewModelBase
     private readonly Action<int>? _aoAbrirCliente;
 
     private List<CobrancaViewModel> _todasAsCobrancas = [];
+    private List<SaldoViewModel> _todosOsSaldos = [];
+
+    /// <summary>Guardadas para os formulários de despesa e de crédito escolherem.</summary>
+    private List<ContratacaoParaLancamento> _contratacoes = [];
+    private List<ClienteParaEscolha> _clientes = [];
 
     public ObservableCollection<MovimentoViewModel> Movimentos { get; } = [];
     public ObservableCollection<CobrancaViewModel> Cobrancas { get; } = [];
+    public ObservableCollection<SaldoViewModel> Saldos { get; } = [];
 
     /// <summary>Quanto entrou por forma de pagamento, no mês escolhido.</summary>
     public ObservableCollection<FatiaDaFormaViewModel> PorForma { get; } = [];
@@ -76,6 +85,7 @@ public partial class FinanceiroViewModel : ViewModelBase
 
     public bool NoCaixa => Aba == AbaFinanceiro.Caixa;
     public bool NaCobranca => Aba == AbaFinanceiro.Cobranca;
+    public bool NosSaldos => Aba == AbaFinanceiro.Saldos;
 
     public int Ano { get; private set; }
     public int Mes { get; private set; }
@@ -140,13 +150,24 @@ public partial class FinanceiroViewModel : ViewModelBase
     [ObservableProperty]
     public partial string TermoBusca { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial string TotalDeSaldos { get; set; } = Formato.Dinheiro(0);
+
+    [ObservableProperty]
+    public partial string ResumoDosSaldos { get; set; } = string.Empty;
+
     public bool TemBusca => TermoBusca.Length > 0;
     public bool SemMovimentos => !Carregando && Movimentos.Count == 0;
     public bool SemCobrancas => !Carregando && Cobrancas.Count == 0;
+    public bool SemSaldos => !Carregando && Saldos.Count == 0;
 
     public string MensagemSemCobrancas => TemBusca
         ? "Ninguém com esse nome está devendo."
         : "Ninguém está devendo. Tudo que foi contratado já foi pago.";
+
+    public string MensagemSemSaldos => TemBusca
+        ? "Nenhum saldo para o que foi digitado."
+        : "Nenhum saldo registrado. Devolução que fica para o cliente usar depois entra aqui.";
 
     [RelayCommand]
     private async Task Carregar()
@@ -158,9 +179,14 @@ public partial class FinanceiroViewModel : ViewModelBase
         {
             var fechamento = await _financeiro.FecharMesAsync(Ano, Mes);
             var cobrancas = await _financeiro.ListarCobrancasAsync();
+            var creditos = await _financeiro.ListarCreditosAsync();
+
+            _contratacoes = await _financeiro.ListarContratacoesAsync();
+            _clientes = await new ClienteDAO().ListarParaEscolhaAsync();
 
             PreencherCaixa(fechamento);
             PreencherCobranca(cobrancas);
+            PreencherSaldos(creditos);
         }
         catch (Exception excecao)
         {
@@ -171,6 +197,7 @@ public partial class FinanceiroViewModel : ViewModelBase
             Carregando = false;
             OnPropertyChanged(nameof(SemMovimentos));
             OnPropertyChanged(nameof(SemCobrancas));
+            OnPropertyChanged(nameof(SemSaldos));
         }
     }
 
@@ -225,13 +252,35 @@ public partial class FinanceiroViewModel : ViewModelBase
         AplicarBusca();
     }
 
+    /// <summary>Os créditos são uma dívida do escritório: contam pelo que falta devolver.</summary>
+    private void PreencherSaldos(List<CreditoDoCliente> creditos)
+    {
+        _todosOsSaldos = [.. creditos.Select(c => new SaldoViewModel(c))];
+
+        var disponiveis = creditos.Where(c => !c.Utilizado).ToList();
+        TotalDeSaldos = Formato.Dinheiro(disponiveis.Sum(c => c.Valor));
+
+        var quantos = disponiveis.Count;
+        ResumoDosSaldos = creditos.Count == 0
+            ? string.Empty
+            : quantos == 0
+                ? "nenhum saldo em aberto"
+                : $"{quantos} {(quantos == 1 ? "saldo disponível" : "saldos disponíveis")}";
+
+        AplicarBusca();
+    }
+
     [RelayCommand]
     private void TrocarAba(AbaFinanceiro aba)
     {
         Aba = aba;
 
+        // A busca é por aba: o termo do nome na cobrança não faz sentido nos créditos.
+        TermoBusca = string.Empty;
+
         OnPropertyChanged(nameof(NoCaixa));
         OnPropertyChanged(nameof(NaCobranca));
+        OnPropertyChanged(nameof(NosSaldos));
     }
 
     /// <summary>Volta um mês. Não há limite para trás: o histórico é todo consultável.</summary>
@@ -354,8 +403,68 @@ public partial class FinanceiroViewModel : ViewModelBase
             Cobrancas.Add(cobranca);
         }
 
+        var creditos = termo.Length == 0
+            ? _todosOsSaldos
+            : [.. _todosOsSaldos.Where(c => c.Busca.Contains(termo, StringComparison.Ordinal))];
+
+        Saldos.Clear();
+        foreach (var credito in creditos)
+        {
+            Saldos.Add(credito);
+        }
+
         OnPropertyChanged(nameof(SemCobrancas));
         OnPropertyChanged(nameof(MensagemSemCobrancas));
+        OnPropertyChanged(nameof(SemSaldos));
+        OnPropertyChanged(nameof(MensagemSemSaldos));
+    }
+
+    /// <summary>Lança um custo do serviço, do próprio caixa (RF-39).</summary>
+    [RelayCommand]
+    private void LancarDespesa() =>
+        Formulario = new DespesaFormularioViewModel(
+            _contratacoes,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: () =>
+            {
+                Formulario = null;
+                CarregarCommand.Execute(null);
+            });
+
+    /// <summary>Registra uma devolução como crédito do cliente (RF-40).</summary>
+    [RelayCommand]
+    private void NovoSaldo() =>
+        Formulario = new SaldoFormularioViewModel(
+            _clientes,
+            aoCancelar: () => Formulario = null,
+            aoSalvar: () =>
+            {
+                Formulario = null;
+                CarregarCommand.Execute(null);
+            });
+
+    /// <summary>Marca o crédito como usado, ou o devolve à disponibilidade.</summary>
+    /// <remarks>
+    /// Usar o crédito é um gesto de fora do sistema — vira desconto na próxima
+    /// negociação —, então o que fica guardado aqui é só o fato de já ter sido usado.
+    /// </remarks>
+    [RelayCommand]
+    private async Task AlternarUsoDoSaldo(SaldoViewModel? credito)
+    {
+        if (credito is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await new PagamentoDAO().MarcarCreditoUsadoAsync(credito.Id, !credito.Utilizado);
+            CarregarCommand.Execute(null);
+        }
+        catch (Exception excecao)
+        {
+            Erro = $"Não foi possível alterar o saldo: {excecao.Message}";
+        }
     }
 
     /// <summary>Leva à ficha do cliente, para o que esta tela não mostra.</summary>
