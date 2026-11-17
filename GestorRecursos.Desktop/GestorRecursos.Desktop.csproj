@@ -7,7 +7,7 @@
     <ApplicationIcon>Assets/Icone.ico</ApplicationIcon>
     <!-- A versao que a tela de Configuracoes mostra. Mantenha igual a primeira entrada
          de ViewModels/Comum/NotasDaVersao.cs; publicar.ps1 sobrescreve no empacotamento. -->
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

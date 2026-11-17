@@ -21,6 +21,21 @@ public static class NotasDaVersao
 {
     public static IReadOnlyList<NotaDaVersao> Todas { get; } =
     [
+        new("1.3.0", "17/11/2026",
+            "Três seções novas no menu: Processos, Financeiro e Agenda.",
+            [
+                "Processos: todos os recursos de todos os clientes numa lista só, com o nome de quem é cada um. Busca por nome, CPF, AIT ou placa, e filtros por situação, fase, tipo de serviço, órgão e data, numa barra que abre no ícone de funil.",
+                "Financeiro: o caixa do mês mostra quanto entrou, quanto saiu em despesas, o líquido e por qual forma o dinheiro veio. O título do mês abre um calendário para escolher mês e ano.",
+                "Financeiro: a aba Cobrança lista o que está em aberto, de quem e há quanto tempo. O pagamento pode ser lançado ali mesmo, sem abrir a ficha.",
+                "Despesas: correio, taxa de DETRAN, autenticação. Entram no caixa do mês e descontam do resultado da contratação em que foram lançadas.",
+                "Saldo do cliente: valor devolvido fica registrado, aparece no resumo da ficha e pode ser usado para pagar — tanto ao contratar um serviço novo quanto num pagamento avulso. Quando sobra troco, o resto continua como saldo.",
+                "Agenda: o mês inteiro em calendário, com os prazos de protocolo e os compromissos marcados. O dia com prazo vencendo ganha uma faixa vermelha.",
+                "Agenda: o dia escolhido abre ao lado, com o plano do dia — quantos recursos do dia já foram protocolados —, os compromissos e o diário.",
+                "Agenda: a mesma informação também em lista, agrupada por dia, com busca e filtro por tipo.",
+                "Agenda: compromisso que se repete toda semana, a cada quinze dias ou todo mês é marcado de uma vez, até a data escolhida. Excluir pergunta se é só o do dia ou daí em diante.",
+                "Agenda: o recurso já julgado continua no calendário, riscado, dizendo como terminou — deferido, indeferido ou encerrado."
+            ]),
+
         new("1.2.0", "04/11/2026",
             "Documentos do cliente guardados no sistema, e backup automático toda semana.",
             [
