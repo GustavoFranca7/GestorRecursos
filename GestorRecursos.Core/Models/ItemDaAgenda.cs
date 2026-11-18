@@ -52,6 +52,9 @@ public class ItemDaAgenda
     /// <summary>O tipo escrito à mão, quando o tipo escolhido foi "Outro".</summary>
     public string? TipoOutro { get; set; }
 
+    /// <summary>Liga as ocorrências de uma tarefa que se repete. Nulo quando não repete.</summary>
+    public int? SerieId { get; set; }
+
     /// <summary>A fase como o banco guarda: AUTUACAO, JARI, CETRAN. Só no prazo.</summary>
     /// <remarks>
     /// Crua de propósito: "AUTUACAO" vira "Autuação" na camada de tela, com os demais

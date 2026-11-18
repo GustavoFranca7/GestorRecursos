@@ -19,6 +19,13 @@ public class Compromisso
     public Recorrencia Recorrencia { get; set; } = Recorrencia.Nenhuma;
     public string? Observacao { get; set; }
 
+    /// <summary>Liga as ocorrências de uma tarefa que se repete. Nulo quando não repete.</summary>
+    /// <remarks>
+    /// É o ID da primeira ocorrência, gravado quando a série nasce, e não muda mais:
+    /// corrigir o título, a hora ou o dia de uma delas não a solta do grupo.
+    /// </remarks>
+    public int? SerieId { get; set; }
+
     /// <summary>O que é, escrito à mão, quando o tipo escolhido foi "Outro".</summary>
     /// <remarks>
     /// Existe porque a lista de tipos é fechada — ela define cor, filtro e selo — e

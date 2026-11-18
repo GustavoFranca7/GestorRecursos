@@ -607,15 +607,18 @@ public partial class AgendaViewModel : ViewModelBase
 
         SerieAExcluir = null;
 
+        // Sem série não há o que apagar em grupo. Não deveria acontecer — o script 15
+        // preencheu o que já existia —, mas apagar uma linha só é melhor do que apagar
+        // o que não se sabe.
+        if (item.Dados.SerieId is not { } serieId)
+        {
+            await ApagarUm(item);
+            return;
+        }
+
         try
         {
-            var quantas = await _agenda.ExcluirSerieAsync(new Compromisso
-            {
-                Data = item.Data,
-                Titulo = item.Dados.Titulo,
-                ClienteId = item.ClienteId,
-                Recorrencia = item.Dados.Recorrencia
-            });
+            var quantas = await _agenda.ExcluirSerieAsync(serieId, item.Data);
 
             Notificacoes.Sucesso(quantas == 1
                 ? "Compromisso excluído."

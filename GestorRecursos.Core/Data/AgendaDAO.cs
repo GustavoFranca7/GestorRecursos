@@ -8,7 +8,8 @@ public class AgendaDAO
 {
     private const string Colunas = """
         A.ID, A.DATA_AGENDA, A.HORA, A.TIPO, A.TITULO, A.CLIENTE_ID,
-        A.INSTANCIA_ID, A.CONCLUIDO, A.RECORRENCIA, A.OBSERVACAO, A.TIPO_OUTRO
+        A.INSTANCIA_ID, A.CONCLUIDO, A.RECORRENCIA, A.OBSERVACAO, A.TIPO_OUTRO,
+        A.SERIE_ID
         """;
 
     /// <summary>Compromissos de um período, com o nome do cliente quando houver.</summary>
@@ -38,7 +39,7 @@ public class AgendaDAO
         while (await reader.ReadAsync(cancelamento))
         {
             var compromisso = Ler(reader);
-            compromisso.ClienteNome = reader.TextoOuNulo(11);
+            compromisso.ClienteNome = reader.TextoOuNulo(12);
             lista.Add(compromisso);
         }
 
@@ -113,26 +114,46 @@ public class AgendaDAO
         DateTime ate,
         CancellationToken cancelamento = default)
     {
-        const string sql = """
+        // A primeira ocorrência devolve o ID, que vira o SERIE_ID de todas — inclusive
+        // dela mesma, no UPDATE logo abaixo. Evita criar uma sequence só para isto, e o
+        // número ainda diz algo: a série que começou naquela linha.
+        const string sqlPrimeira = """
             INSERT INTO AGENDA
                 (DATA_AGENDA, HORA, TIPO, TITULO, CLIENTE_ID, INSTANCIA_ID,
                  CONCLUIDO, RECORRENCIA, OBSERVACAO, TIPO_OUTRO)
             VALUES
                 (:data, :hora, :tipo, :titulo, :clienteId, :instanciaId,
                  'N', :recorrencia, :observacao, :tipoOutro)
+            RETURNING ID INTO :novoId
             """;
 
+        const string sqlDemais = """
+            INSERT INTO AGENDA
+                (DATA_AGENDA, HORA, TIPO, TITULO, CLIENTE_ID, INSTANCIA_ID,
+                 CONCLUIDO, RECORRENCIA, OBSERVACAO, TIPO_OUTRO, SERIE_ID)
+            VALUES
+                (:data, :hora, :tipo, :titulo, :clienteId, :instanciaId,
+                 'N', :recorrencia, :observacao, :tipoOutro, :serieId)
+            """;
+
+        const string sqlMarcarPrimeira = "UPDATE AGENDA SET SERIE_ID = :id WHERE ID = :id";
+
         var datas = Datas(modelo.Data.Date, ate.Date, modelo.Recorrencia).ToList();
+        var repete = modelo.Recorrencia != Recorrencia.Nenhuma;
 
         await using var conexao = await Database.AbrirAsync(cancelamento);
         await using var transacao = (OracleTransaction)await conexao.BeginTransactionAsync(cancelamento);
 
         try
         {
-            foreach (var data in datas)
+            var serieId = 0;
+
+            for (var i = 0; i < datas.Count; i++)
             {
-                await using var cmd = conexao.Comando(sql, transacao);
-                cmd.Param("data", data)
+                var primeira = i == 0;
+
+                await using var cmd = conexao.Comando(primeira ? sqlPrimeira : sqlDemais, transacao);
+                cmd.Param("data", datas[i])
                    .Param("hora", modelo.Hora)
                    .Param("tipo", modelo.Tipo.Texto())
                    .Param("titulo", modelo.Titulo)
@@ -142,6 +163,31 @@ public class AgendaDAO
                    .Param("observacao", modelo.Observacao)
                    .Param("tipoOutro", modelo.TipoOutro);
 
+                if (primeira)
+                {
+                    var pId = new OracleParameter("novoId", OracleDbType.Int32)
+                    {
+                        Direction = System.Data.ParameterDirection.Output
+                    };
+                    cmd.Parameters.Add(pId);
+
+                    await cmd.ExecuteNonQueryAsync(cancelamento);
+                    serieId = Convert.ToInt32(pId.Value.ToString());
+
+                    // Compromisso de uma vez só não é série: fica sem SERIE_ID.
+                    if (!repete)
+                    {
+                        break;
+                    }
+
+                    await using var marcar = conexao.Comando(sqlMarcarPrimeira, transacao);
+                    marcar.Param("id", serieId);
+                    await marcar.ExecuteNonQueryAsync(cancelamento);
+
+                    continue;
+                }
+
+                cmd.Param("serieId", serieId);
                 await cmd.ExecuteNonQueryAsync(cancelamento);
             }
 
@@ -235,37 +281,30 @@ public class AgendaDAO
         return await cmd.ExecuteNonQueryAsync(cancelamento) > 0;
     }
 
-    /// <summary>Apaga desta data em diante tudo que é a mesma tarefa repetida.</summary>
+    /// <summary>Apaga desta data em diante todas as ocorrências da mesma série.</summary>
     /// <remarks>
-    /// A série não tem identificador próprio na tabela; o que a define aqui é a combinação
-    /// título, recorrência e cliente. A hora ficou de fora da chave de propósito: corrigir
-    /// o horário de uma ocorrência é justamente o que se espera poder fazer, e não deveria
-    /// soltá-la da série.
-    ///
-    /// O preço de não mexer no esquema é que renomear uma ocorrência a solta do grupo: ela
-    /// deixa de ser apagada junto. Se isso incomodar, a saída é uma coluna SERIE_ID.
+    /// Pelo <c>SERIE_ID</c>, que é gravado quando a série nasce e não muda mais. A versão
+    /// anterior agrupava por título, recorrência e cliente, e isso se perdia no momento em
+    /// que alguém renomeava uma ocorrência: ela deixava de bater com as irmãs e ficava
+    /// órfã no calendário.
     ///
     /// Só daqui para a frente: o que já passou é histórico, e apagar o que foi feito para
     /// parar de repetir no futuro seria perder registro de trabalho.
     /// </remarks>
     public async Task<int> ExcluirSerieAsync(
-        Compromisso modelo,
+        int serieId,
+        DateTime apartirDe,
         CancellationToken cancelamento = default)
     {
         const string sql = """
             DELETE FROM AGENDA
-             WHERE TITULO = :titulo
-               AND RECORRENCIA = :recorrencia
+             WHERE SERIE_ID = :serieId
                AND DATA_AGENDA >= :data
-               AND (CLIENTE_ID = :clienteId OR (CLIENTE_ID IS NULL AND :clienteId IS NULL))
             """;
 
         await using var conexao = await Database.AbrirAsync(cancelamento);
         await using var cmd = conexao.Comando(sql);
-        cmd.Param("titulo", modelo.Titulo)
-           .Param("recorrencia", modelo.Recorrencia.Texto())
-           .Param("data", modelo.Data.Date)
-           .Param("clienteId", modelo.ClienteId);
+        cmd.Param("serieId", serieId).Param("data", apartirDe.Date);
 
         return await cmd.ExecuteNonQueryAsync(cancelamento);
     }
@@ -360,11 +399,12 @@ public class AgendaDAO
                     Tipo = compromisso.Tipo,
                     Titulo = compromisso.Titulo,
                     ClienteId = compromisso.ClienteId,
-                    ClienteNome = reader.TextoOuNulo(11),
+                    ClienteNome = reader.TextoOuNulo(12),
                     Concluido = compromisso.Concluido,
                     Recorrencia = compromisso.Recorrencia,
                     Observacao = compromisso.Observacao,
-                    TipoOutro = compromisso.TipoOutro
+                    TipoOutro = compromisso.TipoOutro,
+                    SerieId = compromisso.SerieId
                 });
             }
         }
@@ -483,6 +523,7 @@ public class AgendaDAO
         Concluido = reader.Booleano(7),
         Recorrencia = ValorBanco.De<Recorrencia>(reader.Texto(8)),
         Observacao = reader.TextoOuNulo(9),
-        TipoOutro = reader.TextoOuNulo(10)
+        TipoOutro = reader.TextoOuNulo(10),
+        SerieId = reader.InteiroOuNulo(11)
     };
 }
