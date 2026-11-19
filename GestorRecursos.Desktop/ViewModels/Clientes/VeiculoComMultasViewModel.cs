@@ -14,13 +14,18 @@ public class VeiculoComMultasViewModel(VeiculoComMultas dados)
     public int Id { get; } = dados.Id;
     public string Placa { get; } = dados.Placa;
 
-    /// <summary>"NISSAN VERSA 2019 · PRETA". Vazio quando só se sabe a placa.</summary>
-    public string Descricao { get; } = string.Join(" · ", new[] { dados.MarcaModelo, dados.Cor }
-        .Where(p => !string.IsNullOrWhiteSpace(p))
-        .Select(p => p!.ToUpperInvariant()));
-
-    public string? Ano { get; } = dados.Ano;
-    public bool TemAno { get; } = !string.IsNullOrWhiteSpace(dados.Ano);
+    /// <summary>"Nissan Versa · preta · 2019/2019". Vazio quando só se sabe a placa.</summary>
+    /// <remarks>
+    /// Ano junto, e não num campo à parte: são três pedaços da mesma frase, e separá-los
+    /// era o que fazia o cabeçalho do carro virar uma fila de valores soltos.
+    /// </remarks>
+    public string Descricao { get; } = string.Join(" · ", new[]
+        {
+            dados.MarcaModelo,
+            dados.Cor?.ToLowerInvariant(),
+            dados.Ano
+        }
+        .Where(p => !string.IsNullOrWhiteSpace(p)));
 
     public string Renavam { get; } = string.IsNullOrWhiteSpace(dados.Renavam)
         ? ViewModelBase.SemValor
@@ -29,6 +34,13 @@ public class VeiculoComMultasViewModel(VeiculoComMultas dados)
     public bool TemRenavam { get; } = !string.IsNullOrWhiteSpace(dados.Renavam);
 
     public string Vinculo { get; } = Rotulos.Vinculo(dados.Vinculo);
+
+    // O dono responde "de quem é o carro"; o condutor indicado fica em tom menor.
+    public string FundoDoVinculo { get; } =
+        dados.Vinculo == "PROPRIETARIO" ? "PrimariaClara" : "Fundo";
+
+    public string CorDoVinculo { get; } =
+        dados.Vinculo == "PROPRIETARIO" ? "PrimariaEscura" : "TextoFraco";
 
     public string? Observacao { get; } = dados.Observacao;
     public bool TemObservacao { get; } = !string.IsNullOrWhiteSpace(dados.Observacao);
@@ -88,6 +100,30 @@ public class MultaViewModel(MultaDaFicha dados)
 
     public string Valor { get; } = dados.Valor is { } valor ? Formato.Dinheiro(valor) : "—";
 
+    /// <summary>O que foi a infração. É a primeira coisa que se lê na linha.</summary>
+    public string Infracao { get; } = string.IsNullOrWhiteSpace(dados.Descricao)
+        ? "Infração sem descrição"
+        : dados.Descricao!;
+
+    /// <summary>"art. 218 III · 28/08/2026 · Avenida Brasil, em frente ao número 1000".</summary>
+    /// <remarks>
+    /// Uma frase só, que corta no fim quando não cabe. Em três colunas estreitas, cada uma
+    /// quebrava por conta própria e a linha da multa virava um bloco de seis alturas.
+    /// </remarks>
+    public string Detalhe { get; } = MontarDetalhe(dados);
+
+    /// <summary>Gravidade como ponto colorido e texto, sem fundo: é dado do carro, não alarme.</summary>
+    /// <remarks>A cor de fundo fica reservada ao prazo, que é o único que cobra ação.</remarks>
+    public string TextoGravidade { get; } = Rotulos.Gravidade(dados.Gravidade, dados.Pontos);
+    public string CorDaGravidade { get; } = Rotulos.CoresDaGravidade(dados.Gravidade).Texto;
+
+    /// <summary>Prazo só aparece quando corre de verdade: julgado não tem prazo correndo.</summary>
+    public bool TemPrazo { get; } =
+        dados.PrazoQueVale is not null && !Rotulos.Encerrada(dados.Situacao);
+
+    /// <summary>Multa registrada sem recurso contratado. É serviço em aberto, não falta de dado.</summary>
+    public bool SemRecurso { get; } = dados.Situacao is null;
+
     public SeloViewModel? SeloGravidade { get; } = MontarGravidade(dados);
     public bool TemGravidade => SeloGravidade is not null;
 
@@ -96,6 +132,31 @@ public class MultaViewModel(MultaDaFicha dados)
 
     public SeloViewModel? SeloSituacao { get; } = MontarSituacao(dados);
     public bool TemSituacao => SeloSituacao is not null;
+
+    /// <summary>Junta artigo, data e local numa frase, pulando o que o banco não tem.</summary>
+    private static string MontarDetalhe(MultaDaFicha multa)
+    {
+        var partes = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(multa.Enquadramento))
+        {
+            partes.Add($"art. {multa.Enquadramento}");
+        }
+
+        if (multa.DataHoraInfracao is { } quando)
+        {
+            partes.Add(quando.TimeOfDay == TimeSpan.Zero
+                ? Formato.Data(quando)
+                : $"{Formato.Data(quando)} às {quando:HH:mm}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(multa.LocalInfracao))
+        {
+            partes.Add(multa.LocalInfracao!);
+        }
+
+        return partes.Count > 0 ? string.Join(" · ", partes) : "sem outros dados registrados";
+    }
 
     private static SeloViewModel? MontarGravidade(MultaDaFicha multa)
     {
@@ -123,8 +184,9 @@ public class MultaViewModel(MultaDaFicha dados)
             return new SeloViewModel("—", "Fundo", "TextoApagado");
         }
 
+        // Com a palavra: ao lado de "na JARI", uma data solta não diz do que é.
         var dias = (int)(prazo.Date - DateTime.Today).TotalDays;
-        return Prazos.Selo(prazo.ToString("dd/MM"), dias);
+        return Prazos.Selo($"prazo {prazo:dd/MM}", dias);
     }
 
     /// <summary>Sem recurso contratado não há situação: a multa está só registrada.</summary>
@@ -137,9 +199,16 @@ public class MultaViewModel(MultaDaFicha dados)
 
         // Quem está em julgamento é mostrado pela instância, que é a informação útil
         // para o escritório: "na JARI" diz mais que "aguardando julgamento".
-        var texto = multa.Situacao is "AGUARDANDO_JULGAMENTO" or "PROTOCOLADO"
-            ? $"na {Rotulos.Fase(multa.Fase)}"
-            : Rotulos.Situacao(multa.Situacao);
+        var texto = multa.Situacao switch
+        {
+            "AGUARDANDO_JULGAMENTO" or "PROTOCOLADO" => $"na {Rotulos.Fase(multa.Fase)}",
+
+            // "aguardando protocolo no CETRAN" repete a fase e não cabe na faixa do estado.
+            "AGUARDANDO_PROTOCOLO_JARI" or "AGUARDANDO_PROTOCOLO_CETRAN" =>
+                $"a protocolar na {Rotulos.Fase(multa.Fase)}",
+
+            _ => Rotulos.Situacao(multa.Situacao)
+        };
 
         return new SeloViewModel(texto, "RoxoClaro", "Roxo");
     }

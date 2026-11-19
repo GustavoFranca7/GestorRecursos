@@ -153,6 +153,16 @@
             <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
         </Style>
 
+        <!-- O AIT ao lado da infração: identifica a multa, mas quem se lê é a infração -->
+        <Style Selector="Button.copiavel.ait">
+            <Setter Property="FontFamily" Value="Consolas,monospace"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoApagado}"/>
+        </Style>
+        <Style Selector="Button.copiavel.ait:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource PrimariaEscura}"/>
+        </Style>
+
         <!-- Cliente na lista do lado -->
         <Style Selector="Button.vizinho">
             <Setter Property="Background" Value="Transparent"/>
@@ -582,30 +592,55 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:VeiculoComMultasViewModel">
                                     <Border Classes="cartao" Margin="0,0,0,14">
-                                        <StackPanel Spacing="12">
+                                        <StackPanel Spacing="10">
 
-                                            <!-- Identificação do veículo -->
-                                            <StackPanel Spacing="7">
-                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                    <!-- A placa é o nome do carro: destaque para ela,
-                                                         e o resto da descrição em voz baixa. -->
-                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9">
-                                                        <Button Classes="copiavel placagrande"
-                                                                Content="{Binding Placa}"
-                                                                ToolTip.Tip="Copiar placa"
+                                            <!-- ===== Identidade do carro =====
+                                                 Placa e descrição à esquerda, estado à direita. Os rótulos
+                                                 "Vínculo" e "Multas" saíram da frente do valor: "proprietário"
+                                                 e "2 multas" já dizem o que são, e eram os rótulos que faziam
+                                                 a linha virar uma fila de pares soltos. -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="9"
+                                                            VerticalAlignment="Center">
+                                                    <Button Classes="copiavel placagrande"
+                                                            Content="{Binding Placa}"
+                                                            ToolTip.Tip="Copiar placa"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                                                            CommandParameter="{Binding Placa}"/>
+                                                    <TextBlock Text="{Binding Descricao}" FontSize="12.5"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                                                VerticalAlignment="Center"
+                                                                IsVisible="{Binding TemRenavam}">
+                                                        <TextBlock Text="RENAVAM" FontSize="10.5"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource TextoApagado}"/>
+                                                        <Button Classes="copiavel" FontSize="11.5"
+                                                                Content="{Binding Renavam}"
+                                                                Foreground="{StaticResource TextoApagado}"
+                                                                ToolTip.Tip="Clique para copiar o RENAVAM"
                                                                 Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
-                                                                CommandParameter="{Binding Placa}"/>
-                                                        <TextBlock Text="{Binding Descricao}" FontSize="12.5"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextoApagado}"/>
-                                                        <TextBlock Text="{Binding Ano}" FontSize="12"
-                                                                   IsVisible="{Binding TemAno}"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextoApagado}"/>
+                                                                CommandParameter="{Binding Renavam}"/>
                                                     </StackPanel>
+                                                </StackPanel>
 
-                                                    <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                                                Spacing="2" VerticalAlignment="Center">
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="9"
+                                                            VerticalAlignment="Center">
+                                                    <Border CornerRadius="{StaticResource RaioSelo}" Padding="8,3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{Binding FundoDoVinculo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                        <TextBlock Text="{Binding Vinculo}" FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{Binding CorDoVinculo, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    </Border>
+
+                                                    <TextBlock Text="{Binding ResumoMultas}" FontSize="11.5"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{StaticResource TextoFraco}"/>
+
+                                                    <StackPanel Orientation="Horizontal" Spacing="2"
+                                                                VerticalAlignment="Center">
                                                         <Button Classes="atalhoicone"
                                                                 ToolTip.Tip="Editar veículo"
                                                                 Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).EditarVeiculoCommand}"
@@ -628,171 +663,144 @@
                                                             </Viewbox>
                                                         </Button>
                                                     </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Orientation="Horizontal" Spacing="18">
-                                                    <StackPanel Orientation="Horizontal" Spacing="5"
-                                                                IsVisible="{Binding TemRenavam}">
-                                                        <TextBlock Text="RENAVAM" FontSize="10.5"
-                                                                   LetterSpacing="0.4" VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextoApagado}"/>
-                                                        <Button Classes="copiavel"
-                                                                Content="{Binding Renavam}" FontSize="12"
-                                                                ToolTip.Tip="Clique para copiar o RENAVAM"
-                                                                Command="{Binding $parent[ItemsControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
-                                                                CommandParameter="{Binding Renavam}"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                                        <TextBlock Text="Vínculo" FontSize="12"
-                                                                   Foreground="{StaticResource TextoApagado}"/>
-                                                        <TextBlock Text="{Binding Vinculo}" FontSize="12"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextoFraco}"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                                        <TextBlock Text="Multas" FontSize="12"
-                                                                   Foreground="{StaticResource TextoApagado}"/>
-                                                        <TextBlock Text="{Binding ResumoMultas}" FontSize="12"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextoFraco}"/>
-                                                    </StackPanel>
                                                 </StackPanel>
+                                            </Grid>
 
-                                                <TextBlock Text="{Binding Observacao}" FontSize="11.5"
-                                                           IsVisible="{Binding TemObservacao}"
-                                                           TextWrapping="Wrap"
-                                                           Foreground="{StaticResource TextoApagado}"/>
-                                            </StackPanel>
+                                            <TextBlock Text="{Binding Observacao}" FontSize="11.5"
+                                                       IsVisible="{Binding TemObservacao}"
+                                                       TextWrapping="Wrap" Margin="0,-4,0,0"
+                                                       Foreground="{StaticResource TextoApagado}"/>
 
-                                            <!-- Multas do veículo -->
+                                            <!-- Fecha os dados do carro e abre as multas. A margem negativa
+                                                 desconta o Padding do cartão: a linha vai de borda a borda. -->
+                                            <Border Height="1" Margin="-18,0,-18,0"
+                                                    Background="{StaticResource BordaClara}"/>
+
+                                            <!-- ===== Multas do veículo =====
+                                                 Cada multa em duas alturas, e não em oito colunas: em cima o
+                                                 que foi a infração, embaixo a frase corrida com artigo, data e
+                                                 local. Gravidade, valor e estado saem do meio do texto e vão
+                                                 para uma faixa de largura fixa, igual em todos os carros: é o
+                                                 que devolve a leitura em coluna sem voltar a ser tabela. -->
                                             <StackPanel IsVisible="{Binding TemMultas}" Spacing="0">
-                                                <Border BorderBrush="{StaticResource BordaClara}"
-                                                        BorderThickness="0,1,0,1" Padding="0,7">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <!-- Texto cresce com a tela; selo e número têm tamanho próprio.
-                                                                 MinWidth impede a coluna de sumir em tela estreita. -->
-                                                            <ColumnDefinition Width="96"/>
-                                                            <ColumnDefinition Width="1.3*" MinWidth="140"/>
-                                                            <ColumnDefinition Width="1.1*" MinWidth="130"/>
-                                                            <ColumnDefinition Width="104"/>
-                                                            <ColumnDefinition Width="88"/>
-                                                            <ColumnDefinition Width="68"/>
-                                                            <ColumnDefinition Width="112"/>
-                                                            <ColumnDefinition Width="44"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Grid.Column="0" Classes="colunamulta" Text="AIT"/>
-                                                        <TextBlock Grid.Column="1" Classes="colunamulta" Text="INFRAÇÃO"/>
-                                                        <TextBlock Grid.Column="2" Classes="colunamulta" Text="LOCAL E DATA"/>
-                                                        <TextBlock Grid.Column="3" Classes="colunamulta" Text="GRAVIDADE"/>
+                                                <Grid ColumnDefinitions="*,258,30" Margin="0,2,0,5">
+                                                    <TextBlock Grid.Column="0" Classes="colunamulta" Text="MULTA"/>
+                                                    <Grid Grid.Column="1" ColumnDefinitions="*,88" Margin="14,0,0,0">
+                                                        <TextBlock Grid.Column="0" Classes="colunamulta"
+                                                                   Text="GRAVIDADE"/>
                                                         <!-- O espaçamento entre letras sobra depois da última,
                                                              e era o que desencontrava o título do número. -->
-                                                        <TextBlock Grid.Column="4" Classes="colunamulta" Text="VALOR"
+                                                        <TextBlock Grid.Column="1" Classes="colunamulta" Text="VALOR"
                                                                    TextAlignment="Right" LetterSpacing="0"/>
-                                                        <TextBlock Grid.Column="5" Classes="colunamulta" Text="PRAZO"
-                                                                   HorizontalAlignment="Center"/>
-                                                        <TextBlock Grid.Column="6" Classes="colunamulta" Text="SITUAÇÃO"
-                                                                   HorizontalAlignment="Left"/>
-                                                        <TextBlock Grid.Column="7" Classes="colunamulta" Text="AÇÃO"
-                                                                   HorizontalAlignment="Center"/>
                                                     </Grid>
-                                                </Border>
+                                                </Grid>
 
                                                 <ItemsControl ItemsSource="{Binding Multas}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="vm:MultaViewModel">
                                                             <Border BorderBrush="{StaticResource BordaClara}"
-                                                                    BorderThickness="0,0,0,1" Padding="0,10">
+                                                                    BorderThickness="0,1,0,0" Padding="0,9">
                                                                 <!-- Mesmas larguras do cabeçalho: mudar uma, mudar as duas -->
-                                                                <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <!-- Texto cresce com a tela; selo e número têm tamanho próprio.
-                                                                 MinWidth impede a coluna de sumir em tela estreita. -->
-                                                            <ColumnDefinition Width="96"/>
-                                                            <ColumnDefinition Width="1.3*" MinWidth="140"/>
-                                                            <ColumnDefinition Width="1.1*" MinWidth="130"/>
-                                                            <ColumnDefinition Width="104"/>
-                                                            <ColumnDefinition Width="88"/>
-                                                            <ColumnDefinition Width="68"/>
-                                                            <ColumnDefinition Width="112"/>
-                                                            <ColumnDefinition Width="44"/>
-                                                        </Grid.ColumnDefinitions>
-                                                                    <Button Grid.Column="0" Classes="copiavel placa"
-                                                                            Content="{Binding Ait}"
-                                                                            VerticalAlignment="Top"
-                                                                            ToolTip.Tip="Clique para copiar o AIT"
-                                                                            Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
-                                                                            CommandParameter="{Binding Ait}"/>
+                                                                <Grid ColumnDefinitions="3,*,258,30">
 
-                                                                    <StackPanel Grid.Column="1" Spacing="2"
-                                                                                Margin="0,0,14,0">
-                                                                        <TextBlock Text="{Binding Enquadramento}"
-                                                                                   FontSize="12.5"
-                                                                                   Foreground="{StaticResource Texto}"/>
-                                                                        <TextBlock Text="{Binding Descricao}"
-                                                                                   IsVisible="{Binding TemDescricao}"
-                                                                                   FontSize="11" TextWrapping="Wrap"
-                                                                                   Foreground="{StaticResource TextoApagado}"/>
-                                                                    </StackPanel>
+                                                                    <!-- A gravidade repetida em barra, para quem lê de relance -->
+                                                                    <Border Grid.Column="0" Width="3" CornerRadius="2"
+                                                                            VerticalAlignment="Stretch"
+                                                                            Background="{Binding CorDaGravidade, Converter={x:Static vm:Conversores.Pincel}}"/>
 
-                                                                    <StackPanel Grid.Column="2" Spacing="2"
-                                                                                Margin="0,0,14,0">
-                                                                        <TextBlock Text="{Binding Local}" FontSize="12"
-                                                                                   TextWrapping="Wrap"
+                                                                    <StackPanel Grid.Column="1" Spacing="3"
+                                                                                Margin="11,0,14,0">
+                                                                        <Grid ColumnDefinitions="Auto,*">
+                                                                            <Button Grid.Column="0" Classes="copiavel ait"
+                                                                                    Content="{Binding Ait}"
+                                                                                    VerticalAlignment="Center"
+                                                                                    ToolTip.Tip="Clique para copiar o AIT"
+                                                                                    Command="{Binding $parent[UserControl].((vm:FichaClienteViewModel)DataContext).CopiarCommand}"
+                                                                                    CommandParameter="{Binding Ait}"/>
+                                                                            <TextBlock Grid.Column="1" Margin="7,0,0,0"
+                                                                                       Text="{Binding Infracao}"
+                                                                                       FontSize="12.5" FontWeight="SemiBold"
+                                                                                       VerticalAlignment="Center"
+                                                                                       TextTrimming="CharacterEllipsis"
+                                                                                       ToolTip.Tip="{Binding Infracao}"
+                                                                                       Foreground="{StaticResource Texto}"/>
+                                                                        </Grid>
+
+                                                                        <TextBlock Text="{Binding Detalhe}" FontSize="11"
+                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                   ToolTip.Tip="{Binding Detalhe}"
                                                                                    Foreground="{StaticResource TextoFraco}"/>
-                                                                        <TextBlock Text="{Binding DataHora}" FontSize="11"
-                                                                                   Foreground="{StaticResource TextoApagado}"/>
                                                                     </StackPanel>
 
-                                                                    <Border Grid.Column="3" IsVisible="{Binding TemGravidade}"
-                                                                            CornerRadius="{StaticResource RaioSelo}"
-                                                                            Padding="8,3" HorizontalAlignment="Left"
-                                                                            VerticalAlignment="Top"
-                                                                            Background="{Binding SeloGravidade.ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
-                                                                        <TextBlock Text="{Binding SeloGravidade.Texto}"
-                                                                                   FontSize="11"
-                                                                                   Foreground="{Binding SeloGravidade.ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
-                                                                    </Border>
+                                                                    <!-- A faixa de largura fixa: o que se compara entre carros -->
+                                                                    <Grid Grid.Column="2" Margin="14,0,0,0"
+                                                                          ColumnDefinitions="*,88" RowDefinitions="Auto,Auto">
+                                                                        <StackPanel Grid.Row="0" Grid.Column="0"
+                                                                                    Orientation="Horizontal" Spacing="6"
+                                                                                    VerticalAlignment="Center"
+                                                                                    IsVisible="{Binding TemGravidade}">
+                                                                            <Border Width="7" Height="7" CornerRadius="4"
+                                                                                    VerticalAlignment="Center"
+                                                                                    Background="{Binding CorDaGravidade, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            <TextBlock Text="{Binding TextoGravidade}"
+                                                                                       FontSize="11"
+                                                                                       VerticalAlignment="Center"
+                                                                                       Foreground="{StaticResource TextoFraco}"/>
+                                                                        </StackPanel>
 
-                                                                    <TextBlock Grid.Column="4" Text="{Binding Valor}"
-                                                                               FontSize="12.5" FontWeight="SemiBold"
-                                                                               TextAlignment="Right"
-                                                                               VerticalAlignment="Top"
-                                                                               Foreground="{StaticResource Texto}"/>
+                                                                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                                                                   Text="{Binding Valor}"
+                                                                                   FontSize="12.5" FontWeight="SemiBold"
+                                                                                   TextAlignment="Right"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Foreground="{StaticResource Texto}"/>
 
-                                                                    <Border Grid.Column="5"
-                                                                            CornerRadius="{StaticResource RaioSelo}"
-                                                                            Padding="8,3" Margin="4,0"
-                                                                            HorizontalAlignment="Center"
-                                                                            VerticalAlignment="Top"
-                                                                            Background="{Binding SeloPrazo.ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
-                                                                        <TextBlock Text="{Binding SeloPrazo.Texto}"
-                                                                                   FontSize="11"
-                                                                                   Foreground="{Binding SeloPrazo.ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
-                                                                    </Border>
+                                                                        <!-- Os estados embaixo, atravessando as duas colunas:
+                                                                             prazo quando corre, desfecho quando já saiu.
+                                                                             WrapPanel, e não StackPanel: desfecho comprido
+                                                                             ("a protocolar na CETRAN") passava por cima do
+                                                                             botão de ações em vez de descer uma linha. -->
+                                                                        <WrapPanel Grid.Row="1" Grid.Column="0"
+                                                                                   Grid.ColumnSpan="2" Margin="0,6,0,-4">
+                                                                            <Border IsVisible="{Binding TemPrazo}"
+                                                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                                                    Padding="8,3" Margin="0,0,5,4"
+                                                                                    Background="{Binding SeloPrazo.ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                                <TextBlock FontSize="11"
+                                                                                           Text="{Binding SeloPrazo.Texto}"
+                                                                                           Foreground="{Binding SeloPrazo.ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            </Border>
 
-                                                                    <Border Grid.Column="6" IsVisible="{Binding TemSituacao}"
-                                                                            CornerRadius="{StaticResource RaioSelo}"
-                                                                            Padding="8,3"
-                                                                            HorizontalAlignment="Left"
-                                                                            VerticalAlignment="Top"
-                                                                            Background="{Binding SeloSituacao.ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
-                                                                        <TextBlock Text="{Binding SeloSituacao.Texto}"
-                                                                                   FontSize="11" TextWrapping="Wrap"
-                                                                                   HorizontalAlignment="Center"
-                                                                                   Foreground="{Binding SeloSituacao.ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
-                                                                    </Border>
+                                                                            <Border IsVisible="{Binding TemSituacao}"
+                                                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                                                    Padding="8,3" Margin="0,0,5,4"
+                                                                                    Background="{Binding SeloSituacao.ChaveFundo, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                                <TextBlock FontSize="11"
+                                                                                           Text="{Binding SeloSituacao.Texto}"
+                                                                                           Foreground="{Binding SeloSituacao.ChaveTexto, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                            </Border>
+
+                                                                            <!-- Multa sem recurso contratado é serviço em
+                                                                                 aberto: antes ficava uma célula vazia. -->
+                                                                            <Border IsVisible="{Binding SemRecurso}"
+                                                                                    CornerRadius="{StaticResource RaioSelo}"
+                                                                                    Padding="8,3" Margin="0,0,5,4"
+                                                                                    BorderThickness="1"
+                                                                                    BorderBrush="{StaticResource Borda}">
+                                                                                <TextBlock Text="sem recurso" FontSize="11"
+                                                                                           Foreground="{StaticResource TextoApagado}"/>
+                                                                            </Border>
+                                                                        </WrapPanel>
+                                                                    </Grid>
 
                                                                     <!-- As ações da multa num menu só: a linha já tem
                                                                          informação demais para ganhar botões soltos. -->
-                                                                    <Button Grid.Column="7" Classes="atalhoicone"
-                                                                            HorizontalAlignment="Center"
+                                                                    <Button Grid.Column="3" Classes="atalhoicone"
+                                                                            HorizontalAlignment="Right"
                                                                             VerticalAlignment="Top"
                                                                             ToolTip.Tip="Ações desta multa">
                                                                         <Viewbox Width="14" Height="14">
-                                                                            <Path Fill="{StaticResource TextoFraco}"
+                                                                            <Path Fill="{StaticResource TextoApagado}"
                                                                                   Stretch="Uniform"
                                                                                   Data="{StaticResource IconeMenuHamburguer}"/>
                                                                         </Viewbox>
