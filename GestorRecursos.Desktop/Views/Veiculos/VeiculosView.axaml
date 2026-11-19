@@ -1,0 +1,421 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.VeiculosView"
+             x:DataType="vm:VeiculosViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.cartao">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}"/>
+            <Setter Property="Padding" Value="16,13"/>
+        </Style>
+        <Style Selector="TextBlock.titulocartao">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.7"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+        <Style Selector="TextBlock.legenda">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+        </Style>
+        <Style Selector="TextBlock.cabecalho">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.6"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="ComboBox.filtro">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- A linha do veículo: clicar nela abre o histórico do carro -->
+        <Style Selector="Button.linhaveiculo">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BordaClara}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="14,11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.linhaveiculo /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.linhaveiculo:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource CartaoSuave}"/>
+        </Style>
+        <!-- A linha escolhida se marca por um quadro verde em volta dela, e só dela.
+             Vai no ContentPresenter, e repetida nos estados do mouse, porque o tema do
+             Button troca a borda dele em :pointerover e apagaria a nossa. -->
+        <Style Selector="Button.linhaveiculo.aberta /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.linhaveiculo.aberta:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.linhaveiculo.aberta:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- A placa: fonte larga e espaçada, como ela é lida em voz alta -->
+        <Style Selector="TextBlock.placa">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="1.2"/>
+            <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+        </Style>
+
+        <Style Selector="Border.selo">
+            <Setter Property="CornerRadius" Value="{StaticResource RaioSelo}"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.selo">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Aviso do topo que também é atalho para o filtro -->
+        <Style Selector="Button.aviso">
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="13,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusAdorner" Value="{x:Null}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <!-- Verde claro: o histórico aberto precisa se separar do branco das linhas -->
+        <Style Selector="Border.historico">
+            <Setter Property="Background" Value="{StaticResource PrimariaMedia}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimariaBorda}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="22,16"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel Background="{StaticResource Fundo}">
+        <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="24,20,24,16">
+
+            <!-- ========== CABEÇALHO ========== -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,14">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                            VerticalAlignment="Center">
+                    <TextBox Classes="busca" Width="300" Text="{Binding TermoBusca}"
+                             PlaceholderText="Buscar por placa, RENAVAM, modelo ou dono"/>
+                    <ComboBox Classes="filtro" Width="212"
+                              ItemsSource="{Binding Filtros}"
+                              SelectedItem="{Binding FiltroEscolhido}"/>
+                    <TextBlock Text="{Binding Resumo}" FontSize="11.5"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource TextoFraco}"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Classes="primario" Content="+ Veículo"
+                        FontSize="11.5" Padding="14,8" VerticalAlignment="Center"
+                        ToolTip.Tip="Cadastrar um carro antes de saber de quem é"
+                        Command="{Binding NovoVeiculoCommand}"/>
+            </Grid>
+
+            <!-- ========== O QUE ESTÁ FALTANDO ==========
+                 Os dois avisos são atalhos para o filtro: a varredura é o que a lista
+                 faz e a busca não, porque ninguém procura o que não sabe que existe. -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,14">
+                <Button Classes="aviso"
+                        Background="{StaticResource AvisoClaro}"
+                        BorderBrush="{StaticResource AvisoBorda}"
+                        IsVisible="{Binding TemSemVinculo}"
+                        Command="{Binding FiltrarCommand}"
+                        CommandParameter="{x:Static vm:VeiculosViewModel.SemVinculo}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <TextBlock Text="{Binding QuantosSemVinculo}" FontWeight="Bold"
+                                   Foreground="{StaticResource Aviso}"/>
+                        <TextBlock Text="sem dono vinculado"
+                                   Foreground="{StaticResource Texto}"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="aviso"
+                        Background="{StaticResource Cartao}"
+                        BorderBrush="{StaticResource Borda}"
+                        IsVisible="{Binding TemFaltandoDado}"
+                        ToolTip.Tip="Marca/modelo, cor, ano ou RENAVAM — o que o recurso usa para descrever o carro"
+                        Command="{Binding FiltrarCommand}"
+                        CommandParameter="{x:Static vm:VeiculosViewModel.FaltaDado}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <TextBlock Text="{Binding QuantosFaltandoDado}" FontWeight="Bold"
+                                   Foreground="{StaticResource TextoFraco}"/>
+                        <TextBlock Text="com dado faltando para o recurso"
+                                   Foreground="{StaticResource Texto}"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- ========== CABEÇALHO DA LISTA ========== -->
+            <Border Grid.Row="2" Background="{StaticResource CartaoSuave}"
+                    BorderBrush="{StaticResource Borda}" BorderThickness="1,1,1,0"
+                    CornerRadius="10,10,0,0" Padding="14,9"
+                    IsVisible="{Binding !SemNada}">
+                <Grid ColumnDefinitions="150,2.4*,2*,1.4*,86">
+                    <TextBlock Grid.Column="0" Classes="cabecalho" Text="PLACA"/>
+                    <TextBlock Grid.Column="1" Classes="cabecalho" Text="VEÍCULO"/>
+                    <TextBlock Grid.Column="2" Classes="cabecalho" Text="DE QUEM É"/>
+                    <TextBlock Grid.Column="3" Classes="cabecalho" Text="MULTAS"/>
+                </Grid>
+            </Border>
+
+            <!-- ========== A LISTA ========== -->
+            <Panel Grid.Row="3">
+                <Border Background="{StaticResource Cartao}"
+                        BorderBrush="{StaticResource Borda}" BorderThickness="1,0,1,1"
+                        CornerRadius="0,0,10,10" ClipToBounds="True"
+                        IsVisible="{Binding !SemNada}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Veiculos}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:VeiculoViewModel">
+                                    <StackPanel>
+
+                                        <Button Classes="linhaveiculo" Classes.aberta="{Binding Aberto}"
+                                                Command="{Binding $parent[ItemsControl].((vm:VeiculosViewModel)DataContext).AlternarCommand}"
+                                                CommandParameter="{Binding}">
+                                            <Grid ColumnDefinitions="150,2.4*,2*,1.4*,86">
+
+                                                <StackPanel Grid.Column="0" Spacing="2"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Classes="placa" Text="{Binding Placa}"/>
+                                                    <TextBlock Text="{Binding Renavam}" FontSize="10.5"
+                                                               IsVisible="{Binding TemRenavam}"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" Spacing="2"
+                                                            VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding Descricao}" FontSize="12.5"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <TextBlock Text="{Binding QueFalta}" FontSize="10.5"
+                                                               IsVisible="{Binding FaltaDado}"
+                                                               Foreground="{StaticResource Aviso}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" Spacing="2"
+                                                            VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding DeQuemE}" FontSize="12.5"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{Binding CorDeQuemE, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                    <TextBlock Text="{Binding Condutores}" FontSize="10.5"
+                                                               IsVisible="{Binding TemCondutores}"
+                                                               Foreground="{StaticResource TextoApagado}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="3" Spacing="2"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding TextoMultas}" FontSize="12"
+                                                               Foreground="{StaticResource Texto}"/>
+                                                    <TextBlock Text="{Binding TextoRecursos}" FontSize="10.5"
+                                                               IsVisible="{Binding TemRecursos}"
+                                                               Foreground="{StaticResource PrimariaEscura}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal"
+                                                            Spacing="2" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right">
+                                                    <Button Classes="atalhoicone"
+                                                            ToolTip.Tip="Alterar os dados do veículo"
+                                                            Command="{Binding $parent[ItemsControl].((vm:VeiculosViewModel)DataContext).EditarVeiculoCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Viewbox Width="12" Height="12">
+                                                            <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                                                                  Data="{StaticResource IconeEditar}"/>
+                                                        </Viewbox>
+                                                    </Button>
+                                                    <Viewbox Width="11" Height="11" Margin="6,0,0,0"
+                                                             VerticalAlignment="Center">
+                                                        <Path Fill="{StaticResource TextoApagado}" Stretch="Uniform"
+                                                              Data="{StaticResource IconeSetaDireita}"/>
+                                                    </Viewbox>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+
+                                        <!-- ===== O HISTÓRICO DO CARRO ===== -->
+                                        <Border Classes="historico" IsVisible="{Binding Aberto}">
+                                            <StackPanel Spacing="16">
+
+                                                <TextBlock Classes="legenda"
+                                                           IsVisible="{Binding CarregandoHistorico}"
+                                                           Text="Carregando o histórico..."/>
+
+                                                <!-- Quem está ligado ao carro -->
+                                                <StackPanel Spacing="8">
+                                                    <TextBlock Classes="titulocartao" Text="DE QUEM É"/>
+
+                                                    <ItemsControl ItemsSource="{Binding Donos}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:DonoViewModel">
+                                                                <Border Background="{StaticResource Cartao}"
+                                                                        BorderBrush="{StaticResource Borda}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="{StaticResource RaioBotao}"
+                                                                        Padding="13,10" Margin="0,0,0,6">
+                                                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                        <Border Grid.Column="0" Classes="selo"
+                                                                                Margin="0,0,11,0"
+                                                                                Background="{Binding FundoDoPapel, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                            <TextBlock Classes="selo" Text="{Binding Papel}"
+                                                                                       Foreground="{Binding CorDoPapel, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                        </Border>
+
+                                                                        <StackPanel Grid.Column="1" Spacing="1"
+                                                                                    VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding Nome}" FontSize="12.5"
+                                                                                       FontWeight="SemiBold"
+                                                                                       Foreground="{StaticResource Texto}"/>
+                                                                            <TextBlock Text="{Binding Cpf}" FontSize="10.5"
+                                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                                        </StackPanel>
+
+                                                                        <TextBlock Grid.Column="2" Text="{Binding Whatsapp}"
+                                                                                   FontSize="11.5" Margin="0,0,12,0"
+                                                                                   VerticalAlignment="Center"
+                                                                                   IsVisible="{Binding TemWhatsapp}"
+                                                                                   Foreground="{StaticResource TextoFraco}"/>
+
+                                                                        <Button Grid.Column="3" Classes="atalhocartao"
+                                                                                Content="abrir ficha"
+                                                                                VerticalAlignment="Center"
+                                                                                Command="{Binding $parent[UserControl].((vm:VeiculosViewModel)DataContext).AbrirClienteCommand}"
+                                                                                CommandParameter="{Binding ClienteId}"/>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+
+                                                    <TextBlock Classes="legenda" IsVisible="{Binding SemDonos}"
+                                                               Text="Nenhum cliente ligado a este carro. Ele entrou pelo cadastro de uma multa e o vínculo ficou para depois."
+                                                               TextWrapping="Wrap" MaxWidth="560"/>
+                                                </StackPanel>
+
+                                                <!-- As multas, de todos os clientes -->
+                                                <StackPanel Spacing="8">
+                                                    <TextBlock Classes="titulocartao" Text="MULTAS DESTE CARRO"/>
+
+                                                    <ItemsControl ItemsSource="{Binding Multas}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:MultaDoVeiculoViewModel">
+                                                                <Border Background="{StaticResource Cartao}"
+                                                                        BorderBrush="{StaticResource Borda}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="{StaticResource RaioBotao}"
+                                                                        Padding="13,10" Margin="0,0,0,6">
+                                                                    <Grid ColumnDefinitions="170,2.4*,1.7*,Auto">
+
+                                                                        <StackPanel Grid.Column="0" Spacing="2"
+                                                                                    VerticalAlignment="Center"
+                                                                                    Margin="0,0,10,0">
+                                                                            <TextBlock Text="{Binding Ait}" FontSize="12"
+                                                                                       FontWeight="SemiBold"
+                                                                                       Foreground="{StaticResource Texto}"/>
+                                                                            <TextBlock Text="{Binding Quando}" FontSize="10.5"
+                                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                                        </StackPanel>
+
+                                                                        <StackPanel Grid.Column="1" Spacing="3"
+                                                                                    VerticalAlignment="Center"
+                                                                                    Margin="0,0,10,0">
+                                                                            <TextBlock Text="{Binding Descricao}" FontSize="12"
+                                                                                       TextWrapping="Wrap"
+                                                                                       Foreground="{StaticResource Texto}"/>
+                                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                                <Border Classes="selo"
+                                                                                        IsVisible="{Binding TemGravidade}"
+                                                                                        Background="{Binding FundoDaGravidade, Converter={x:Static vm:Conversores.Pincel}}">
+                                                                                    <TextBlock Classes="selo" Text="{Binding Gravidade}"
+                                                                                               Foreground="{Binding CorDaGravidade, Converter={x:Static vm:Conversores.Pincel}}"/>
+                                                                                </Border>
+                                                                                <TextBlock Text="{Binding Valor}" FontSize="11"
+                                                                                           VerticalAlignment="Center"
+                                                                                           IsVisible="{Binding TemValor}"
+                                                                                           Foreground="{StaticResource TextoFraco}"/>
+                                                                            </StackPanel>
+                                                                        </StackPanel>
+
+                                                                        <StackPanel Grid.Column="2" Spacing="2"
+                                                                                    VerticalAlignment="Center"
+                                                                                    Margin="0,0,10,0">
+                                                                            <TextBlock Text="{Binding DeQuem}" FontSize="11.5"
+                                                                                       TextWrapping="Wrap"
+                                                                                       Foreground="{StaticResource Texto}"/>
+                                                                            <TextBlock Text="{Binding Andamento}" FontSize="10.5"
+                                                                                       IsVisible="{Binding TemRecurso}"
+                                                                                       Foreground="{StaticResource TextoApagado}"/>
+                                                                        </StackPanel>
+
+                                                                        <Button Grid.Column="3" Classes="atalhocartao"
+                                                                                Content="abrir ficha"
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding TemCliente}"
+                                                                                Command="{Binding $parent[UserControl].((vm:VeiculosViewModel)DataContext).AbrirClienteCommand}"
+                                                                                CommandParameter="{Binding ClienteId}"/>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+
+                                                    <TextBlock Classes="legenda" IsVisible="{Binding SemMultas}"
+                                                               Text="Este carro ainda não tomou nenhuma multa registrada no sistema."/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <TextBlock IsVisible="{Binding SemNada}"
+                           Text="{Binding MensagemVazia}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+            </Panel>
+        </Grid>
+
+        <TextBlock IsVisible="{Binding Carregando}"
+                   Text="Carregando os veículos..."
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="13" Foreground="{StaticResource TextoFraco}"/>
+
+        <!-- Erro fica na tela até alguém resolver -->
+        <Border Margin="24" VerticalAlignment="Top"
+                IsVisible="{Binding Erro, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                Background="{StaticResource AlertaClaro}"
+                BorderBrush="{StaticResource AlertaBorda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}" Padding="16,13">
+            <TextBlock Text="{Binding Erro}" FontSize="12.5" TextWrapping="Wrap"
+                       Foreground="{StaticResource AlertaEscuro}"/>
+        </Border>
+
+        <ContentControl Content="{Binding Formulario}"
+                        IsVisible="{Binding Formulario, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+    </Panel>
+</UserControl>

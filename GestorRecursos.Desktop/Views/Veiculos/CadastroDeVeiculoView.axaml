@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GestorRecursos.Desktop.ViewModels"
+             xmlns:servicos="using:GestorRecursos.Desktop.Servicos"
+             mc:Ignorable="d" d:DesignWidth="1290" d:DesignHeight="880"
+             x:Class="GestorRecursos.Desktop.Views.CadastroDeVeiculoView"
+             x:DataType="vm:CadastroDeVeiculoViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.entrada">
+            <Setter Property="Background" Value="{StaticResource Cartao}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Borda}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource RaioBotao}"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="MinHeight" Value="40"/>
+        </Style>
+        <Style Selector="TextBox.entrada:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource Primaria}"/>
+        </Style>
+        <Style Selector="TextBox.entrada.erro">
+            <Setter Property="BorderBrush" Value="{StaticResource Alerta}"/>
+        </Style>
+        <Style Selector="TextBlock.rotulo">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{StaticResource TextoFraco}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        <Style Selector="TextBlock.erroCampo">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{StaticResource Alerta}"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="#73102A2C">
+        <Border Width="560" Background="{StaticResource Cartao}"
+                BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                CornerRadius="{StaticResource RaioCartao}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True" BoxShadow="0 18 50 0 #35102A2C">
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <StackPanel Grid.Row="0" Spacing="3" Margin="26,22,26,0">
+                    <TextBlock Text="{Binding TituloDaJanela}" FontSize="17" FontWeight="Bold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock FontSize="12" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextoFraco}"
+                               Text="{Binding Explicacao}"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                              Margin="26,18,26,0">
+                    <StackPanel Spacing="14">
+
+                        <Grid ColumnDefinitions="170,16,*">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Placa *"/>
+                                <TextBox Classes="entrada" Text="{Binding Placa}"
+                                         servicos:Mascara.Padrao="placa"
+                                         Classes.erro="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"
+                                         PlaceholderText="ABC1D23"/>
+                                <TextBlock Classes="erroCampo" Text="{Binding ErroPlaca}"
+                                           IsVisible="{Binding ErroPlaca, Converter={x:Static vm:Conversores.NaoEhNulo}}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="RENAVAM"/>
+                                <TextBox Classes="entrada" Text="{Binding Renavam}"
+                                         MaxLength="11"
+                                         PlaceholderText="11 dígitos"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Marca e modelo"/>
+                            <TextBox Classes="entrada" Text="{Binding MarcaModelo}"
+                                     MaxLength="80"
+                                     PlaceholderText="VW Gol 1.6"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,16,170">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="rotulo" Text="Cor"/>
+                                <TextBox Classes="entrada" Text="{Binding Cor}"
+                                         MaxLength="30" PlaceholderText="Prata"/>
+                            </StackPanel>
+                            <!-- Texto, e não número: o documento traz "2019/2019" -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="rotulo" Text="Ano"/>
+                                <TextBox Classes="entrada" Text="{Binding Ano}"
+                                         MaxLength="9" PlaceholderText="2019/2019"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="rotulo" Text="Observação"/>
+                            <TextBox Classes="entrada" Text="{Binding Observacao}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"
+                                     MaxLength="200"
+                                     PlaceholderText="O que mais precisa ser lembrado deste carro"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Row="2" Background="{StaticResource Fundo}"
+                        BorderBrush="{StaticResource Borda}" BorderThickness="0,1,0,0"
+                        Padding="26,16" Margin="0,18,0,0">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Erro}" FontSize="11.5"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"
+                                   IsVisible="{Binding TemErro}"
+                                   Foreground="{StaticResource Alerta}"/>
+                        <Button Grid.Column="1" Classes="neutro" Content="Cancelar"
+                                Padding="16,8" Margin="0,0,8,0"
+                                Command="{Binding CancelarCommand}"/>
+                        <Button Grid.Column="2" Classes="primario" Content="{Binding TextoDoBotao}"
+                                Padding="16,8" IsEnabled="{Binding !Salvando}"
+                                Command="{Binding SalvarCommand}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

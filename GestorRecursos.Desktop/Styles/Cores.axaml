@@ -37,6 +37,8 @@
     <!-- Cores de ação -->
     <SolidColorBrush x:Key="Primaria" Color="#008782"/>
     <SolidColorBrush x:Key="PrimariaEscura" Color="#14665B"/>
+    <!-- Um degrau acima da PrimariaClara: painel que abre dentro de uma lista branca -->
+    <SolidColorBrush x:Key="PrimariaMedia" Color="#D6EDEA"/>
     <SolidColorBrush x:Key="PrimariaClara" Color="#E6F4F3"/>
     <SolidColorBrush x:Key="PrimariaBorda" Color="#C9E6E4"/>
 

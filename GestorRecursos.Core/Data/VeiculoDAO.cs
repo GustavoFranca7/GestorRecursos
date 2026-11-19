@@ -317,4 +317,202 @@ public class VeiculoDAO
         Ano = reader.TextoOuNulo(5),
         Observacao = reader.TextoOuNulo(6)
     };
+
+    // ---------------------------------------------------------------------
+    // A seção Veículos
+    // ---------------------------------------------------------------------
+
+    // Os agregados vêm em subconsultas escalares, e não em junções com GROUP BY: são
+    // cinco contagens de tabelas diferentes, e agrupar por todas as colunas do veículo
+    // para somá-las sairia mais longo e mais fácil de errar. A tabela é pequena.
+    private static readonly string SqlLista = $"""
+        SELECT V.ID, V.PLACA, V.RENAVAM, V.MARCA_MODELO, V.COR, V.ANO, V.OBSERVACAO,
+               (SELECT MIN(CV.CLIENTE_ID)
+                  FROM CLIENTE_VEICULO CV
+                 WHERE CV.VEICULO_ID = V.ID AND CV.VINCULO = 'PROPRIETARIO'),
+               (SELECT MIN(C.NOME)
+                  FROM CLIENTE_VEICULO CV
+                  JOIN CLIENTES C ON C.ID = CV.CLIENTE_ID
+                 WHERE CV.VEICULO_ID = V.ID AND CV.VINCULO = 'PROPRIETARIO'),
+               (SELECT COUNT(*)
+                  FROM CLIENTE_VEICULO CV
+                 WHERE CV.VEICULO_ID = V.ID AND CV.VINCULO = 'CONDUTOR'),
+               (SELECT COUNT(*) FROM MULTAS M WHERE M.VEICULO_ID = V.ID),
+               (SELECT COUNT(*)
+                  FROM MULTAS M
+                  JOIN ITENS_CONTRATACAO IT ON IT.MULTA_ID = M.ID
+                  JOIN INSTANCIAS I         ON I.ITEM_ID = IT.ID
+                 WHERE M.VEICULO_ID = V.ID
+                   AND IT.SITUACAO <> 'CANCELADO'
+                   AND I.SITUACAO NOT IN {SituacoesSql.InstanciaEncerrada})
+          FROM VEICULOS V
+         ORDER BY V.PLACA
+        """;
+
+    /// <summary>Todos os veículos, com quem está ligado a eles e o que já acumularam.</summary>
+    public async Task<List<VeiculoDaLista>> ListarAsync(CancellationToken cancelamento = default)
+    {
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(SqlLista);
+        await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+
+        var lista = new List<VeiculoDaLista>();
+        while (await reader.ReadAsync(cancelamento))
+        {
+            lista.Add(new VeiculoDaLista
+            {
+                Id = reader.Inteiro(0),
+                Placa = reader.Texto(1),
+                Renavam = reader.TextoOuNulo(2),
+                MarcaModelo = reader.TextoOuNulo(3),
+                Cor = reader.TextoOuNulo(4),
+                Ano = reader.TextoOuNulo(5),
+                Observacao = reader.TextoOuNulo(6),
+                ProprietarioId = reader.InteiroOuNulo(7),
+                ProprietarioNome = reader.TextoOuNulo(8),
+                Condutores = reader.Inteiro(9),
+                Multas = reader.Inteiro(10),
+                RecursosAbertos = reader.Inteiro(11)
+            });
+        }
+
+        return lista;
+    }
+
+    /// <summary>O histórico do carro: os vínculos e todas as multas, de todos os clientes.</summary>
+    /// <remarks>
+    /// Sob demanda, e não junto da lista: multa é o que mais há no banco, e carregar as
+    /// de todos os veículos para mostrar as de um seria pagar pelo que ninguém pediu.
+    /// </remarks>
+    public async Task<HistoricoDoVeiculo> AbrirAsync(int veiculoId, CancellationToken cancelamento = default)
+    {
+        const string sqlDonos = """
+            SELECT CV.ID, CV.CLIENTE_ID, C.NOME, C.CPF, C.WHATSAPP, CV.VINCULO
+              FROM CLIENTE_VEICULO CV
+              JOIN CLIENTES C ON C.ID = CV.CLIENTE_ID
+             WHERE CV.VEICULO_ID = :id
+             ORDER BY CASE CV.VINCULO WHEN 'PROPRIETARIO' THEN 0 ELSE 1 END, C.NOME
+            """;
+
+        // A situação que vale é a da instância mais recente: o recurso anda de AUTUACAO
+        // para JARI e para CETRAN, e é na última que ele está agora.
+        const string sqlMultas = """
+            SELECT M.ID, M.AIT, M.DESCRICAO, M.ENQUADRAMENTO, M.DATA_HORA_INFRACAO,
+                   M.GRAVIDADE, M.PONTOS, M.VALOR, M.PRAZO_DEFESA,
+                   MAX(CO.CLIENTE_ID)     KEEP (DENSE_RANK LAST ORDER BY NVL(I.ID, 0)),
+                   MAX(CL.NOME)           KEEP (DENSE_RANK LAST ORDER BY NVL(I.ID, 0)),
+                   MAX(I.FASE)            KEEP (DENSE_RANK LAST ORDER BY I.ID),
+                   MAX(I.SITUACAO)        KEEP (DENSE_RANK LAST ORDER BY I.ID),
+                   MAX(I.PRAZO_PROTOCOLO) KEEP (DENSE_RANK LAST ORDER BY I.ID)
+              FROM MULTAS M
+              LEFT JOIN ITENS_CONTRATACAO IT ON IT.MULTA_ID = M.ID
+              LEFT JOIN CONTRATACOES CO      ON CO.ID = IT.CONTRATACAO_ID
+              LEFT JOIN CLIENTES CL          ON CL.ID = CO.CLIENTE_ID
+              LEFT JOIN INSTANCIAS I         ON I.ITEM_ID = IT.ID
+             WHERE M.VEICULO_ID = :id
+             GROUP BY M.ID, M.AIT, M.DESCRICAO, M.ENQUADRAMENTO, M.DATA_HORA_INFRACAO,
+                      M.GRAVIDADE, M.PONTOS, M.VALOR, M.PRAZO_DEFESA
+             ORDER BY M.DATA_HORA_INFRACAO DESC NULLS LAST, M.ID DESC
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+
+        var donos = new List<DonoDoVeiculo>();
+        await using (var cmd = conexao.Comando(sqlDonos))
+        {
+            cmd.Param("id", veiculoId);
+
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                donos.Add(new DonoDoVeiculo
+                {
+                    VinculoId = reader.Inteiro(0),
+                    ClienteId = reader.Inteiro(1),
+                    Nome = reader.Texto(2),
+                    Cpf = reader.Texto(3),
+                    Whatsapp = reader.TextoOuNulo(4),
+                    Vinculo = reader.Texto(5)
+                });
+            }
+        }
+
+        var multas = new List<MultaDoVeiculo>();
+        await using (var cmd = conexao.Comando(sqlMultas))
+        {
+            cmd.Param("id", veiculoId);
+
+            await using var reader = (OracleDataReader)await cmd.ExecuteReaderAsync(cancelamento);
+            while (await reader.ReadAsync(cancelamento))
+            {
+                multas.Add(new MultaDoVeiculo
+                {
+                    Id = reader.Inteiro(0),
+                    Ait = reader.Texto(1),
+                    Descricao = reader.TextoOuNulo(2),
+                    Enquadramento = reader.TextoOuNulo(3),
+                    DataHoraInfracao = reader.DataOuNulo(4),
+                    Gravidade = reader.TextoOuNulo(5),
+                    Pontos = reader.InteiroOuNulo(6),
+                    Valor = reader.DecimalOuNulo(7),
+                    PrazoDefesa = reader.DataOuNulo(8),
+                    ClienteId = reader.InteiroOuNulo(9),
+                    ClienteNome = reader.TextoOuNulo(10),
+                    Fase = reader.TextoOuNulo(11),
+                    Situacao = reader.TextoOuNulo(12),
+                    PrazoProtocolo = reader.DataOuNulo(13)
+                });
+            }
+        }
+
+        return new HistoricoDoVeiculo { Donos = donos, Multas = multas };
+    }
+
+    /// <summary>Cadastra o veículo sem ligar a ninguém.</summary>
+    /// <remarks>
+    /// O caminho de dentro da multa é o <see cref="CadastrarComVinculoAsync"/>, que já
+    /// chega com o cliente. Aqui o carro pode nascer solto: na seção Veículos ele é
+    /// cadastrado antes de se saber de quem é — o caso do carro que aparece numa
+    /// notificação antes de o dono procurar o escritório.
+    /// </remarks>
+    public async Task<int> CadastrarAsync(Veiculo veiculo, CancellationToken cancelamento = default)
+    {
+        const string sql = """
+            INSERT INTO VEICULOS (PLACA, RENAVAM, MARCA_MODELO, COR, ANO, OBSERVACAO)
+            VALUES (:placa, :renavam, :marcaModelo, :cor, :ano, :observacao)
+            RETURNING ID INTO :novoId
+            """;
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("placa", veiculo.Placa)
+           .Param("renavam", veiculo.Renavam)
+           .Param("marcaModelo", veiculo.MarcaModelo)
+           .Param("cor", veiculo.Cor)
+           .Param("ano", veiculo.Ano)
+           .Param("observacao", veiculo.Observacao);
+
+        var pId = new OracleParameter("novoId", OracleDbType.Int32)
+        {
+            Direction = System.Data.ParameterDirection.Output
+        };
+        cmd.Parameters.Add(pId);
+
+        await cmd.ExecuteNonQueryAsync(cancelamento);
+        veiculo.Id = Convert.ToInt32(pId.Value.ToString());
+        return veiculo.Id;
+    }
+
+    /// <summary>A placa já está no sistema? O UNIQUE garante, isto só avisa antes.</summary>
+    public async Task<bool> PlacaJaCadastradaAsync(
+        string placa, int idIgnorado = 0, CancellationToken cancelamento = default)
+    {
+        const string sql = "SELECT COUNT(*) FROM VEICULOS WHERE PLACA = :placa AND ID <> :id";
+
+        await using var conexao = await Database.AbrirAsync(cancelamento);
+        await using var cmd = conexao.Comando(sql);
+        cmd.Param("placa", placa).Param("id", idIgnorado);
+
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync(cancelamento)) > 0;
+    }
 }
